@@ -1,98 +1,118 @@
 # Readit PDF Reader & Editor
 
-A modern, high-performance Windows desktop PDF reader and editor built with Electron, React, TypeScript, pdf.js, pdf-lib, and local Tesseract.js.
+A lightweight, local-first PDF reader and editor for Windows. Built with Electron, React, TypeScript, pdf.js, pdf-lib, and offline Tesseract.js OCR.
 
-Created by **Avaneesh Inamdar**.
+Developed by **Avaneesh Inamdar**.
 
----
+## Download
+
+Pre-built Windows binaries (64-bit) are available under [Releases](https://github.com/Avaneesh-Inamdar/Readit-Pdf-Reader-and-Editor/releases):
+
+- **Setup Installer (`.exe`)**: `Readit PDF Reader and Editor-Setup-1.0.0.exe` — Windows setup wizard with desktop shortcut, Start Menu shortcut, uninstaller, and automatic `.pdf` file association.
+- **Portable Executable (`.exe`)**: `Readit PDF Reader and Editor-1.0.0-portable.exe` — Standalone executable, runs immediately without installation.
 
 ## Features
 
-### 📄 Advanced PDF Viewing & Navigation
-- High-fidelity PDF rendering with bundled offline `pdf.js` worker
-- Continuous and single page viewing modes
-- Fluid zoom (50% to 500%), Fit Page, Fit Width, and custom scaling
-- Thumbnail rail with drag navigation and page preview
-- Spacebar temporary pan hand tool & dedicated pan mode
-- Full-text search with regex and instant navigation
-- Document properties inspection (fonts, security, producer, page dimensions)
+### Viewing & Navigation
+- High-resolution rendering via `pdf.js` with continuous and single-page display modes.
+- Zoom from 50% to 500%, Fit Width, and Fit Page options.
+- Thumbnail sidebar with drag-and-drop page jumping.
+- Hand pan tool (click-drag or hold `Space` to pan).
+- In-document search (`Ctrl+F`) with match navigation and keyword highlighting.
+- Metadata and document properties viewer.
 
-### ✏️ Annotation & Text Selection
-- **Selected Text Actions**: Select any text on a page to instantly **Highlight**, **Underline**, **Strikethrough**, **Change Text Color**, **Copy**, or **Redact** via the floating context toolbar or top action bar.
-- Freehand pencil/highlighter with customizable stroke width, opacity, and color palette.
-- Shape annotations: Rectangle, Circle, Line, and Arrow with live geometry controls.
-- Sticky notes and centered text annotations.
-- Eraser tool and individual annotation deletion.
-- Real PDF annotation object export (preserving re-openable annotations) as well as flattened burn-in export.
+### Text Selection Actions
+- Selecting text in the document opens a quick action bar with:
+  - **Highlight**, **Underline**, and **Strikethrough**
+  - **Text Color**: change selected text color non-destructively
+  - **Copy** and **Redact**
 
-### 📑 Page Organization & Document Operations
-- **Reorganize Pages Modal**: Drag-and-drop page reordering, page deletion, 90° clockwise/counter-clockwise rotation, and external page insertion.
-- **Robust Undo / Redo**: Multi-level document undo stack (`Ctrl+Z` / `Ctrl+Y`) for all page reorganization, rotations, deletions, and insertions, coordinated with annotation history.
+### Annotations & Markup
+- Freehand pen and highlighter with adjustable color palette, stroke width, and opacity.
+- Geometric shapes: Rectangle, Circle, Line, and Arrow.
+- Text boxes and sticky notes.
+- Annotations can be saved as standard PDF annotation objects (editable across PDF viewers) or burned in as flattened exports.
 
-### 🔍 OCR & Scan Detection
-- Offline optical character recognition powered by bundled Tesseract.js (`/tessdata`).
-- Automatic scan detection with heuristic analysis of character density.
-- **Improved OCR Accuracy**: High-resolution 300 DPI canvas rendering paired with adaptive contrast stretching and thresholding preprocessing.
-- **Custom Page Selection**: Run OCR on current page, all pages, or custom page ranges (e.g. `1-3, 5`).
-- **Stop in Between**: Responsive stop option to cancel OCR at any point while keeping completed pages intact.
-- **Searchable PDF Output**: Automatically prompts to save the searchable PDF with invisible text layer baked in and suggests `<filename>_ocr.pdf`.
-- **Convert OCR to Editable Text**: Turn recognized scanned text into editable text boxes with configurable fonts and sizes.
+### Page Management & Undo
+- Organize Pages modal: reorder pages by dragging, rotate 90° clockwise/counter-clockwise, delete pages, or insert blank pages.
+- Full multi-step Undo/Redo (`Ctrl+Z` / `Ctrl+Y`) that coordinates between page restructuring and annotation changes.
 
-### 📝 Form Filling & Editing
-- Interactive AcroForm field detection, text box filling, checkbox toggling, and export.
-- Non-destructive inline text editing (whiteout + font overlay preserving background image objects).
+### Local OCR (Scan Recognition)
+- Bundled offline Tesseract.js engine (no network requests or cloud services).
+- Automatic detection for scanned documents based on character density.
+- Preprocessing filter (grayscale + contrast stretching + thresholding) at 300 DPI for cleaner character recognition.
+- Flexible scope: run OCR on the current page, all pages, or a custom page range (`1-3, 5`).
+- Option to stop OCR processing at any time without losing completed pages.
+- Prompts to save the resulting searchable PDF as `<filename>_ocr.pdf`.
+- Convert OCR results into editable text boxes.
 
----
+### Forms & Editing
+- AcroForm detection and fillable form support (text fields, checkboxes).
+- Inline non-destructive text editing (whiteout overlay preserving background graphics and image resolution).
 
-## Tech Stack
+## Keyboard Shortcuts
 
-- **Framework**: Electron 33 + electron-vite
-- **UI**: React 19, TypeScript 5.9, Tailwind CSS 4, Lucide Icons
-- **State Management**: Zustand
-- **PDF Engines**:
-  - `pdfjs-dist` 4.7 (viewing, rendering, text layer extraction)
-  - `pdf-lib` 1.17 (page manipulation, annotation creation, form filling, text baking)
-- **OCR**: Tesseract.js 5.1 (bundled local language weights)
-- **Packaging**: electron-builder with NSIS wizard installer and portable executable
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl + O` | Open PDF |
+| `Ctrl + S` | Save |
+| `Ctrl + Shift + S` | Save As |
+| `Ctrl + Z` | Undo |
+| `Ctrl + Y` | Redo |
+| `Ctrl + F` | Search in Document |
+| `Ctrl + 0` | Fit Page |
+| `Ctrl + 1` | Actual Size (100%) |
+| `Ctrl + 2` | Fit Width |
+| `Ctrl + +` / `Ctrl + -` | Zoom In / Zoom Out |
+| `Space` (hold) | Temporary Hand Pan |
+| `Delete` | Remove selected annotation |
+| `Ctrl + D` | Document Properties |
+| `Ctrl + W` | Close Document |
 
----
+## Building from Source
 
-## Development & Build
-
-### Prerequisites
+### Requirements
 - Node.js >= 18
 - npm
 
-### Installation
+### Setup
 ```bash
+git clone https://github.com/Avaneesh-Inamdar/Readit-Pdf-Reader-and-Editor.git
+cd Readit-Pdf-Reader-and-Editor
 npm install
 ```
 
-### Run in Development
+### Development
 ```bash
 npm run dev
 ```
 
-### Run Tests
+### Running Tests
 ```bash
 npm test
 ```
 
-### Build Windows Installer (.exe)
+### Packaging Windows Binaries
 ```bash
+# Build NSIS Setup Installer (.exe)
 npm run build:win:nsis
-```
-This produces:
-- `release/Readit PDF Reader and Editor-Setup-1.0.0.exe` (NSIS Wizard installer with desktop shortcut, start menu shortcut, and `.pdf` file association)
 
-### Build Portable Executable
-```bash
+# Build Portable Executable (.exe)
 npm run build:win:portable
-```
-This produces:
-- `release/Readit PDF Reader and Editor-1.0.0-portable.exe` (standalone executable without installation)
 
----
+# Build both
+npm run package:win
+```
+Outputs are generated in the `release/` directory.
+
+## Tech Stack
+- Electron 33 & electron-vite
+- React 19 & TypeScript 5.9
+- Tailwind CSS 4
+- pdf.js (`pdfjs-dist`)
+- pdf-lib
+- Tesseract.js (offline bundle)
+- Zustand
 
 ## License
 

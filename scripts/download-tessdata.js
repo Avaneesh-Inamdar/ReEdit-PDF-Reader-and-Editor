@@ -9,8 +9,7 @@ const ENG_URL = 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/m
 const ENG_URL_FALLBACK = 'https://github.com/tesseract-ocr/tessdata_fast/raw/main/eng.traineddata'
 
 const targets = [
-  path.join(__dirname, '..', 'public', 'tessdata'),
-  path.join(__dirname, '..', 'src', 'renderer', 'public', 'tessdata'),
+  path.join(__dirname, '..', 'src', 'renderer', 'public', 'tessdata')
 ]
 
 function ensureDir(p) { fs.mkdirSync(p, { recursive: true }) }
