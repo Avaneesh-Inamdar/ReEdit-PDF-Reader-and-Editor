@@ -1,0 +1,489 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+/* ── Adobe Acrobat Theme Tokens ── */
+:root {
+  /* Classic Adobe Acrobat Gray (default) */
+  --acrobat-canvas: #525659;
+  --acrobat-chrome: #3c3f41;
+  --acrobat-chrome-alt: #484b4d;
+  --acrobat-surface: #f5f5f5;
+  --acrobat-border: #2c2e30;
+  --acrobat-border-light: #606366;
+  --acrobat-text: #e8e8e8;
+  --acrobat-text-muted: #a0a3a7;
+  --acrobat-text-dim: #6e7175;
+  --acrobat-titlebar: #323436;
+  --acrobat-menu-bg: #2d2f31;
+  --acrobat-menu-hover: #4a7ab5;
+  --acrobat-tab-active: #525659;
+  --acrobat-tab-inactive: #3c3f41;
+  --acrobat-toolbar: #404245;
+  --acrobat-toolbar-border: #2c2e30;
+  --acrobat-input-bg: #3a3c3e;
+  --acrobat-input-border: #555;
+  --acrobat-pane-bg: #f0f0f0;
+  --acrobat-pane-text: #333;
+  --acrobat-pane-border: #ccc;
+  --acrobat-pane-hover: #e0e0e0;
+  --acrobat-page-shadow: 0 2px 10px rgba(0,0,0,0.45);
+  --acrobat-accent: #1473e6;
+  --acrobat-accent-hover: #0d66d0;
+  --acrobat-red: #e3272a;
+
+  /* Tool colors */
+  --tool-comment: #f5a623;
+  --tool-sign: #7b61ff;
+  --tool-edit: #1473e6;
+  --tool-organize: #00b4a2;
+  --tool-ocr: #27ae60;
+  --tool-forms: #e67e22;
+  --tool-redact: #2c2c2c;
+  --tool-protect: #7f8c8d;
+
+  /* Annotation palette */
+  --anno-yellow: #ffee58;
+  --anno-green: #66bb6a;
+  --anno-blue: #42a5f5;
+  --anno-red: #ef5350;
+  --anno-purple: #ab47bc;
+  --anno-orange: #ffa726;
+  --anno-black: #212121;
+}
+
+[data-theme="dark"] {
+  --acrobat-canvas: #1e1e1e;
+  --acrobat-chrome: #252526;
+  --acrobat-chrome-alt: #2d2d2d;
+  --acrobat-surface: #1e1e1e;
+  --acrobat-border: #3c3c3c;
+  --acrobat-border-light: #555;
+  --acrobat-text: #d4d4d4;
+  --acrobat-text-muted: #808080;
+  --acrobat-text-dim: #5a5a5a;
+  --acrobat-titlebar: #1e1e1e;
+  --acrobat-menu-bg: #252526;
+  --acrobat-tab-active: #1e1e1e;
+  --acrobat-tab-inactive: #2d2d30;
+  --acrobat-toolbar: #333333;
+  --acrobat-toolbar-border: #3c3c3c;
+  --acrobat-input-bg: #3c3c3c;
+  --acrobat-input-border: #555;
+  --acrobat-pane-bg: #252526;
+  --acrobat-pane-text: #d4d4d4;
+  --acrobat-pane-border: #3c3c3c;
+  --acrobat-pane-hover: #2a2d2e;
+  --acrobat-page-shadow: 0 2px 12px rgba(0,0,0,0.6);
+}
+
+[data-theme="light"] {
+  --acrobat-canvas: #e8e8e8;
+  --acrobat-chrome: #f3f3f3;
+  --acrobat-chrome-alt: #e8e8e8;
+  --acrobat-surface: #fff;
+  --acrobat-border: #d1d1d1;
+  --acrobat-border-light: #e0e0e0;
+  --acrobat-text: #333;
+  --acrobat-text-muted: #666;
+  --acrobat-text-dim: #999;
+  --acrobat-titlebar: #f0f0f0;
+  --acrobat-menu-bg: #fff;
+  --acrobat-menu-hover: #e8f0fe;
+  --acrobat-tab-active: #fff;
+  --acrobat-tab-inactive: #e8e8e8;
+  --acrobat-toolbar: #fafafa;
+  --acrobat-toolbar-border: #d1d1d1;
+  --acrobat-input-bg: #fff;
+  --acrobat-input-border: #ccc;
+  --acrobat-pane-bg: #fff;
+  --acrobat-pane-text: #333;
+  --acrobat-pane-border: #e0e0e0;
+  --acrobat-pane-hover: #f5f5f5;
+  --acrobat-page-shadow: 0 1px 6px rgba(0,0,0,0.15);
+}
+
+/* ── Scrollbar ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--acrobat-border-light) transparent;
+}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--acrobat-border-light); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--acrobat-text-muted); }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ── Base ── */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  background: var(--acrobat-chrome);
+  color: var(--acrobat-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Animations — minimal, no slop ── */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.animate-fade-in { animation: fadeIn 0.12s ease-out; }
+.animate-slide-down { animation: none; }
+.animate-slide-up { animation: none; }
+.animate-scale-in { animation: none; }
+.animate-hud { animation: none; }
+
+/* ── Menu dropdown ── */
+.acrobat-menu {
+  background: var(--acrobat-menu-bg);
+  border: 1px solid var(--acrobat-border);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  min-width: 220px;
+  padding: 4px 0;
+  z-index: 1000;
+}
+.acrobat-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 24px 6px 12px;
+  font-size: 12px;
+  color: var(--acrobat-text);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.acrobat-menu-item:hover {
+  background: var(--acrobat-menu-hover);
+  color: #fff;
+}
+[data-theme="light"] .acrobat-menu-item:hover { color: #333; }
+.acrobat-menu-item[data-disabled="true"] {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.acrobat-menu-sep {
+  height: 1px;
+  background: var(--acrobat-border);
+  margin: 4px 8px;
+}
+
+/* ── Toolbar buttons ── */
+.tb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 3px;
+  border: none;
+  background: transparent;
+  color: var(--acrobat-text);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0 6px;
+  transition: background 0.12s;
+}
+.tb-btn:hover { background: rgba(255,255,255,0.12); }
+.tb-btn:active { background: rgba(255,255,255,0.18); }
+.tb-btn.active { background: rgba(255,255,255,0.18); outline: 1px solid var(--acrobat-accent); }
+.tb-btn:disabled { opacity: 0.35; pointer-events: none; }
+[data-theme="light"] .tb-btn:hover { background: rgba(0,0,0,0.06); }
+[data-theme="light"] .tb-btn:active { background: rgba(0,0,0,0.1); }
+
+.tb-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--acrobat-border-light);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* ── Tab bar ── */
+.acrobat-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  color: var(--acrobat-text-muted);
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+  white-space: nowrap;
+  user-select: none;
+  position: relative;
+}
+.acrobat-tab:hover { color: var(--acrobat-text); background: var(--acrobat-tab-active); }
+.acrobat-tab.active {
+  color: var(--acrobat-text);
+  background: var(--acrobat-tab-active);
+  border-bottom-color: var(--acrobat-accent);
+}
+.acrobat-tab .close-btn {
+  width: 16px; height: 16px;
+  display: grid; place-items: center;
+  border-radius: 3px;
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.1s, background 0.1s;
+}
+.acrobat-tab:hover .close-btn, .acrobat-tab.active .close-btn { opacity: 0.6; }
+.acrobat-tab .close-btn:hover { opacity: 1; background: rgba(255,255,255,0.15); }
+
+/* ── Modal overlay ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: grid;
+  place-items: center;
+  z-index: 2000;
+}
+.modal-card {
+  background: var(--acrobat-chrome);
+  border: 1px solid var(--acrobat-border);
+  border-radius: 8px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  max-height: 85vh;
+  overflow: auto;
+}
+[data-theme="light"] .modal-card {
+  background: #fff;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+}
+
+/* ── Tool card for Tools Center — flat, no lift ── */
+.tool-card {
+  border-radius: 8px;
+  border: 1px solid var(--acrobat-border);
+  background: var(--acrobat-chrome-alt);
+  color: var(--acrobat-text);
+  padding: 20px;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.tool-card:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--acrobat-accent);
+  background: var(--acrobat-pane-hover);
+}
+[data-theme="light"] .tool-card { background: #fff; }
+
+/* ── Sticky note popup ── */
+.sticky-popup {
+  background: #fff9c4;
+  border: 1px solid #f0e68c;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  min-width: 220px;
+  max-width: 300px;
+}
+.sticky-popup textarea {
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: vertical;
+  width: 100%;
+  font-size: 12px;
+  font-family: inherit;
+  color: #333;
+  min-height: 60px;
+}
+
+/* ── Floating HUD ── */
+.hud-bar {
+  background: rgba(50,52,54,0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 999px;
+  padding: 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  transition: opacity 0.3s;
+}
+[data-theme="light"] .hud-bar {
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(0,0,0,0.12);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+}
+
+/* ── Home view ── */
+.home-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.12s;
+  color: var(--acrobat-pane-text);
+}
+.home-sidebar-item:hover { background: var(--acrobat-pane-hover); }
+.home-sidebar-item.active { background: var(--acrobat-accent); color: #fff; }
+
+/* ── Dropzone ── */
+.drop-zone {
+  border: 2px dashed var(--acrobat-border-light);
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  transition: border-color 0.2s, background 0.2s;
+}
+.drop-zone.active {
+  border-color: var(--acrobat-accent);
+  background: rgba(20,115,230,0.06);
+}
+
+/* ── Color swatch ── */
+.color-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+.color-swatch.active { border-color: var(--acrobat-accent); }
+
+/* ── Signature canvas ── */
+.sig-canvas {
+  border: 1px solid var(--acrobat-border);
+  border-radius: 6px;
+  cursor: crosshair;
+  touch-action: none;
+  background: #fff;
+}
+
+/* ── Organize pages grid ── */
+.org-page-card {
+  border: 2px solid transparent;
+  border-radius: 6px;
+  cursor: grab;
+  position: relative;
+  background: #fff;
+}
+.org-page-card:hover {
+  border-color: var(--acrobat-accent);
+}
+.org-page-card.dragging {
+  opacity: 0.6;
+}
+
+/* ── Context menu ── */
+.ctx-menu {
+  position: fixed;
+  background: var(--acrobat-menu-bg);
+  border: 1px solid var(--acrobat-border);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  padding: 4px 0;
+  min-width: 200px;
+  z-index: 3000;
+}
+.ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px;
+  font-size: 12px;
+  color: var(--acrobat-text);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.ctx-item:hover { background: var(--acrobat-menu-hover); color: #fff; }
+[data-theme="light"] .ctx-item:hover { color: #333; }
+
+/* ── Pane section ── */
+.pane-section {
+  padding: 12px;
+  border-bottom: 1px solid var(--acrobat-pane-border);
+}
+.pane-section:last-child { border-bottom: none; }
+.pane-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--acrobat-text-muted);
+  margin-bottom: 8px;
+}
+
+/* ── Right pane tool button ── */
+.rp-tool {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s;
+  border: none;
+  background: transparent;
+  text-align: left;
+  color: var(--acrobat-pane-text);
+}
+.rp-tool:hover { background: var(--acrobat-pane-hover); }
+.rp-tool.active { background: var(--acrobat-accent); color: #fff; }
+
+/* ── Bookmark tree ── */
+.bm-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.1s;
+  color: var(--acrobat-pane-text);
+}
+.bm-item:hover { background: var(--acrobat-pane-hover); }
+
+/* ── File row in Home ── */
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.file-row:hover { background: var(--acrobat-pane-hover); }
+
+/* ── Zoom dropdown ── */
+.zoom-dropdown {
+  background: var(--acrobat-menu-bg);
+  border: 1px solid var(--acrobat-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  padding: 4px 0;
+  min-width: 140px;
+  z-index: 1000;
+}
+.zoom-item {
+  padding: 6px 16px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+  color: var(--acrobat-text);
+}
+.zoom-item:hover { background: var(--acrobat-menu-hover); color: #fff; }
+[data-theme="light"] .zoom-item:hover { color: #333; }
+
+::selection {
+  background: rgba(0, 115, 230, 0.35);
+  color: inherit;
+}
