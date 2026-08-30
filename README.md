@@ -113,7 +113,3 @@ Outputs are generated in the `release/` directory.
 - pdf-lib
 - Tesseract.js (offline bundle)
 - Zustand
-
-## License
-
-Copyright © 2026 Avaneesh Inamdar. All rights reserved.
