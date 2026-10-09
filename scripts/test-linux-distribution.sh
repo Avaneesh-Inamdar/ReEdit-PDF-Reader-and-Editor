@@ -21,7 +21,14 @@ if [ "$READIT_DISTRO" = debian-12 ]; then
   test -n "$image"
   chmod +x "$image"
   "$image" --appimage-extract >/dev/null
-  xvfb-run -a node scripts/test-linux-launch.cjs /work/squashfs-root/AppRun release/linux-tests/debian-12/appimage-launch.json
+  # Test the extracted AppImage payload via its binary directly (same as the
+  # local lab). The AppRun wrapper is not used here: FUSE mounting is not
+  # available in containers and AppRun's mount-relative lookup fails once
+  # extracted to an absolute path.
+  appimage_binary=$(find /work/squashfs-root -maxdepth 1 -type f -name 're-edit-pdf' | head -1)
+  test -n "$appimage_binary"
+  test -x "$appimage_binary"
+  xvfb-run -a node scripts/test-linux-launch.cjs "$appimage_binary" release/linux-tests/debian-12/appimage-launch.json
   mkdir -p /work/release/tar-test
   tar -xzf /work/release/ci/re-edit-pdf-Linux/*.tar.gz -C /work/release/tar-test
   binary=$(find /work/release/tar-test -type f -name re-edit-pdf | head -1)
