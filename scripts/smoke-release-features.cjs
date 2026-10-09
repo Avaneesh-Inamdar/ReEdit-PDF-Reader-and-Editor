@@ -13,6 +13,7 @@ dialog.showOpenDialog=async()=>({canceled:!picked.length,filePaths:picked})
 dialog.showSaveDialog=async()=>({canceled:!destination,filePath:destination})
 dialog.showMessageBox=async()=>({response:1})
 dialog.showErrorBox=(title,message)=>errors.push(title+': '+message)
+process.on('unhandledRejection',(reason)=>{try{writeFileSync(join(directory,'result.json'),JSON.stringify({passed:false,error:String(reason && reason.stack ? reason.stack : reason)},null,2))}catch{};app.exit(1)})
 app.on('browser-window-created',(_,candidate)=>{if(!window)window=candidate})
 require(process.env.READIT_FEATURE_APP ? resolve(process.env.READIT_FEATURE_APP,'out/main/index.js') : '../out/main/index.js')
 async function wait(expression,timeout=45000){const deadline=Date.now()+timeout;while(Date.now()<deadline){if(await window.webContents.executeJavaScript(expression))return;await new Promise(resolve=>setTimeout(resolve,100))}throw new Error('Timed out: '+expression)}
@@ -42,6 +43,6 @@ app.whenReady().then(async()=>{
   await wait('!!document.querySelector("#page-1 [data-anno-id]")');destination=join(directory,'redacted.pdf');window.webContents.send('menu:action','saveAs');await waitFile(destination)
   const m=await import('mupdf');const redacted=new m.PDFDocument(readFileSync(destination));const p=redacted.loadPage(0),s=p.toStructuredText('');assert.ok(!s.asText().includes('Simple Text PDF'));s.destroy();p.destroy();redacted.destroy();assert.deepEqual(errors,[])
   writeFileSync(join(directory,'result.json'),JSON.stringify({passed:true,checks:['update dialog','editable Word export through UI','P12 certificate signing through UI','password cleared','draw and save genuine redaction']},null,2));if(certificatePath && existsSync(certificatePath))unlinkSync(certificatePath);console.log('Release feature checks passed');app.exit(0)
- } catch(error){console.error(error);writeFileSync(join(directory,'failure.png'),(await window.webContents.capturePage()).toPNG());console.log(await window.webContents.executeJavaScript('JSON.stringify({title:document.body.innerText.slice(-1800),svgs:Array.from(document.querySelectorAll("#page-1 svg")).map(s=>({rect:s.getBoundingClientRect().toJSON(),pointer:s.style.pointerEvents}))})'));writeFileSync(join(directory,'result.json'),JSON.stringify({passed:false,error:String(error)},null,2));app.exit(1)}
+ } catch(error){console.error(error);try{writeFileSync(join(directory,'failure.png'),(await window.webContents.capturePage()).toPNG())}catch{};console.log(await window.webContents.executeJavaScript('JSON.stringify({title:document.body.innerText.slice(-1800),svgs:Array.from(document.querySelectorAll("#page-1 svg")).map(s=>({rect:s.getBoundingClientRect().toJSON(),pointer:s.style.pointerEvents}))})'));writeFileSync(join(directory,'result.json'),JSON.stringify({passed:false,error:String(error)},null,2));app.exit(1)}
  finally{if(certificatePath && existsSync(certificatePath))unlinkSync(certificatePath)}
 })

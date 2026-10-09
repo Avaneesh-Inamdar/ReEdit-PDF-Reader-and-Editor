@@ -17,6 +17,30 @@ dialog.showSaveDialog = async () => ({ canceled: !destination, filePath: destina
 const errors = []
 dialog.showErrorBox = (title, content) => errors.push(`${title}: ${content}`)
 dialog.showMessageBox = async () => ({ response: 1 })
+// Fail fast on background rejections (e.g. viz/capture errors under software
+// rendering) instead of hanging until the job timeout.
+process.on('unhandledRejection', (reason) => {
+  errors.push(`unhandled: ${reason && reason.message ? reason.message : String(reason)}`)
+  try {
+    writeFileSync(
+      join(output, 'result.json'),
+      JSON.stringify({ passed: false, error: String(reason && reason.stack ? reason.stack : reason), rendererErrors: errors }, null, 2)
+    )
+  } catch {}
+  app.exit(1)
+})
+async function capturePage(retries = 3) {
+  let last
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await main.webContents.capturePage()
+    } catch (error) {
+      last = error
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+    }
+  }
+  throw last
+}
 app.on('browser-window-created', (_, window) => {
   if (!main) main = window
   window.webContents.on('console-message', (_, level, message) => {
@@ -286,7 +310,7 @@ app.whenReady().then(async () => {
     const savedTwice = await PDFDocument.load(readFileSync(join(output, 'simple-text.pdf')))
     assert.equal(savedTwice.getPage(0).node.Annots().size(), count)
     await new Promise((resolve) => setTimeout(resolve, 300))
-    writeFileSync(join(output, 'document.png'), (await main.webContents.capturePage()).toPNG())
+    writeFileSync(join(output, 'document.png'), (await capturePage()).toPNG())
     await main.webContents.executeJavaScript(
       'window.dispatchEvent(new CustomEvent("acrobat:print"))'
     )
@@ -308,7 +332,7 @@ app.whenReady().then(async () => {
       '!!document.querySelector("#page-1 canvas") && document.body.innerText.includes("Edited PDF heading")'
     )
     await new Promise((resolve) => setTimeout(resolve, 500))
-    writeFileSync(join(output, 'reopened.png'), (await main.webContents.capturePage()).toPNG())
+    writeFileSync(join(output, 'reopened.png'), (await capturePage()).toPNG())
     if (process.platform === 'linux')
       await main.webContents.executeJavaScript('window.api.openDefaultApps()')
     main.webContents.send('menu:action', 'preferences')
@@ -360,7 +384,7 @@ app.whenReady().then(async () => {
       .join(' ')
     assert.ok(firstPageText.includes('Image'), 'Combined document uses requested file order')
     await combinedText.destroy()
-    writeFileSync(join(output, 'combined.png'), (await main.webContents.capturePage()).toPNG())
+    writeFileSync(join(output, 'combined.png'), (await capturePage()).toPNG())
 
     // Exercise native mouse selection and partial editing on a large document.
     const large = await PDFDocument.create()
@@ -465,7 +489,7 @@ app.whenReady().then(async () => {
     )
     writeFileSync(
       join(output, 'large-document.png'),
-      (await main.webContents.capturePage()).toPNG()
+      (await capturePage()).toPNG()
     )
     writeFileSync(
       join(output, 'performance.json'),
@@ -533,7 +557,9 @@ app.whenReady().then(async () => {
     app.exit(0)
   } catch (error) {
     if (main && !main.isDestroyed())
-      writeFileSync(join(output, 'failure.png'), (await main.webContents.capturePage()).toPNG())
+      try {
+        writeFileSync(join(output, 'failure.png'), (await capturePage(1)).toPNG())
+      } catch {}
     writeFileSync(
       join(output, 'result.json'),
       JSON.stringify({ passed: false, error: String(error), rendererErrors: errors }, null, 2)

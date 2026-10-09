@@ -15,18 +15,21 @@ export READIT_SMOKE_OUTPUT="release/linux-tests/$label"
 export XDG_CURRENT_DESKTOP=GNOME
 mkdir -p "$READIT_SMOKE_OUTPUT"
 # Root containers cannot use Chromium's sandbox; installed desktop launches retain it.
+# Containers also lack a GPU, so the Electron test harness disables GPU
+# compositing and shared-memory rendering paths (the installed application
+# launch checks keep the normal flags).
 if [ "$(id -u)" = 0 ]; then
-  xvfb-run -a -s '-screen 0 1600x1000x24' "$runtime" --no-sandbox scripts/smoke-electron.cjs
+  xvfb-run -a -s '-screen 0 1600x1000x24' "$runtime" --no-sandbox --disable-gpu --disable-dev-shm-usage scripts/smoke-electron.cjs
 else
-  xvfb-run -a -s '-screen 0 1600x1000x24' "$runtime" scripts/smoke-electron.cjs
+  xvfb-run -a -s '-screen 0 1600x1000x24' "$runtime" --disable-gpu --disable-dev-shm-usage scripts/smoke-electron.cjs
 fi
 grep -q '"passed": true' "$READIT_SMOKE_OUTPUT/result.json"
 export READIT_FEATURE_APP="$READIT_SMOKE_APP"
 export READIT_FEATURE_OUTPUT="$READIT_SMOKE_OUTPUT/release-features"
 if [ "$(id -u)" = 0 ]; then
-  xvfb-run -a -s '-screen 0 1600x1000x24' "$runtime" --no-sandbox scripts/smoke-release-features.cjs
+  xvfb-run -a -s '-screen 0 1600x1000x24' "$runtime" --no-sandbox --disable-gpu --disable-dev-shm-usage scripts/smoke-release-features.cjs
 else
-  xvfb-run -a -s '-screen 0 1600x1000x24' "$runtime" scripts/smoke-release-features.cjs
+  xvfb-run -a -s '-screen 0 1600x1000x24' "$runtime" --disable-gpu --disable-dev-shm-usage scripts/smoke-release-features.cjs
 fi
 grep -q '"passed": true' "$READIT_FEATURE_OUTPUT/result.json"
 if command -v gio >/dev/null 2>&1; then

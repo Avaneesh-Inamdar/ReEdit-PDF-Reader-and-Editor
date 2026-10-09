@@ -11,7 +11,7 @@ permissions:
 jobs:
   distributions:
     runs-on: ubuntu-22.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -46,6 +46,9 @@ jobs:
         run: |
           node_dir=$(dirname "$(dirname "$(command -v node)")")
           docker run --rm -v "$PWD:/work" -v "$node_dir:/node:ro" -w /work -e PATH=/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin -e READIT_DISTRO -e READIT_ALSA_SUFFIX '${{ matrix.image }}' sh scripts/test-linux-distribution.sh
+      - name: Fix test artifact ownership
+        if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" release/linux-tests release/linux-validation 2>/dev/null || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
