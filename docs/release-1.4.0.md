@@ -6,7 +6,7 @@ Windows x64: assisted setup and portable executable. Linux x64: DEB, RPM, AppIma
 
 - Re-Edit PDF branding, a manually drawn vector logo, consistent Lucide icons and native Windows window controls.
 - Accurate PDF.js text selection, selected-text editing, a growing text editor, correct baselines, undo/redo and independent document sessions.
-- MuPDF removes original selected text when saving edits. Redaction removes marked text, image pixels and graphics, then rewrites the PDF without previous revisions, document metadata or catalog attachments.
+- MuPDF removes original selected text when saving edits. Redaction flattens form fields, removes marked text, image pixels, graphics and intersecting comments, then rewrites the PDF without previous revisions, document metadata or catalog attachments.
 - Sharp rendering with bounded canvas allocation, lazy page and thumbnail rendering, cached text extraction and limited concurrent work for large documents.
 - Working menus/preferences, internal dragging and hand panning; assisted Windows installer and PDF default-app registration; Linux desktop and MIME integration.
 - Help > Check for Updates reads the latest stable GitHub release. Downloads/installations remain user initiated.

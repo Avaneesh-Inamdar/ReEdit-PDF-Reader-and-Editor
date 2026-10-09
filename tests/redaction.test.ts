@@ -8,6 +8,12 @@ async function fixture(rotation=0):Promise<Uint8Array> {
  page.drawText('SECRET',{x:40,y:300,size:20,font});page.drawText('KEEP',{x:250,y:300,size:20,font});page.setRotation(degrees(rotation));doc.setTitle('SECRET');return doc.save()
 }
 describe('real content removal',()=>{
+ it('removes covered form values from the form dictionary and page content',async()=>{
+  const doc=await PDFDocument.create();const page=doc.addPage([400,400]);const field=doc.getForm().createTextField('secret');field.setText('SECRET');field.addToPage(page,{x:40,y:250,width:120,height:40})
+  const bytes=await removePdfContent(await doc.save(),[{page:1,x:.07,y:.24,w:.4,h:.18}],true)
+  expect((await PDFDocument.load(bytes)).getForm().getFields()).toHaveLength(0)
+  expect(await text(bytes)).not.toContain('SECRET')
+ })
  it('removes sensitive pixels from the embedded image itself, rather than covering them',async()=>{
   const m=await import('mupdf')
   const pixmap=new m.Pixmap(m.ColorSpace.DeviceRGB,[0,0,100,100],false)

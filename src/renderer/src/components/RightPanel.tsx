@@ -191,7 +191,7 @@ function RedactPanel(): React.JSX.Element {
         </div>
         
         <div className="rounded p-3 text-xs bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 text-red-800 dark:text-red-300">
-          Saving removes text, image pixels, and graphics in marked areas and rewrites the PDF. Document metadata and embedded files are removed. Review the saved copy before sharing; undo remains available in this editing session.
+          Saving removes text, image pixels, graphics and comments in marked areas and rewrites the PDF. Form fields become permanent page content; document metadata and catalog attachments are removed. Review the saved copy before sharing; undo remains available in this editing session.
         </div>
       </div>
     </div>
