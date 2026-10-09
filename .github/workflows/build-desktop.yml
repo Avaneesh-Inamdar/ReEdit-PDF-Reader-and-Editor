@@ -1,6 +1,10 @@
 name: Build desktop packages
 on:
   workflow_dispatch:
+    inputs:
+      platforms:
+        description: Runner OS list as JSON
+        default: '["windows-latest", "ubuntu-22.04"]'
 permissions:
   contents: read
 jobs:
@@ -8,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-22.04]
+        os: ${{ fromJSON(inputs.platforms) }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -46,6 +50,7 @@ jobs:
           sh scripts/test-linux-package.sh '/opt/Re-Edit PDF/re-edit-pdf' ubuntu-22.04
           xvfb-run -a node scripts/test-linux-launch.cjs
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: re-edit-pdf-${{ runner.os }}
           path: |

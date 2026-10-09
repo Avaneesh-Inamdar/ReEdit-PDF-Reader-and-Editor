@@ -29,5 +29,12 @@ else
   xvfb-run -a -s '-screen 0 1600x1000x24' "$runtime" scripts/smoke-release-features.cjs
 fi
 grep -q '"passed": true' "$READIT_FEATURE_OUTPUT/result.json"
-test "$(xdg-mime query default application/pdf)" = re-edit-pdf.desktop
+default_pdf=$(xvfb-run -a sh -c 'XDG_UTILS_DEBUG_LEVEL=2 xdg-mime query default application/pdf')
+printf '%s\n' "Default PDF application: $default_pdf"
+if [ "$default_pdf" != re-edit-pdf.desktop ]; then
+  for defaults_file in "${XDG_CONFIG_HOME:-$HOME/.config}/mimeapps.list" "$HOME/.local/share/applications/mimeapps.list"; do
+    if [ -f "$defaults_file" ]; then grep 'application/pdf=' "$defaults_file" || true; fi
+  done
+  exit 1
+fi
 printf '%s\n' "Installed package, PDF default, desktop entry, and GUI workflows passed: $label"
