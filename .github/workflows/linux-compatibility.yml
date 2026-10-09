@@ -1,0 +1,49 @@
+name: Validate Linux distributions
+on:
+  workflow_dispatch:
+    inputs:
+      build_run:
+        description: Successful Build desktop packages run ID
+        required: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  distributions:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: debian:12
+            label: debian-12
+            alsa: ''
+          - image: ubuntu:24.04
+            label: ubuntu-24.04
+            alsa: t64
+          - image: fedora:43
+            label: fedora-43
+            alsa: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.build_run }}
+          github-token: ${{ github.token }}
+          name: re-edit-pdf-Linux
+          path: release/ci/re-edit-pdf-Linux
+      - name: Install and test distribution packages
+        env:
+          READIT_DISTRO: ${{ matrix.label }}
+          READIT_ALSA_SUFFIX: ${{ matrix.alsa }}
+        run: |
+          node_dir=$(dirname "$(dirname "$(command -v node)")")
+          docker run --rm -v "$PWD:/work" -v "$node_dir:/node:ro" -w /work -e PATH=/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin -e READIT_DISTRO -e READIT_ALSA_SUFFIX '${{ matrix.image }}' sh scripts/test-linux-distribution.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-validation-${{ matrix.label }}
+          path: release/linux-tests/${{ matrix.label }}/
