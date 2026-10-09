@@ -1,10 +1,13 @@
+import { Icon } from './Icon'
+import { editSelection } from '../lib/editSelection'
+import { placeImage } from '../lib/imagePlacement'
+import { requestText } from '../lib/requestText'
 import { useEffect, useState, useRef } from 'react'
 import { usePdfStore } from '../stores/usePdfStore'
 import { useAnnotationStore } from '../stores/useAnnotationStore'
 import { useEditStore } from '../stores/useEditStore'
 import { useDetectionStore } from '../stores/useDetectionStore'
 import { useUIStore } from '../stores/useUIStore'
-import { pdfjsLib } from '../lib/pdfjs'
 import {
   getCurrentTextSelection,
   applyHighlightToSelection,
@@ -29,7 +32,6 @@ export function EditPanel(): React.JSX.Element {
   const { annotations, selectedId, updateAnnotation, deleteAnnotation, addAnnotation } = useAnnotationStore()
   const imageInputRef = useRef<HTMLInputElement>(null)
   const det = useDetectionStore()
-  const [pageTexts, setPageTexts] = useState<{ str:string; x:number; y:number }[]>([])
 
   const selected = annotations.find(a => a.id === selectedId) || null
   const isTextSelected = selected?.type === 'text'
@@ -53,32 +55,18 @@ export function EditPanel(): React.JSX.Element {
     }
   }, [])
 
-  // Load detected text for current page (pdf.js textContent) – like PDF-XChange text detection
   useEffect(() => {
-    if (!data) { setPageTexts([]); return }
-    let cancelled = false
-    const load = async (): Promise<void> => {
-      try {
-        const doc = await pdfjsLib.getDocument({ data: data.slice(0) }).promise
-        if (currentPage <1 || currentPage > doc.numPages) return
-        const page = await doc.getPage(currentPage)
-        const tc = await page.getTextContent()
-        const items = tc.items as unknown as { str:string; transform:number[] }[]
-        const out = items.filter(it=> it.str && it.str.trim()).slice(0, 30).map(it => ({ str: it.str, x: it.transform[4], y: it.transform[5]}))
-        if (!cancelled) setPageTexts(out)
-      } catch {}
-    }
-    load()
-    return () => { cancelled = true }
-  }, [data, currentPage])
+    useAnnotationStore.getState().setTool('select')
+    useUIStore.getState().setPointerMode('select')
+  }, [])
 
-  const onAddTextAtCenter = (): void => {
+  const onAddTextAtCenter = async (): Promise<void> => {
     if (!data) return alert('Open a PDF first')
-    const text = prompt('Text to add:', 'Hello PDF')
+    const text = await requestText('Text to add:', 'Hello PDF')
     if (!text) return
-    const sizeStr = prompt('Font size:', '14') || '14'
+    const sizeStr = await requestText('Font size:', '14') || '14'
     const size = Math.max(6, Math.min(72, parseInt(sizeStr,10) || 14))
-    const color = prompt('Color hex:', '#111827') || '#111827'
+    const color = await requestText('Color hex:', '#111827') || '#111827'
     // Place at center of current page
     const anno = {
       id: `txt-${Date.now()}`,
@@ -92,37 +80,34 @@ export function EditPanel(): React.JSX.Element {
     useAnnotationStore.getState().setSelected(anno.id)
   }
 
-  const onAddTextClickMode = (): void => {
-    const text = prompt('Text to place (then click on page):', 'Sample text')
+  const onAddTextClickMode = async (): Promise<void> => {
+    const text = await requestText('Text to place (then click on page):', 'Sample text')
     if (!text) return
-    const sizeStr = prompt('Font size:', '12') || '12'
+    const sizeStr = await requestText('Font size:', '12') || '12'
     const size = Math.max(6, Math.min(72, parseInt(sizeStr,10) || 12))
-    const color = prompt('Color:', '#111827') || '#111827'
+    const color = await requestText('Color:', '#111827') || '#111827'
     useEditStore.getState().setPendingText({ text, color, size })
     useAnnotationStore.getState().setTool('text')
-    alert('Now click on a page to place the text.')
+
   }
 
   const onAddImage = (): void => imageInputRef.current?.click()
   const onImagePicked = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const f = e.target.files?.[0]
     if (!f) return
-    const buf = await f.arrayBuffer()
-    useEditStore.getState().setPendingImage({ bytes: new Uint8Array(buf), mime: f.type || 'image/png' })
-    useAnnotationStore.getState().setTool('image')
-    alert('Image ready – click on a page to place it. Or click "Place at Center" to drop instantly.')
+    const url = URL.createObjectURL(f)
+    try { await placeImage(url, 0.3) } finally { URL.revokeObjectURL(url) }
     e.target.value = ''
   }
   const placeImageAtCenter = async (): Promise<void> => {
     const pending = useEditStore.getState().pendingImage
     if (!pending) return alert('No image selected. Use Add Image first.')
     const id = `img-${Date.now()}`
-    const anno = { id, page: currentPage, type: 'image' as const, x: 0.35, y: 0.32, w: 0.3, h: 0.27, color: '#6b7280', strokeWidth: 1, opacity: 1, text: pending.mime }
-    // store bytes in global map for bake
-    ;(window as unknown as Record<string, unknown>).__imageMap = (window as unknown as Record<string, unknown>).__imageMap || {}
-    ;((window as unknown as Record<string, unknown>).__imageMap as Record<string, { bytes: Uint8Array; mime: string }>)[id] = pending
+    const anno = { id, page: currentPage, type: 'image' as const, x: 0.35, y: 0.32, w: 0.3, h: 0.27, color: '#6b7280', strokeWidth: 1, opacity: 1, image: pending }
     addAnnotation(anno as never)
     useAnnotationStore.getState().setSelected(id)
+    useEditStore.getState().setPendingImage(null)
+    useAnnotationStore.getState().setTool('select')
   }
 
   const onFontChange = (field: 'fontFamily'|'fontSize'|'color'|'text'|'bold'|'italic', value: string|number|boolean): void => {
@@ -137,6 +122,7 @@ export function EditPanel(): React.JSX.Element {
 
   return (
     <div className="flex flex-col h-full">
+      <div className="p-3 text-sm" style={{ background: 'var(--acrobat-chrome-alt)', color: 'var(--acrobat-text)' }}>Click text on the page to edit it.</div>
       {/* FORMAT – wired to selected text annotation, like Word / Master PDF Editor */}
       <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
         <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-3">FORMAT</h3>
@@ -147,7 +133,7 @@ export function EditPanel(): React.JSX.Element {
                 value={selected?.fontFamily || 'Helvetica'}
                 onChange={(e)=> onFontChange('fontFamily', e.target.value)}
                 className="flex-1 h-7 text-xs px-2 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200"
-                title="Font family (pdf-lib StandardFonts, like LibreOffice)"
+                title="Font family"
               >
                 {FONT_OPTIONS.map(o=> <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
@@ -161,8 +147,8 @@ export function EditPanel(): React.JSX.Element {
               </select>
             </div>
             <div className="flex items-center gap-1">
-              <button onClick={()=> onFontChange('bold', !selected?.bold)} className={`tb-btn h-7 w-7 border rounded ${selected?.bold ? 'bg-zinc-800 text-white dark:bg-zinc-700' : 'border-transparent'}`} title="Bold (uses Helvetica-Bold)">B</button>
-              <button onClick={()=> onFontChange('italic', !selected?.italic)} className={`tb-btn h-7 w-7 border rounded ${selected?.italic ? 'bg-zinc-800 text-white dark:bg-zinc-700' : 'border-transparent'}`} title="Italic">I</button>
+              <button onClick={()=> onFontChange('bold', !selected?.bold)} className={`tb-btn h-7 w-7 border rounded ${selected?.bold ? 'bg-zinc-800 text-white dark:bg-zinc-700' : 'border-transparent'}`} title="Bold (uses Helvetica-Bold)"><Icon name="bold" /></button>
+              <button onClick={()=> onFontChange('italic', !selected?.italic)} className={`tb-btn h-7 w-7 border rounded ${selected?.italic ? 'bg-zinc-800 text-white dark:bg-zinc-700' : 'border-transparent'}`} title="Italic"><Icon name="italic" /></button>
               <div className="tb-sep mx-1" />
               <input
                 type="color"
@@ -189,6 +175,7 @@ export function EditPanel(): React.JSX.Element {
             <div className="text-xs font-medium truncate" style={{ color: 'var(--acrobat-text)' }}>
               Selected text (page {liveSelection.pageNum}): &ldquo;{liveSelection.text.slice(0, 35)}{liveSelection.text.length > 35 ? '…' : ''}&rdquo;
             </div>
+            <button className="tb-btn w-full justify-center border rounded" title="Edit selected PDF text" onMouseDown={e => e.preventDefault()} onClick={() => { void editSelection(liveSelection); setLiveSelection(null) }}>Edit selected text</button>
             <div className="grid grid-cols-3 gap-1.5">
               <button
                 onClick={() => { applyHighlightToSelection(); setLiveSelection(null) }}
@@ -247,57 +234,38 @@ export function EditPanel(): React.JSX.Element {
         <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-3">EDIT</h3>
         <div className="flex flex-col gap-1.5">
           <button onClick={onAddTextAtCenter} className="flex items-center gap-3 px-3 py-2 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+            <Icon name="text" size={16} />
             Add Text (at center)
           </button>
           <button onClick={onAddTextClickMode} className="flex items-center gap-3 px-3 py-2 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full" style={{ color: 'var(--acrobat-text-dim)' }}>
             <span className="ml-7">or Place on Click…</span>
           </button>
           <button onClick={onAddImage} className="flex items-center gap-3 px-3 py-2 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <Icon name="image" size={16} />
             Add Image…
           </button>
           {useEditStore.getState().pendingImage && (
             <button onClick={() => void placeImageAtCenter()} className="ml-7 text-xs underline" style={{ color: 'var(--acrobat-accent)' }}>Place pending image at center</button>
           )}
           <button onClick={()=> useAnnotationStore.getState().setTool('rect')} className="flex items-center gap-3 px-3 py-2 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+            <Icon name="rectangle" size={16} />
             Add Rectangle
           </button>
           <button onClick={()=> useAnnotationStore.getState().setTool('ellipse')} className="flex items-center gap-3 px-3 py-2 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><ellipse cx="12" cy="12" rx="10" ry="7"/></svg>
+            <Icon name="ellipse" size={16} />
             Add Ellipse
           </button>
         </div>
 
-        <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mt-6 mb-2">DETECTED PDF TEXT (page {currentPage})</h3>
-        <div className="text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-2 max-h-40 overflow-y-auto">
-          {pageTexts.length === 0 ? (
-            <div style={{ color: 'var(--acrobat-text-dim)' }}>No text detected on this page – {det.isScanned ? 'scanned image. Run OCR in Scan & OCR pane.' : 'empty or image-only.'} {det.fonts.length ? `Fonts: ${det.fonts.slice(0,3).join(', ')}` : ''}</div>
-          ) : (
-            <div className="space-y-1">
-              {pageTexts.map((t,i)=> (
-                <div key={i} className="flex items-center justify-between gap-2">
-                  <span className="truncate flex-1" title={t.str}>{t.str.slice(0,80)}</span>
-                  <button onClick={()=>{
-                    const replacement = prompt(`Edit text (original: "${t.str}")\nEnter replacement:`, t.str)
-                    if (replacement === null) return
-                    // create an overlay edit via annotation (non-destructive whiteout+text, like PDFEscape)
-                    const anno = { id: `edit-${Date.now()}`, page: currentPage, type:'text' as const, x: 0.1, y: 0.15 + i*0.04, w: 0.8, h: 0.03, color:'#111827', strokeWidth:1, opacity:1, text: replacement, fontSize: 12, fontFamily:'Helvetica'}
-                    addAnnotation(anno as never)
-                    alert('Created editable overlay. Select it to change font/size, right-click to remove. For true in-place edit, save will whiteout original bbox (see pdfEditing.nonDestructiveEditText).')
-                  }} className="tb-btn text-xs" style={{ height: 20 }}>Edit</button>
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="mt-2 text-[10px]" style={{ color: 'var(--acrobat-text-dim)' }}>Tip: For image-only PDFs, go to Scan & OCR → “OCR All Pages” → “Convert to Editable”.</div>
-        </div>
+        <p className="mt-4 text-xs" style={{ color: 'var(--acrobat-pane-text)' }}>
+          Click existing text on the page to edit it. Apply your change, then save with Ctrl+S.
+          Scanned pages need OCR first. Text is replaced visually using the original position and a standard font; paragraph reflow is not supported.
+        </p>
 
         <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mt-6 mb-3">PAGES</h3>
         <div className="flex flex-col gap-1.5">
           <button onClick={() => useUIStore.getState().setActiveModal('organizePages')} className="flex items-center gap-3 px-3 py-2 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <Icon name="thumbnails" size={16} />
             Organize Pages
           </button>
           <div className="text-xs mt-2" style={{ color:'var(--acrobat-text-dim)' }}>{det.textChars} chars · {det.avgCharsPerPage}/page · {det.numFonts} fonts {det.isScanned ? '· SCANNED' : ''}</div>

@@ -1,9 +1,14 @@
 import { create } from 'zustand'
+import type { PdfTextRun } from '../lib/pdfText'
 
 export type AnnotationTool = 'select' | 'highlight' | 'underline' | 'strike' | 'draw' | 'rect' | 'ellipse' | 'arrow' | 'note' | 'eraser' | 'redact' | 'text' | 'image'
 export type AnnotationType = 'highlight' | 'underline' | 'strike' | 'draw' | 'rect' | 'ellipse' | 'arrow' | 'note' | 'redact' | 'text' | 'image'
 
 export interface Annotation {
+  image?: { bytes: Uint8Array; mime: string; dataUrl?: string }
+  sourceText?: PdfTextRun
+  maskTexts?: PdfTextRun[]
+  lineHeight?: number
   id: string
   page: number
   type: AnnotationType
@@ -74,6 +79,7 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     set({ annotations: [...get().annotations, a] })
   },
   updateAnnotation: (id, patch) => {
+    pushHistory(get, set as never)
     set({ annotations: get().annotations.map((x) => (x.id === id ? { ...x, ...patch } : x)) })
   },
   deleteAnnotation: (id) => {

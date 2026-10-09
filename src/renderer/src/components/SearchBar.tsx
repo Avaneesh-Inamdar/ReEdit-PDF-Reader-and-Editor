@@ -1,3 +1,5 @@
+import { pageText } from '../lib/rendering'
+import { Icon } from './Icon'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { usePdfStore } from '../stores/usePdfStore'
@@ -8,6 +10,8 @@ export function SearchBar({ pdfDoc, open, onClose }: { pdfDoc: PDFDocumentProxy 
   const [local, setLocal] = useState(searchQuery)
   const inputRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const searchVersion = useRef(0)
+  useEffect(() => () => { searchVersion.current++; if (debounceRef.current) clearTimeout(debounceRef.current) }, [pdfDoc, open])
   const [isSearching, setIsSearching] = useState(false)
 
   useEffect(() => {
@@ -25,6 +29,7 @@ export function SearchBar({ pdfDoc, open, onClose }: { pdfDoc: PDFDocumentProxy 
   }, [])
 
   const doSearch = useCallback(async (q: string) => {
+    const version = ++searchVersion.current
     const needle = q.trim().toLowerCase()
     if (!pdfDoc || !needle) {
       setSearch('', [])
@@ -35,8 +40,8 @@ export function SearchBar({ pdfDoc, open, onClose }: { pdfDoc: PDFDocumentProxy 
       const matches: { page: number; index: number }[] = []
       // Search PDF text layer (pdf.js) — combine fragmented items like pdf.js PDFFindController
       for (let p = 1; p <= pdfDoc.numPages; p++) {
-        const page = await pdfDoc.getPage(p)
-        const tc = await page.getTextContent()
+        if (version !== searchVersion.current) return
+        const tc = await pageText(pdfDoc, p)
         const items = tc.items as unknown as { str: string }[]
         // Build combined string with offsets to catch cross-item matches (e.g. "Hello" split as "Hel" + "lo")
         let combined = ''
@@ -82,6 +87,7 @@ export function SearchBar({ pdfDoc, open, onClose }: { pdfDoc: PDFDocumentProxy 
           }
         })
       }
+      if (version !== searchVersion.current) return
       setSearch(q, matches)
       if (matches.length) {
         setCurrentMatch(0)
@@ -90,12 +96,13 @@ export function SearchBar({ pdfDoc, open, onClose }: { pdfDoc: PDFDocumentProxy 
     } catch (e) {
       console.warn('search failed', e)
     } finally {
-      setIsSearching(false)
+      if (version === searchVersion.current) setIsSearching(false)
     }
   }, [pdfDoc, setSearch, setCurrentMatch, scrollToMatch])
 
   // Debounced live search like Acrobat / pdf.js viewer
   const onChange = (v: string): void => {
+    searchVersion.current++
     setLocal(v)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => { void doSearch(v) }, 280)
@@ -121,7 +128,7 @@ export function SearchBar({ pdfDoc, open, onClose }: { pdfDoc: PDFDocumentProxy 
         borderBottom: '1px solid var(--acrobat-toolbar-border)'
       }}
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--acrobat-text-muted)" strokeWidth="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+      <Icon name="search" size={14} />
       <input
         ref={inputRef}
         value={local}
@@ -166,7 +173,7 @@ export function SearchBar({ pdfDoc, open, onClose }: { pdfDoc: PDFDocumentProxy 
         <span className="text-xs" style={{ color: 'var(--acrobat-text-dim)' }}>No matches</span>
       ) : null}
       <div className="flex-1" />
-      <button className="tb-btn" onClick={() => { setSearch('', []); onClose() }} style={{ fontSize: 12 }}>✕</button>
+      <button className="tb-btn" onClick={() => { setSearch('', []); onClose() }} style={{ fontSize: 12 }}><Icon name="close" /></button>
     </div>
   )
 }

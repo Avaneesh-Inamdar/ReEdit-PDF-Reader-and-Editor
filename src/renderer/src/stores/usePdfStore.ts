@@ -1,4 +1,23 @@
 import { create } from 'zustand'
+import { useAnnotationStore } from './useAnnotationStore'
+import { useEditStore } from './useEditStore'
+
+const editSnapshots = new WeakMap<ArrayBuffer, {
+  annotations: ReturnType<typeof useAnnotationStore.getState>
+  edits: ReturnType<typeof useEditStore.getState>
+}>()
+function snapshot(data: ArrayBuffer): ArrayBuffer {
+  const copy = data.slice(0)
+  editSnapshots.set(copy, { annotations: useAnnotationStore.getState(), edits: useEditStore.getState() })
+  return copy
+}
+function restoreEdits(data: ArrayBuffer): void {
+  const edits = editSnapshots.get(data)
+  if (edits) {
+    useAnnotationStore.setState(edits.annotations)
+    useEditStore.setState(edits.edits)
+  }
+}
 
 export interface PdfState {
   filePath: string | null
@@ -67,6 +86,8 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   openFile: (filePath, data) =>
     set({
       filePath,
+      title: null,
+      author: null,
       fileName: filePath.split(/[\\/]/).pop() || filePath,
       data,
       numPages: 0,
@@ -114,7 +135,7 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   pushHistory: () => {
     const s = get()
     if (!s.data) return
-    const nextPast = [...s.past, s.data.slice(0)]
+    const nextPast = [...s.past, snapshot(s.data)]
     if (nextPast.length > 25) nextPast.shift()
     set({ past: nextPast, future: [], lastModifiedTime: Date.now() })
   },
@@ -123,7 +144,7 @@ export const usePdfStore = create<PdfState>((set, get) => ({
     if (!s.past.length || !s.data) return false
     const prevData = s.past[s.past.length - 1]
     const nextPast = s.past.slice(0, -1)
-    const nextFuture = [...s.future, s.data.slice(0)]
+    const nextFuture = [...s.future, snapshot(s.data)]
     set({
       data: prevData,
       past: nextPast,
@@ -131,9 +152,10 @@ export const usePdfStore = create<PdfState>((set, get) => ({
       isDirty: true,
       lastModifiedTime: Date.now()
     })
+    restoreEdits(prevData)
     import('pdf-lib').then(({ PDFDocument }) => {
       PDFDocument.load(prevData).then((doc) => {
-        set({ numPages: doc.getPageCount() })
+        if (get().data === prevData) set({ numPages: doc.getPageCount(), currentPage: Math.min(get().currentPage, doc.getPageCount()) })
       }).catch(() => {})
     }).catch(() => {})
     return true
@@ -143,7 +165,7 @@ export const usePdfStore = create<PdfState>((set, get) => ({
     if (!s.future.length || !s.data) return false
     const nextData = s.future[s.future.length - 1]
     const nextFuture = s.future.slice(0, -1)
-    const nextPast = [...s.past, s.data.slice(0)]
+    const nextPast = [...s.past, snapshot(s.data)]
     set({
       data: nextData,
       future: nextFuture,
@@ -151,9 +173,10 @@ export const usePdfStore = create<PdfState>((set, get) => ({
       isDirty: true,
       lastModifiedTime: Date.now()
     })
+    restoreEdits(nextData)
     import('pdf-lib').then(({ PDFDocument }) => {
       PDFDocument.load(nextData).then((doc) => {
-        set({ numPages: doc.getPageCount() })
+        if (get().data === nextData) set({ numPages: doc.getPageCount(), currentPage: Math.min(get().currentPage, doc.getPageCount()) })
       }).catch(() => {})
     }).catch(() => {})
     return true

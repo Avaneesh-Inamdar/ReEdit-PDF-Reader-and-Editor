@@ -1,3 +1,5 @@
+import { Icon } from './Icon'
+import { placeImage } from '../lib/imagePlacement'
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useUIStore } from '../stores/useUIStore'
 
@@ -7,9 +9,8 @@ import { useUIStore } from '../stores/useUIStore'
 type SigMode = 'type' | 'draw' | 'image'
 
 const CURSIVE_FONTS = [
-  { name: 'Dancing Script', css: "'Dancing Script', cursive" },
-  { name: 'Pacifico', css: "'Pacifico', cursive" },
-  { name: 'Great Vibes', css: "'Great Vibes', cursive" },
+  { name: 'Segoe Script', css: "'Segoe Script', cursive" },
+  { name: 'Segoe Print', css: "'Segoe Print', cursive" },
   { name: 'Brush Script', css: "'Brush Script MT', 'Segoe Script', cursive" }
 ]
 
@@ -42,7 +43,7 @@ export function SignatureModal(): React.JSX.Element {
     const rect = canvasRef.current.getBoundingClientRect()
     const ctx = canvasRef.current.getContext('2d')!
     ctx.beginPath()
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top)
+    ctx.moveTo((e.clientX - rect.left) * canvasRef.current.width / rect.width, (e.clientY - rect.top) * canvasRef.current.height / rect.height)
     ;(e.target as Element).setPointerCapture(e.pointerId)
   }, [])
 
@@ -50,7 +51,7 @@ export function SignatureModal(): React.JSX.Element {
     if (!isDrawing.current || !canvasRef.current) return
     const rect = canvasRef.current.getBoundingClientRect()
     const ctx = canvasRef.current.getContext('2d')!
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top)
+    ctx.lineTo((e.clientX - rect.left) * canvasRef.current.width / rect.width, (e.clientY - rect.top) * canvasRef.current.height / rect.height)
     ctx.stroke()
   }, [])
 
@@ -73,7 +74,7 @@ export function SignatureModal(): React.JSX.Element {
     reader.readAsDataURL(file)
   }
 
-  const handleSave = (): void => {
+  const handleSave = async (): Promise<void> => {
     let dataUrl = ''
     let label = ''
 
@@ -88,7 +89,7 @@ export function SignatureModal(): React.JSX.Element {
       ctx.fillStyle = '#1a1a1a'
       ctx.font = `36px ${CURSIVE_FONTS[selectedFont].css}`
       ctx.textBaseline = 'middle'
-      ctx.fillText(text, 10, 40)
+      ctx.fillText(text, 10, 40, 280)
       dataUrl = offscreen.toDataURL('image/png')
       label = text
     } else if (mode === 'draw' && canvasRef.current) {
@@ -101,6 +102,7 @@ export function SignatureModal(): React.JSX.Element {
 
     if (!dataUrl) return
 
+    await placeImage(dataUrl)
     if (saveChecked) {
       addSignature({
         id: Math.random().toString(36).slice(2, 9),
@@ -119,7 +121,7 @@ export function SignatureModal(): React.JSX.Element {
         {/* Header */}
         <div className="flex items-center justify-between px-4" style={{ height: 44, borderBottom: '1px solid var(--acrobat-border)' }}>
           <span className="text-sm font-semibold" style={{ color: 'var(--acrobat-text)' }}>Add Signature</span>
-          <button className="tb-btn" onClick={() => setActiveModal('none')} style={{ fontSize: 14 }}>✕</button>
+          <button className="tb-btn" onClick={() => setActiveModal('none')} style={{ fontSize: 14 }}><Icon name="close" /></button>
         </div>
 
         {/* Mode tabs */}

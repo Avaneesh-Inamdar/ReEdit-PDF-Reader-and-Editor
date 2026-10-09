@@ -1,7 +1,7 @@
 {
-  "name": "readit-pdf-reader-and-editor",
-  "version": "1.0.0",
-  "description": "Readit PDF Reader & Editor — Modern Windows Desktop App",
+  "name": "re-edit-pdf",
+  "version": "1.4.0",
+  "description": "Re-Edit PDF — desktop PDF reader and editor",
   "main": "./out/main/index.js",
   "author": "Avaneesh Inamdar",
   "homepage": "https://github.com/Avaneesh-Inamdar/Readit-Pdf-Reader-and-Editor",
@@ -12,8 +12,8 @@
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "start": "electron-vite preview",
-    "dev": "electron-vite dev",
-    "build": "npm run typecheck && electron-vite build",
+    "dev": "node scripts/prepare-pdf-assets.mjs && electron-vite dev",
+    "build": "node scripts/prepare-pdf-assets.mjs && npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
@@ -25,13 +25,20 @@
     "test:watch": "vitest",
     "generate:fixtures": "node scripts/generate-fixtures.mjs",
     "build:mac": "electron-vite build && electron-builder --mac",
-    "build:linux": "electron-vite build && electron-builder --linux",
-    "preview": "electron-vite preview"
+    "build:linux": "npm run build && electron-builder --linux AppImage deb rpm tar.gz --x64",
+    "preview": "electron-vite preview",
+    "test:desktop": "electron scripts/smoke-electron.cjs"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "@signpdf/placeholder-pdf-lib": "^3.3.0",
+    "@signpdf/signer-p12": "^3.3.0",
+    "@signpdf/signpdf": "^3.3.0",
+    "docx": "^9.5.1",
     "electron-store": "^8.1.0",
+    "mupdf": "^1.28.1",
+    "node-forge": "^1.4.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.7.77",
     "tesseract.js": "^5.1.1",
@@ -47,13 +54,14 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.21",
-    "electron": "^33.4.1",
+    "electron": "^44.7.0",
     "electron-builder": "^25.1.8",
     "electron-vite": "^4.0.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
+    "fflate": "^0.8.3",
     "lucide-react": "^1.37.0",
     "postcss": "^8.5.1",
     "prettier": "^3.7.4",
@@ -63,5 +71,9 @@
     "typescript": "^5.9.3",
     "vite": "^6.2.6",
     "vitest": "^4.1.11"
+  },
+  "license": "AGPL-3.0-only",
+  "overrides": {
+    "node-forge": "^1.4.0"
   }
 }

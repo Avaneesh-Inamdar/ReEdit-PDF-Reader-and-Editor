@@ -7,3 +7,5 @@ release
 *.log*
 .vscode/
 test-*.pdf
+
+src/renderer/public/pdfjs/

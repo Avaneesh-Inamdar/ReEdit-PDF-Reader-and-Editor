@@ -1,3 +1,5 @@
+import { Icon } from './Icon'
+import { requestText } from '../lib/requestText'
 import { useState, useEffect, useRef } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { usePdfStore } from '../stores/usePdfStore'
@@ -75,7 +77,7 @@ export function StatusBar({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
 
   return (
     <div className="flex items-center h-6 shrink-0 select-none" style={{ background: 'var(--acrobat-chrome)', borderTop: '1px solid var(--acrobat-border)', color: 'var(--acrobat-text-muted)', fontSize: 11 }}>
-      {/* Window splitter – drag to adjust overview/document split (Adobe p8) */}
+      {/* Window splitter – drag to adjust overview/document split */}
       <div
         onMouseDown={onSplitterDown}
         title="Drag to adjust overview width (Window splitter)"
@@ -94,17 +96,17 @@ export function StatusBar({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
           onKeyDown={e=> { if(e.key==='Enter') onPageGo(); if(e.key==='Escape') setPageInput(String(currentPage)) }}
           onBlur={onPageGo}
           onClick={e=> (e.target as HTMLInputElement).select()}
-          title="Click to Go to Page (Adobe Status bar)"
+          title="Click to Go to Page"
           className="text-center tabular-nums"
           style={{ width: 42, height: 18, borderRadius: 3, border: '1px solid var(--acrobat-input-border)', background: 'var(--acrobat-input-bg)', color: 'var(--acrobat-text)', outline:'none', fontSize: 11 }}
         />
         <span>of {numPages || '--'}</span>
-        <button className="tb-btn" style={{ width:22, height:18, fontSize:10 }} onClick={()=> {
-          const nStr = prompt(`Go to Page (1-${numPages}):`, String(currentPage))
+        <button className="tb-btn" style={{ width:22, height:18, fontSize:10 }} onClick={async ()=> {
+          const nStr = await requestText(`Go to Page (1-${numPages}):`, String(currentPage))
           if(!nStr) return
           const n = parseInt(nStr,10)
           if(n>=1 && n<=numPages) { setCurrentPage(n); document.getElementById(`page-${n}`)?.scrollIntoView({behavior:'smooth'}) }
-        }} title="Go to Page…">↗</button>
+        }} title="Go to Page…"><Icon name="external" size={12} /></button>
       </div>
 
       <div className="w-px h-4 mx-1" style={{ background:'var(--acrobat-border-light)' }} />
@@ -119,7 +121,7 @@ export function StatusBar({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
           title="Magnification box – choose or Other… (Zoom To)"
         >
           {Math.round(zoom*100)}%
-          <svg width="8" height="5" viewBox="0 0 8 5" fill="currentColor" style={{ marginLeft:6 }}><path d="M0 0l4 5 4-5z"/></svg>
+          <Icon name="down" size={8} />
         </button>
         {zoomInputOpen && (
           <div className="zoom-dropdown absolute bottom-full left-0 mb-1" style={{ minWidth:120 }} onMouseLeave={()=> setZoomInputOpen(false)}>
@@ -130,8 +132,8 @@ export function StatusBar({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
             <div className="zoom-item" onClick={()=> { setFitMode('page'); setZoomInputOpen(false) }}>Fit Page</div>
             <div className="zoom-item" onClick={()=> { setFitMode('width'); setZoomInputOpen(false) }}>Fit Width</div>
             <div className="zoom-item" onClick={()=> { setFitMode('page'); setZoomInputOpen(false) }}>Fit Visible</div>
-            <div className="zoom-item" onClick={()=> {
-              const v = prompt('Zoom To (25-400%):', String(Math.round(zoom*100)))
+            <div className="zoom-item" onClick={async ()=> {
+              const v = await requestText('Zoom To (25-400%):', String(Math.round(zoom*100)))
               if(!v) return
               const n = parseInt(v,10)
               if(n>=25 && n<=400) setZoom(n/100)
@@ -163,7 +165,7 @@ export function StatusBar({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
         {data ? `${numPages} page${numPages!==1?'s':''} · ${useUIStore.getState().leftPane==='closed'?'Page Only':'Overview on'} · ${useUIStore.getState().displayMode==='single'?'Single':'Continuous'}` : 'No document'}
       </div>
       <div className="w-px h-4 mx-1 hidden sm:block" style={{ background:'var(--acrobat-border-light)' }} />
-      <button className="tb-btn hidden sm:flex" style={{ width:22, height:18, fontSize:10 }} onClick={()=> useUIStore.getState().setActiveModal('preferences')} title="Preferences…">⚙</button>
+      <button className="tb-btn hidden sm:flex" style={{ width:22, height:18, fontSize:10 }} onClick={()=> useUIStore.getState().setActiveModal('preferences')} title="Preferences…"><Icon name="settings" /></button>
     </div>
   )
 }

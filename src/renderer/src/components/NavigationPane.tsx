@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useThumbnails } from '../lib/useThumbnails'
+import { Icon } from './Icon'
+import { useEffect, useRef } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { usePdfStore } from '../stores/usePdfStore'
 import { useUIStore, type BookmarkItem } from '../stores/useUIStore'
@@ -37,7 +39,7 @@ function BookmarkTree({
                 onClick={(e) => { e.stopPropagation(); toggleBookmark([...path, i]) }}
                 style={{ width: 16, height: 16, minWidth: 16, fontSize: 10, padding: 0 }}
               >
-                {item.expanded ? '▾' : '▸'}
+                <Icon name={item.expanded ? 'down' : 'right'} size={12} />
               </button>
             )}
             <span className="truncate flex-1" style={{ fontSize: 12 }}>{item.title}</span>
@@ -54,33 +56,19 @@ function BookmarkTree({
 
 export function NavigationPane({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): React.JSX.Element | null {
   const { currentPage, setCurrentPage, numPages, rotation } = usePdfStore()
-  const { leftPane, setLeftPane, leftPaneWidth, thumbnailScale, setThumbnailScale, bookmarks, setBookmarks, attachments, setAttachments: _setAttachments } = useUIStore()
-  const [thumbs, setThumbs] = useState<string[]>([])
+  const { leftPane, setLeftPane, leftPaneWidth, thumbnailScale, setThumbnailScale, bookmarks, setBookmarks, attachments, setAttachments } = useUIStore()
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Generate thumbnails
   useEffect(() => {
-    if (!pdfDoc) { setThumbs([]); return }
     let cancelled = false
-    const gen = async (): Promise<void> => {
-      const out: string[] = []
-      for (let i = 1; i <= pdfDoc.numPages; i++) {
-        if (cancelled) break
-        const page = await pdfDoc.getPage(i)
-        const viewport = page.getViewport({ scale: thumbnailScale, rotation })
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')!
-        canvas.width = viewport.width
-        canvas.height = viewport.height
-        // @ts-ignore
-        await page.render({ canvasContext: ctx, viewport }).promise
-        out[i - 1] = canvas.toDataURL('image/png')
-        if (!cancelled) setThumbs([...out])
-      }
-    }
-    gen()
+    setAttachments([])
+    if (pdfDoc) void pdfDoc.getAttachments().then(entries => {
+      if (!cancelled) setAttachments(Object.values((entries || {}) as Record<string, { filename: string; content: Uint8Array }>).map(entry => ({ name: entry.filename, size: entry.content.length, data: entry.content })))
+    }).catch(error => { if (!cancelled) console.warn('Unable to read attachments', error) })
     return () => { cancelled = true }
-  }, [pdfDoc, rotation, thumbnailScale])
+  }, [pdfDoc, setAttachments])
+
+  const thumbs = useThumbnails(pdfDoc, rotation, thumbnailScale, containerRef, leftPane === 'thumbnails')
 
   // Extract bookmarks / outline
   useEffect(() => {
@@ -123,17 +111,17 @@ export function NavigationPane({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }):
     {
       id: 'thumbnails',
       label: 'Page Thumbnails',
-      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="7" height="9" rx="1" /><rect x="14" y="3" width="7" height="9" rx="1" /><rect x="3" y="15" width="7" height="6" rx="1" /><rect x="14" y="15" width="7" height="6" rx="1" /></svg>
+      icon: <Icon name="thumbnails" />
     },
     {
       id: 'bookmarks',
       label: 'Bookmarks',
-      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+      icon: <Icon name="bookmark" />
     },
     {
       id: 'attachments',
       label: 'Attachments',
-      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
+      icon: <Icon name="attachments" />
     }
   ]
 
@@ -175,12 +163,14 @@ export function NavigationPane({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }):
         {leftPane === 'thumbnails' && (
           <div className="p-2 flex flex-col gap-2">
             {!pdfDoc && <div className="text-xs p-3 text-center" style={{ color: 'var(--acrobat-text-dim)' }}>No PDF opened</div>}
-            {thumbs.map((src, idx) => {
+            {Array.from({ length: numPages }, (_, idx) => {
+              const src = thumbs[idx+1]
               const pageNum = idx + 1
               const active = currentPage === pageNum
               return (
                 <button
                   key={pageNum}
+                  data-thumbnail={pageNum}
                   onClick={() => {
                     setCurrentPage(pageNum)
                     document.getElementById(`page-${pageNum}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -192,7 +182,7 @@ export function NavigationPane({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }):
                   }}
                 >
                   {src ? (
-                    <img src={src} alt={`page ${pageNum}`} className="w-full block" />
+                    <img draggable={false} src={src} alt={`page ${pageNum}`} className="w-full block" />
                   ) : (
                     <div style={{ height: 140, background: 'var(--acrobat-pane-hover)' }} className="animate-pulse" />
                   )}
@@ -209,7 +199,7 @@ export function NavigationPane({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }):
                 </button>
               )
             })}
-            {pdfDoc && thumbs.length === 0 && (
+            {pdfDoc && Object.keys(thumbs).length === 0 && (
               <div className="text-xs p-2" style={{ color: 'var(--acrobat-text-dim)' }}>
                 Generating thumbnails… {numPages} pages
               </div>
@@ -255,11 +245,11 @@ export function NavigationPane({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }):
             ) : (
               <div className="space-y-2">
                 {attachments.map((a, i) => (
-                  <div key={i} className="file-row text-xs">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
+                  <button key={i} className="file-row text-xs w-full" title="Save attachment" onClick={() => { if (a.data) void window.api.saveAttachment(a.data, a.name).catch(error => alert('Unable to save attachment: ' + String(error))) }}>
+                    <Icon name="attachments" />
                     <span className="flex-1 truncate">{a.name}</span>
                     <span style={{ color: 'var(--acrobat-text-dim)' }}>{(a.size / 1024).toFixed(1)}KB</span>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}

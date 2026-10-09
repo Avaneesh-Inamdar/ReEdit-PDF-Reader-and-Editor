@@ -1,8 +1,16 @@
 import { app, shell, BrowserWindow, dialog, ipcMain, Menu } from 'electron'
-import { join } from 'path'
-import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { execFile } from 'child_process'
+import { fileURLToPath } from 'url'
+import { join, isAbsolute } from 'path'
+import { randomUUID } from 'crypto'
+import { existsSync, readFileSync, writeFileSync, renameSync, unlinkSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import Store from 'electron-store'
+import { Worker } from 'node:worker_threads'
+import { isNewerRelease, releasesUrl } from './updates'
+import type { RemovalRegion } from '../shared/pdfOperations'
+import { signPdfWithCertificate } from './certificateSigning'
+import { createWordDocument, convertOfficeToPdf, type WordLine } from './officeConversion'
 
 interface RecentEntry {
   path: string
@@ -21,6 +29,53 @@ const store = new Store<{
 
 let mainWindow: BrowserWindow | null = null
 let currentFilePath: string | null = null
+let allowClose = false
+let rendererReady = false
+const pendingPaths: string[] = []
+
+function writePdf(target: string, bytes: Uint8Array): void {
+  const temporary = `${target}.${process.pid}.tmp`
+  try {
+    writeFileSync(temporary, Buffer.from(bytes), { flag: 'wx' })
+    renameSync(temporary, target)
+  } finally {
+    if (existsSync(temporary)) unlinkSync(temporary)
+  }
+}
+
+function openFromShell(args: string[]): void {
+  const paths = args.flatMap(arg => {
+    try { const path = arg.startsWith('file:') ? fileURLToPath(arg) : arg; return /\.pdf$/i.test(path) && isAbsolute(path) ? [path] : [] } catch { return [] }
+  })
+  for (const filePath of paths) {
+    if (!rendererReady) {
+      pendingPaths.push(filePath)
+      continue
+    }
+    try {
+      const data = readFileSync(filePath)
+      currentFilePath = filePath
+      addRecentFile(filePath)
+      buildMenu()
+      mainWindow?.webContents.send('file:opened', {
+        filePath,
+        data: data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
+      })
+    } catch (error) {
+      dialog.showErrorBox('Unable to open PDF', String(error))
+    }
+  }
+}
+
+if (!app.requestSingleInstanceLock()) app.quit()
+else {
+  openFromShell(process.argv)
+  app.on('second-instance', (_event, args) => {
+    if (mainWindow?.isMinimized()) mainWindow.restore()
+    mainWindow?.focus()
+    openFromShell(args)
+  })
+}
 
 function addRecentFile(filePath: string): void {
   const name = filePath.split(/[\\/]/).pop() || filePath
@@ -60,6 +115,8 @@ function buildMenu(): void {
     {
       label: 'File',
       submenu: [
+        { label: 'Convert Office document to PDF…', click: () => mainWindow?.webContents.send('menu:action', 'importOffice') },
+        { label: 'Export text to Word…', click: () => mainWindow?.webContents.send('menu:action', 'exportWord') },
         {
           label: 'Open…',
           accelerator: 'CmdOrCtrl+O',
@@ -71,7 +128,6 @@ function buildMenu(): void {
           label: 'Close',
           accelerator: 'CmdOrCtrl+W',
           click: (): void => {
-            currentFilePath = null
             mainWindow?.webContents.send('file:closed')
           }
         },
@@ -99,39 +155,89 @@ function buildMenu(): void {
         { type: 'separator' },
         {
           label: 'Recent Files',
-          submenu: [...recentSubmenu, { type: 'separator' }, { label: 'Clear Recent Files', click: (): void => { store.set('recentFiles', []); buildMenu() } }] as Electron.MenuItemConstructorOptions[]
+          submenu: [
+            ...recentSubmenu,
+            { type: 'separator' },
+            {
+              label: 'Clear Recent Files',
+              click: (): void => {
+                store.set('recentFiles', [])
+                buildMenu()
+              }
+            }
+          ] as Electron.MenuItemConstructorOptions[]
         },
         { type: 'separator' },
+        {
+          label: 'Print…',
+          accelerator: 'CmdOrCtrl+P',
+          click: () => mainWindow?.webContents.send('menu:action', 'print')
+        },
         { role: 'quit', label: 'Exit' }
       ]
     },
     {
       label: 'Edit',
       submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
+        {
+          label: 'Undo',
+          accelerator: 'CmdOrCtrl+Z',
+          click: () => mainWindow?.webContents.send('menu:action', 'undo')
+        },
+        {
+          label: 'Redo',
+          accelerator: 'CmdOrCtrl+Y',
+          click: () => mainWindow?.webContents.send('menu:action', 'redo')
+        },
         { type: 'separator' },
         { role: 'cut' },
         { role: 'copy' },
         { role: 'paste' },
         { role: 'delete' },
         { type: 'separator' },
-        { label: 'Find…', accelerator: 'CmdOrCtrl+F', click: (): void => mainWindow?.webContents.send('menu:action', 'find') }
+        {
+          label: 'Find…',
+          accelerator: 'CmdOrCtrl+F',
+          click: (): void => mainWindow?.webContents.send('menu:action', 'find')
+        },
+        {
+          label: 'Preferences…',
+          accelerator: 'CmdOrCtrl+K',
+          click: () => mainWindow?.webContents.send('menu:action', 'preferences')
+        }
       ]
     },
     {
       label: 'View',
       submenu: [
-        { label: 'Zoom In', accelerator: 'CmdOrCtrl+Plus', click: (): void => mainWindow?.webContents.send('menu:action', 'zoomIn') },
-        { label: 'Zoom Out', accelerator: 'CmdOrCtrl+-', click: (): void => mainWindow?.webContents.send('menu:action', 'zoomOut') },
-        { label: 'Reset Zoom', accelerator: 'CmdOrCtrl+0', click: (): void => mainWindow?.webContents.send('menu:action', 'zoomReset') },
+        {
+          label: 'Zoom In',
+          accelerator: 'CmdOrCtrl+Plus',
+          click: (): void => mainWindow?.webContents.send('menu:action', 'zoomIn')
+        },
+        {
+          label: 'Zoom Out',
+          accelerator: 'CmdOrCtrl+-',
+          click: (): void => mainWindow?.webContents.send('menu:action', 'zoomOut')
+        },
+        {
+          label: 'Actual Size',
+          accelerator: 'CmdOrCtrl+1',
+          click: (): void => mainWindow?.webContents.send('menu:action', 'zoomReset')
+        },
         { type: 'separator' },
-        { label: 'Fit Width', accelerator: 'Ctrl+Shift+W', click: (): void => mainWindow?.webContents.send('menu:action', 'fitWidth') },
-        { label: 'Fit Page', accelerator: 'Ctrl+Shift+P', click: (): void => mainWindow?.webContents.send('menu:action', 'fitPage') },
+        {
+          label: 'Fit Width',
+          accelerator: 'CmdOrCtrl+2',
+          click: (): void => mainWindow?.webContents.send('menu:action', 'fitWidth')
+        },
+        {
+          label: 'Fit Page',
+          accelerator: 'CmdOrCtrl+0',
+          click: (): void => mainWindow?.webContents.send('menu:action', 'fitPage')
+        },
         { type: 'separator' },
-        { role: 'reload' },
-        { role: 'forceReload' },
-        { role: 'toggleDevTools' },
+        ...(is.dev ? [{ role: 'reload' as const }, { role: 'toggleDevTools' as const }] : []),
         { type: 'separator' },
         { role: 'togglefullscreen' }
       ]
@@ -139,18 +245,53 @@ function buildMenu(): void {
     {
       label: 'Tools',
       submenu: [
-        { label: 'Rotate Clockwise', click: (): void => mainWindow?.webContents.send('menu:action', 'rotateCw') },
-        { label: 'Rotate Counter-Clockwise', click: (): void => mainWindow?.webContents.send('menu:action', 'rotateCcw') },
+        ...[
+          ['Edit PDF', 'edit'],
+          ['Fill & Sign', 'sign'],
+          ['Sign with a Certificate…', 'certificate'],
+          ['Fill Forms', 'forms'],
+          ['Scan & OCR', 'ocr'],
+          ['Organize Pages', 'organize'],
+          ['Combine Files…', 'combineFiles']
+        ].map(([label, action]) => ({
+          label,
+          click: () => mainWindow?.webContents.send('menu:action', action)
+        })),
         { type: 'separator' },
-        { label: 'Document Properties…', click: (): void => mainWindow?.webContents.send('menu:action', 'docProps') }
+        {
+          label: 'Rotate Clockwise',
+          click: (): void => mainWindow?.webContents.send('menu:action', 'rotateCw')
+        },
+        {
+          label: 'Rotate Counter-Clockwise',
+          click: (): void => mainWindow?.webContents.send('menu:action', 'rotateCcw')
+        },
+        { type: 'separator' },
+        {
+          label: 'Document Properties…',
+          click: (): void => mainWindow?.webContents.send('menu:action', 'docProps')
+        }
       ]
     },
     {
       label: 'Help',
       submenu: [
-        { label: 'About Readit PDF Reader and Editor', click: (): void => { void dialog.showMessageBox(mainWindow!, { type: 'info', title: 'About Readit PDF Reader and Editor', message: 'Readit PDF Reader and Editor v1.0.0\nCreated by Avaneesh Inamdar\nWindows PDF Reader & Editor\nBuilt with Electron + pdf.js + pdf-lib' }) } },
+        { label: 'Check for Updates…', click: () => mainWindow?.webContents.send('menu:action', 'updates') },
+        {
+          label: 'About Re-Edit PDF',
+          click: (): void => {
+            mainWindow?.webContents.send('menu:action', 'about')
+          }
+        },
         { type: 'separator' },
-        { label: 'GitHub Repository', click: (): void => { void shell.openExternal('https://github.com/Avaneesh-Inamdar/Readit-Pdf-Reader-and-Editor') } }
+        {
+          label: 'GitHub Repository',
+          click: (): void => {
+            void shell.openExternal(
+              'https://github.com/Avaneesh-Inamdar/Readit-Pdf-Reader-and-Editor'
+            )
+          }
+        }
       ]
     }
   ]
@@ -171,13 +312,21 @@ async function handleOpenDialog(): Promise<{ filePath: string; data: ArrayBuffer
   currentFilePath = filePath
   addRecentFile(filePath)
   buildMenu()
-  const arrayBuffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer
+  const arrayBuffer = data.buffer.slice(
+    data.byteOffset,
+    data.byteOffset + data.byteLength
+  ) as ArrayBuffer
   mainWindow?.webContents.send('file:opened', { filePath, data: arrayBuffer })
   return { filePath, data: arrayBuffer }
 }
 
 function createWindow(): void {
-  const bounds = store.get('windowBounds') as { width: number; height: number; x?: number; y?: number }
+  const bounds = store.get('windowBounds') as {
+    width: number
+    height: number
+    x?: number
+    y?: number
+  }
   mainWindow = new BrowserWindow({
     width: bounds.width || 1280,
     height: bounds.height || 800,
@@ -186,12 +335,11 @@ function createWindow(): void {
     minWidth: 1024,
     minHeight: 640,
     show: false,
-    autoHideMenuBar: false,
-    title: 'PDF Editor',
-    icon: join(__dirname, '../../build/icon.ico'),
-    frame: false,
-    titleBarStyle: 'hidden',
-    titleBarOverlay: false,
+    autoHideMenuBar: true,
+    title: 'Re-Edit PDF',
+    icon: join(__dirname, process.platform === 'win32' ? '../../build/icon.ico' : '../../build/icon.png'),
+    frame: true,
+    titleBarStyle: 'default',
     backgroundColor: '#09090b',
     fullscreenable: true,
     webPreferences: {
@@ -199,12 +347,16 @@ function createWindow(): void {
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: false,
-      allowRunningInsecureContent: true
+      webSecurity: true,
+      allowRunningInsecureContent: false
     }
   })
 
-  mainWindow.on('close', () => {
+  mainWindow.on('close', (event) => {
+    if (!allowClose && rendererReady) {
+      event.preventDefault()
+      mainWindow?.webContents.send('window:closeRequested')
+    }
     if (mainWindow) {
       store.set('windowBounds', mainWindow.getBounds() as never)
     }
@@ -218,7 +370,7 @@ function createWindow(): void {
   mainWindow.on('unmaximize', () => mainWindow?.webContents.send('window:maximize-changed', false))
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
+    if (/^https?:/i.test(details.url)) void shell.openExternal(details.url)
     return { action: 'deny' }
   })
 
@@ -226,11 +378,12 @@ function createWindow(): void {
     const menuTemplate: Electron.MenuItemConstructorOptions[] = []
     if (params.selectionText) {
       menuTemplate.push({ role: 'copy' })
+      if (!params.isEditable) menuTemplate.push({label: 'Edit Selected Text…', click: () => mainWindow?.webContents.send('menu:action', 'editSelectedText')})
     }
     if (params.isEditable) {
       if (!params.selectionText) {
         menuTemplate.push({ role: 'cut', enabled: false }, { role: 'copy', enabled: false })
-      } else if (!menuTemplate.find(i => i.role === 'copy')) {
+      } else if (!menuTemplate.find((i) => i.role === 'copy')) {
         menuTemplate.push({ role: 'cut' }, { role: 'copy' })
       }
       menuTemplate.push({ role: 'paste' }, { role: 'selectAll' })
@@ -247,13 +400,125 @@ function createWindow(): void {
   }
 
   buildMenu()
+  mainWindow.setMenuBarVisibility(false)
 }
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.pdfeditor.app')
+  ipcMain.handle('pdf:signCertificate', async (_event, bytes: Uint8Array, password: string, name: string, reason: string) => {
+    const picked=await dialog.showOpenDialog(mainWindow!,{title:'Choose signing certificate',properties:['openFile'],filters:[{name:'PKCS#12 certificate',extensions:['p12','pfx']}]})
+    if (picked.canceled) return null
+    const certificate=readFileSync(picked.filePaths[0])
+    try {
+      const signed=await signPdfWithCertificate(bytes,certificate,password,name,reason)
+      const output=await dialog.showSaveDialog(mainWindow!,{title:'Save signed copy',defaultPath:'signed-document.pdf',filters:[{name:'PDF',extensions:['pdf']}]})
+      if (output.canceled || !output.filePath) return null
+      writePdf(output.filePath,signed)
+      return output.filePath
+    } finally {certificate.fill(0)}
+  })
+  ipcMain.handle('office:exportWord', async (_event, pages: WordLine[][], name: string) => {
+    if (!Array.isArray(pages) || pages.length>10000 || pages.some(page => !Array.isArray(page) || page.some(line => typeof line.text!=='string' || !Number.isFinite(line.size)))) throw new Error('Invalid Word document')
+    const output=await dialog.showSaveDialog(mainWindow!,{title:'Export editable text to Word',defaultPath:name.replace(/\.pdf$/i,'.docx'),filters:[{name:'Word document',extensions:['docx']}]})
+    if (output.canceled || !output.filePath) return null
+    writePdf(output.filePath,await createWordDocument(pages))
+    return output.filePath
+  })
+  ipcMain.handle('office:import', async () => {
+    const input=await dialog.showOpenDialog(mainWindow!,{title:'Convert Office document to PDF',properties:['openFile'],filters:[{name:'Office document',extensions:['docx','doc','xlsx','xls','pptx','ppt','odt','ods','odp','rtf']}]})
+    if (input.canceled) return null
+    const bytes=await convertOfficeToPdf(input.filePaths[0])
+    const output=await dialog.showSaveDialog(mainWindow!,{title:'Save converted PDF',defaultPath:input.filePaths[0].replace(/\.[^.]+$/,'.pdf'),filters:[{name:'PDF',extensions:['pdf']}]})
+    if (output.canceled || !output.filePath) return null
+    writePdf(output.filePath,bytes)
+    openFromShell([output.filePath])
+    return output.filePath
+  })
+  ipcMain.handle('pdf:removeContent', (_event, bytes: Uint8Array, regions: RemovalRegion[], secure: boolean) => new Promise<Uint8Array>((resolve, reject) => {
+    if (!(bytes instanceof Uint8Array) || !Array.isArray(regions) || !regions.length || regions.length > 100000) { reject(new Error('Invalid content removal request')); return }
+    const worker = new Worker(join(__dirname, 'pdfEngineWorker.js'), { workerData: {bytes, regions, secure: !!secure} })
+    const timeout = setTimeout(() => { void worker.terminate(); reject(new Error('PDF content removal timed out.')) }, 120000)
+    worker.once('message', result => { clearTimeout(timeout); void worker.terminate(); result.error ? reject(new Error(result.error)) : resolve(result.bytes) })
+    worker.once('error', error => { clearTimeout(timeout); reject(error) })
+    worker.once('exit', code => { clearTimeout(timeout); if (code !== 0) reject(new Error('PDF worker stopped unexpectedly.')) })
+  }))
+  let updateRequest: Promise<{current: string; latest?: string; available: boolean; message: string}> | null = null
+  ipcMain.handle('app:openReleases', () => shell.openExternal(releasesUrl))
+  ipcMain.handle('app:checkUpdates', () => {
+    if (updateRequest) return updateRequest
+    updateRequest = (async () => {
+      const current=app.getVersion()
+      try {
+        const response=await fetch('https://api.github.com/repos/Avaneesh-Inamdar/Readit-Pdf-Reader-and-Editor/releases/latest', {headers:{Accept:'application/vnd.github+json','User-Agent':'Re-Edit-PDF'}, signal:AbortSignal.timeout(15000)})
+        if (response.status===404) return {current,available:false,message:'No stable release has been published yet.'}
+        if (!response.ok) throw new Error(`Release server returned ${response.status}`)
+        const release=await response.json() as {tag_name?:string; draft?:boolean; prerelease?:boolean}
+        if (release.draft || release.prerelease || !release.tag_name || !/^v?\d+\.\d+\.\d+$/.test(release.tag_name)) throw new Error('Invalid release information')
+        const available=isNewerRelease(current,release.tag_name)
+        return {current,latest:release.tag_name.replace(/^v/,''),available,message:available?'A new version is available. Download the installer from GitHub Releases.':'You have the latest stable version.'}
+      } catch { return {current,available:false,message:'Unable to check for updates. Check your connection and try again.'} }
+    })().finally(() => { updateRequest=null })
+    return updateRequest
+  })
+  electronApp.setAppUserModelId('com.avaneeshinamdar.readitpdf')
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
+  })
+
+  ipcMain.handle('window:documentTitle', (_event, title: string) =>
+    mainWindow?.setTitle(title.slice(0, 300))
+  )
+  ipcMain.handle('system:defaultApps', async () => {
+    if (process.platform === 'win32') return shell.openExternal('ms-settings:defaultapps')
+    if (process.platform === 'linux') return new Promise<void>((resolve, reject) => {
+      execFile('xdg-mime', ['default', 're-edit-pdf.desktop', 'application/pdf'], error => error ? reject(error) : resolve())
+    })
+    throw new Error('Choose Re-Edit PDF in your system file association settings.')
+  })
+  ipcMain.handle('dialog:saveAttachment', async (_event, bytes: Uint8Array, name: string) => {
+    const result = await dialog.showSaveDialog(mainWindow!, {
+      title: 'Save attachment',
+      defaultPath: name.split(/[\\/]/).pop() || 'attachment',
+      filters: [{ name: 'All files', extensions: ['*'] }]
+    })
+    if (result.canceled || !result.filePath) return null
+    writePdf(result.filePath, bytes)
+    return result.filePath
+  })
+  ipcMain.handle('dialog:pickPdfs', async () => {
+    const picked = await dialog.showOpenDialog(mainWindow!, {
+      title: 'Choose PDF files',
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: 'PDF documents', extensions: ['pdf'] }]
+    })
+    if (picked.canceled) return []
+    return picked.filePaths.map((filePath) => {
+      const data = readFileSync(filePath)
+      return {
+        filePath,
+        data: data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
+      }
+    })
+  })
+  ipcMain.handle('renderer:ready', () => {
+    rendererReady = true
+    openFromShell(pendingPaths.splice(0))
+  })
+  ipcMain.handle('dialog:confirmClose', async (_event, name: string) => {
+    const result = await dialog.showMessageBox(mainWindow!, {
+      type: 'question',
+      title: 'Unsaved changes',
+      message: `Save changes to "${name}"?`,
+      buttons: ['Save', 'Don’t Save', 'Cancel'],
+      defaultId: 0,
+      cancelId: 2,
+      noLink: true
+    })
+    return ['save', 'discard', 'cancel'][result.response]
+  })
+  ipcMain.handle('window:forceClose', () => {
+    allowClose = true
+    mainWindow?.close()
   })
 
   // IPC handlers
@@ -262,29 +527,32 @@ app.whenReady().then(() => {
     return res
   })
 
-  ipcMain.handle('dialog:savePdf', async (_event, bytes: Uint8Array, defaultName?: string) => {
-    const savePath = currentFilePath
-    let target = savePath
-    if (!target) {
-      const result = await dialog.showSaveDialog(mainWindow!, {
-        title: 'Save PDF',
-        defaultPath: defaultName || 'document.pdf',
-        filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
-      })
-      if (result.canceled || !result.filePath) return null
-      target = result.filePath
+  ipcMain.handle(
+    'dialog:savePdf',
+    async (_event, bytes: Uint8Array, defaultName?: string, filePath?: string) => {
+      const savePath = filePath && isAbsolute(filePath) ? filePath : null
+      let target = savePath
+      if (!target) {
+        const result = await dialog.showSaveDialog(mainWindow!, {
+          title: 'Save PDF',
+          defaultPath: defaultName || 'document.pdf',
+          filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+        })
+        if (result.canceled || !result.filePath) return null
+        target = result.filePath
+      }
+      try {
+        writePdf(target, bytes)
+        currentFilePath = target
+        addRecentFile(target)
+        buildMenu()
+        return target
+      } catch (e) {
+        dialog.showErrorBox('Save failed', String(e))
+        return null
+      }
     }
-    try {
-      writeFileSync(target, Buffer.from(bytes))
-      currentFilePath = target
-      addRecentFile(target)
-      buildMenu()
-      return target
-    } catch (e) {
-      dialog.showErrorBox('Save failed', String(e))
-      return null
-    }
-  })
+  )
 
   ipcMain.handle('dialog:savePdfAs', async (_event, bytes: Uint8Array, defaultName?: string) => {
     const result = await dialog.showSaveDialog(mainWindow!, {
@@ -294,7 +562,7 @@ app.whenReady().then(() => {
     })
     if (result.canceled || !result.filePath) return null
     try {
-      writeFileSync(result.filePath, Buffer.from(bytes))
+      writePdf(result.filePath, bytes)
       currentFilePath = result.filePath
       addRecentFile(result.filePath)
       buildMenu()
@@ -327,7 +595,61 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('window:close', () => mainWindow?.close())
   ipcMain.handle('window:isMaximized', () => mainWindow?.isMaximized() ?? false)
-  ipcMain.handle('window:print', () => mainWindow?.webContents.print())
+  ipcMain.handle(
+    'window:print',
+    async (_event, pages: { image: string; width: number; height: number }[]) => {
+      if (
+        !Array.isArray(pages) ||
+        !pages.length ||
+        pages.some(
+          (p) =>
+            !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(p.image) ||
+            !Number.isFinite(p.width) ||
+            !Number.isFinite(p.height) ||
+            p.width <= 0 ||
+            p.height <= 0
+        )
+      )
+        throw new Error('Invalid print document')
+      const path = join(app.getPath('temp'), `readit-print-${randomUUID()}.html`)
+      const printWindow = new BrowserWindow({
+        show: false,
+        parent: mainWindow!,
+        webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false }
+      })
+      try {
+        const styles = pages
+          .map((p, i) => `@page sheet${i} { size: ${p.width}pt ${p.height}pt; margin: 0; }`)
+          .join('')
+        const sheets = pages
+          .map(
+            (p, i) =>
+              `<section style="page:sheet${i};width:${p.width}pt;height:${p.height}pt"><img src="${p.image}"></section>`
+          )
+          .join('')
+        writeFileSync(
+          path,
+          `<!doctype html><html><head><title>Re-Edit PDF</title><style>${styles}*{box-sizing:border-box}html,body{margin:0;padding:0}section{break-after:page;overflow:hidden}section:last-child{break-after:auto}img{display:block;width:100%;height:100%}</style></head><body>${sheets}</body></html>`
+        )
+        await printWindow.loadFile(path)
+        await printWindow.webContents.executeJavaScript(
+          'Promise.all(Array.from(document.images, img => img.decode()))'
+        )
+        await new Promise<void>((resolve, reject) =>
+          printWindow.webContents.print(
+            { silent: false, printBackground: true, margins: { marginType: 'none' } },
+            (ok, reason) => {
+              if (ok || /cancel/i.test(reason)) resolve()
+              else reject(new Error(reason || 'Printer unavailable'))
+            }
+          )
+        )
+      } finally {
+        printWindow.destroy()
+        if (existsSync(path)) unlinkSync(path)
+      }
+    }
+  )
 
   createWindow()
 

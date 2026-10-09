@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 export interface DetectionInfo {
+  sampledPages?: number
   isScanned: boolean
   textChars: number
   avgCharsPerPage: number

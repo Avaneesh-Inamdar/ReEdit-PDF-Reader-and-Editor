@@ -1,0 +1,59 @@
+name: Build desktop packages
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  packages:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Linux tools and Office conversion runtime
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y binutils rpm fakeroot libgtk-3-0 libnss3 libasound2 libxss1 libgbm1 libnotify4 libxtst6 xvfb xauth xdg-utils desktop-file-utils libreoffice-writer
+      - run: npm ci
+      - run: node node_modules/electron/install.js
+      - name: Unit and conversion tests
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then export READIT_TEST_OFFICE=1; fi
+          npm test
+      - name: Windows packages
+        if: runner.os == 'Windows'
+        run: npm run package:win
+      - name: Windows packaged workflows
+        if: runner.os == 'Windows'
+        env:
+          READIT_SMOKE_PACKAGED: 1
+        run: npm run test:desktop
+      - name: Linux packages
+        if: runner.os == 'Linux'
+        env:
+          ELECTRON_BUILDER_COMPRESSION_LEVEL: 5
+        run: npm run build:linux
+      - name: Linux installation and packaged workflows
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y ./release/*.deb
+          sh scripts/test-linux-package.sh '/opt/Re-Edit PDF/re-edit-pdf' ubuntu-22.04
+          xvfb-run -a node scripts/test-linux-launch.cjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: re-edit-pdf-${{ runner.os }}
+          path: |
+            release/*.exe
+            release/*.deb
+            release/*.rpm
+            release/*.AppImage
+            release/*.tar.gz
+            release/smoke/result.json
+            release/linux-launch.json
+            release/linux-tests/**/result.json

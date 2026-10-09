@@ -1,3 +1,4 @@
+import { Icon } from './Icon'
 import { useState } from 'react'
 import { usePdfStore } from '../stores/usePdfStore'
 import { useDetectionStore } from '../stores/useDetectionStore'
@@ -24,7 +25,7 @@ export function DocumentPropertiesModal(): React.JSX.Element {
         {/* Header */}
         <div className="flex items-center justify-between px-4" style={{ height: 44, borderBottom: '1px solid var(--acrobat-border)' }}>
           <span className="text-sm font-semibold" style={{ color: 'var(--acrobat-text)' }}>Document Properties</span>
-          <button className="tb-btn" onClick={() => setActiveModal('none')} style={{ fontSize: 14 }}>✕</button>
+          <button className="tb-btn" onClick={() => setActiveModal('none')} style={{ fontSize: 14 }}><Icon name="close" /></button>
         </div>
 
         {/* Tabs */}
@@ -55,9 +56,9 @@ export function DocumentPropertiesModal(): React.JSX.Element {
               <Row label="Title" value={title || '—'} />
               <Row label="Author" value={author || '—'} />
               <Row label="Pages" value={String(numPages)} />
-              <Row label="PDF Version" value="—" />
+              <Row label="PDF Version" value={det.metadata.PDFFormatVersion || "Unknown"} />
               <Row label="Document Type" value={det.isScanned ? 'Scanned PDF' : 'Text PDF'} />
-              <Row label="Total Characters" value={String(det.textChars)} />
+              <Row label={det.sampledPages && det.sampledPages < numPages ? "Sampled characters" : "Total Characters"} value={String(det.textChars)} />
               <Row label="Avg Chars/Page" value={String(det.avgCharsPerPage)} />
               {Object.entries(det.metadata).slice(0, 8).map(([k, v]) => (
                 <Row key={k} label={k} value={v} />
@@ -70,10 +71,7 @@ export function DocumentPropertiesModal(): React.JSX.Element {
               <Row label="Encryption" value={det.isEncrypted ? 'Yes — Password Protected' : 'None'} />
               <Row label="AcroForm" value={form.hasAcroForm ? `Yes — ${form.fields.length} fields` : 'No'} />
               <Row label="XFA Forms" value={form.hasXfa ? 'Detected — Unsupported' : 'None'} />
-              <Row label="Printing" value="Allowed" />
-              <Row label="Copying" value="Allowed" />
-              <Row label="Commenting" value="Allowed" />
-              <Row label="Document Assembly" value="Allowed" />
+              <p className="text-xs">Document permission restrictions are not assessed by this app.</p>
             </>
           )}
 
@@ -86,7 +84,7 @@ export function DocumentPropertiesModal(): React.JSX.Element {
               ) : (
                 det.fonts.map((f, i) => (
                   <div key={i} className="flex items-center gap-2 text-xs py-1" style={{ borderBottom: '1px solid var(--acrobat-border)' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 7V4h16v3" /><path d="M9 20h6" /><path d="M12 4v16" /></svg>
+                    <Icon name="text" size={14} />
                     <span>{f}</span>
                   </div>
                 ))

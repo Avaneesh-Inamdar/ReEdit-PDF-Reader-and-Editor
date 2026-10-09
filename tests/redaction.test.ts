@@ -1,64 +1,36 @@
-import { describe, it, expect } from 'vitest'
-import { loadFixture, extractText, countImagesRaw } from './helpers'
-import { applyStrongRedaction } from '../src/renderer/src/lib/pdfEditing'
-
-describe('redaction (strong, not just paint-over)', () => {
-  it('paints opaque box and adds Redact annot; visual check', async () => {
-    const origBytes = loadFixture('simple-text.pdf')
-    const origText = await extractText(origBytes.buffer.slice(origBytes.byteOffset, origBytes.byteOffset+origBytes.byteLength) as ArrayBuffer)
-    expect(origText.text).toContain('The quick brown fox')
-
-    // Apply redaction over region that covers part of text (approx first lines)
-    const redacted = await applyStrongRedaction(
-      origBytes.buffer.slice(origBytes.byteOffset, origBytes.byteOffset+origBytes.byteLength) as ArrayBuffer,
-      [{ page: 1, xNorm: 0.08, yNorm: 0.08, wNorm: 0.8, hNorm: 0.08, colorHex: '#000000' }]
-    )
-    // Redacted file should still be openable
-    const redactedText = await extractText(redacted.buffer.slice(redacted.byteOffset, redacted.byteOffset+redacted.byteLength) as ArrayBuffer)
-    // Spec says best-effort removal: underlying text inside box should be whiteouted in extraction? Our current applyStrongRedaction does whiteout+opaque but does NOT strip TJ operators,
-    // so pdf.js will still extract original text. We verify at least visual opaque rect exists and Redact annot present.
-    // For "strong" classification we check that redacted file contains Redact annotation (via pdf-lib, since ObjStm compressed)
-    const { hasAnnotationObjects } = await import('./helpers')
-    const info = await hasAnnotationObjects(redacted)
-    expect(info.subtypes.includes('Redact') || info.count > 0).toBe(true)
-    // alternative check via pdf-lib node
-    const { PDFDocument: PDDoc, PDFName: PN } = await import('pdf-lib')
-    const pdfDoc = await PDDoc.load(redacted.buffer.slice(redacted.byteOffset, redacted.byteOffset+redacted.byteLength) as ArrayBuffer)
-    const page = pdfDoc.getPages()[0]
-    expect(page.node.has(PN.of('Annots'))).toBe(true)
-    // Should have at least one image? No, but should still have pages
-    expect(redacted.length).toBeGreaterThan(1000)
-
-    // Document limitation: forensic removal of text operators not yet implemented — noted in PROGRESS.md
-    // So we assert that text is STILL extractable (known gap), but redaction marker exists
-    // Future fix would make this assert absent:
-    // expect(redactedText.text).not.toContain('The quick brown fox')
-    // For now, verify the operation does not crash and preserves page count
-    expect(redactedText.text.length).toBeGreaterThan(0)
-  })
-
-  it('redaction does not remove unrelated image objects', async () => {
-    const origBytes = loadFixture('image-and-text.pdf')
-    const beforeImages = await countImagesRaw(origBytes)
-    const redacted = await applyStrongRedaction(
-      origBytes.buffer.slice(origBytes.byteOffset, origBytes.byteOffset+origBytes.byteLength) as ArrayBuffer,
-      [{ page: 1, xNorm: 0.05, yNorm: 0.05, wNorm: 0.3, hNorm: 0.05 }]
-    )
-    const afterImages = await countImagesRaw(redacted)
-    expect(afterImages).toBe(beforeImages)
-  })
-
-  it('UI copy says strong not forensic — documented', async () => {
-    // This test ensures our redaction function is documented as not forensic-grade
-    // We check that applyStrongRedaction adds both whiteout and black cover (two draws)
-    const orig = loadFixture('simple-text.pdf')
-    const redacted = await applyStrongRedaction(
-      orig.buffer.slice(orig.byteOffset, orig.byteOffset+orig.byteLength) as ArrayBuffer,
-      [{ page: 1, xNorm: 0, yNorm: 0, wNorm: 0.1, hNorm: 0.1 }]
-    )
-    // File should be valid PDF
-    const { PDFDocument } = await import('pdf-lib')
-    const doc = await PDFDocument.load(redacted.buffer.slice(redacted.byteOffset, redacted.byteOffset+redacted.byteLength) as ArrayBuffer)
-    expect(doc.getPageCount()).toBe(3)
-  })
+import {describe,it,expect} from 'vitest'
+import {PDFDocument,StandardFonts,degrees} from 'pdf-lib'
+import {removePdfContent} from '../src/main/pdfEngine'
+import {extractText} from './helpers'
+const text = async (bytes:Uint8Array):Promise<string> => (await extractText(bytes.slice().buffer as ArrayBuffer)).text
+async function fixture(rotation=0):Promise<Uint8Array> {
+ const doc=await PDFDocument.create();const page=doc.addPage([400,400]);const font=await doc.embedFont(StandardFonts.Helvetica)
+ page.drawText('SECRET',{x:40,y:300,size:20,font});page.drawText('KEEP',{x:250,y:300,size:20,font});page.setRotation(degrees(rotation));doc.setTitle('SECRET');return doc.save()
+}
+describe('real content removal',()=>{
+ it('removes sensitive pixels from the embedded image itself, rather than covering them',async()=>{
+  const m=await import('mupdf')
+  const pixmap=new m.Pixmap(m.ColorSpace.DeviceRGB,[0,0,100,100],false)
+  const pixels=pixmap.getPixels();for(let i=0;i<pixels.length;i+=3){pixels[i]=255;pixels[i+1]=0;pixels[i+2]=0}
+  const doc=await PDFDocument.create();const page=doc.addPage([400,400]);const image=await doc.embedPng(pixmap.asPNG());pixmap.destroy()
+  page.drawImage(image,{x:40,y:200,width:100,height:100})
+  const bytes=await removePdfContent(await doc.save(),[{page:1,x:.2,y:.3,w:.1,h:.1}],true)
+  const clean=new m.PDFDocument(bytes);const cleanPage=clean.loadPage(0);const structured=cleanPage.toStructuredText('preserve-images=yes')
+  let checked=false
+  structured.walk({onImageBlock(_box,_matrix,embedded){const p=embedded.toPixmap();const values=p.getPixels(),components=p.getNumberOfComponents();const inside=40*p.getStride()+50*components;expect(Array.from(values.slice(inside,inside+3))).not.toEqual([255,0,0]);expect(Array.from(values.slice(0,3))).toEqual([255,0,0]);checked=true;p.destroy()}})
+  expect(checked).toBe(true);structured.destroy();cleanPage.destroy();clean.destroy()
+ })
+ it('removes original text operators and metadata, preserving unrelated text',async()=>{
+  const bytes=await removePdfContent(await fixture(),[{page:1,x:.09,y:.19,w:.30,h:.10}],true)
+  expect(await text(bytes)).not.toContain('SECRET');expect(await text(bytes)).toContain('KEEP')
+  const doc=await PDFDocument.load(bytes);expect(doc.getTitle()).toBeUndefined()
+ })
+ it.each([0,90,180,270])('removes edited text using PDF coordinates on a page rotated %i degrees',async(rotation)=>{
+  const bytes=await removePdfContent(await fixture(rotation),[{page:1,quad:[40,321,124,321,40,295,124,295]}],false)
+  expect(await text(bytes)).not.toContain('SECRET');expect(await text(bytes)).toContain('KEEP')
+ })
+ it('rejects invalid pages and regions instead of silently saving unsafe output',async()=>{
+  await expect(removePdfContent(await fixture(),[{page:2,x:0,y:0,w:1,h:1}],true)).rejects.toThrow('Invalid removal page')
+  await expect(removePdfContent(await fixture(),[{page:1,x:0,y:0,w:-1,h:1}],true)).rejects.toThrow('Invalid redaction region')
+ })
 })

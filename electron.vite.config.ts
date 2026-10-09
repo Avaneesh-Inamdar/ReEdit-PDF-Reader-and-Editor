@@ -7,7 +7,8 @@ export default defineConfig({
   main: {
     build: {
       rollupOptions: {
-        external: ['electron-store']
+        input: { index: resolve('src/main/index.ts'), pdfEngineWorker: resolve('src/main/pdfEngineWorker.ts') },
+        external: ['electron-store', 'mupdf', '@signpdf/signpdf', '@signpdf/placeholder-pdf-lib', '@signpdf/signer-p12', 'pdf-lib', 'docx']
       }
     }
   },

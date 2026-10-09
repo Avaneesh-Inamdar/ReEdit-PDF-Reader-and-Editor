@@ -1,55 +1,48 @@
 appId: com.avaneeshinamdar.readitpdf
-productName: Readit PDF Reader and Editor
+productName: Re-Edit PDF
 copyright: Copyright © 2026 Avaneesh Inamdar
 directories:
   buildResources: build
   output: release
 files:
-  - '!**/.vscode/*'
-  - '!src/*'
-  - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
-  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
-  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - out/**
+  - build/icon.ico
+  - build/icon.png
+  - package.json
+  - LICENSE
+  - THIRD-PARTY-NOTICES.md
 asar: true
 asarUnpack:
   - resources/**
+  - node_modules/mupdf/**
 win:
-  executableName: Readit-PDF-Editor
+  executableName: Re-Edit-PDF
   icon: build/icon.ico
   target:
     - target: nsis
       arch: [x64]
     - target: portable
       arch: [x64]
-  sign: null
-  verifyUpdateCodeSignature: false
 portable:
   artifactName: ${productName}-${version}-portable.${ext}
 nsis:
   artifactName: ${productName}-Setup-${version}.${ext}
-  shortcutName: Readit PDF Reader and Editor
-  uninstallDisplayName: Readit PDF Reader and Editor
+  shortcutName: Re-Edit PDF
+  uninstallDisplayName: Re-Edit PDF
   installerIcon: build/icon.ico
   uninstallerIcon: build/icon.ico
   installerHeaderIcon: build/icon.ico
-  createDesktopShortcut: always
+  createDesktopShortcut: true
   createStartMenuShortcut: true
   oneClick: false
   allowToChangeInstallationDirectory: true
   allowElevation: true
   perMachine: false
   differentialPackage: false
+  deleteAppDataOnUninstall: false
   displayLanguageSelector: false
-  runAfterFinish: true
-  menuCategory: Readit PDF Reader and Editor
+  runAfterFinish: false
   include: build/installer.nsh
-fileAssociations:
-  - ext: pdf
-    name: PDF Document
-    description: PDF Document
-    icon: build/icon.ico
-    role: Editor
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
@@ -61,15 +54,31 @@ mac:
 dmg:
   artifactName: ${name}-${version}.${ext}
 linux:
+  executableName: re-edit-pdf
+  executableArgs: ["%F"]
+  icon: build/icon.png
   target:
-    - AppImage
-    - snap
-    - deb
-  maintainer: pdfeditor.app
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+    - target: rpm
+      arch: [x64]
+    - target: tar.gz
+      arch: [x64]
+  maintainer: Avaneesh Inamdar <104128879+Avaneesh-Inamdar@users.noreply.github.com>
   category: Office
+  mimeTypes: [application/pdf]
+  desktop:
+    Name: Re-Edit PDF
+    Comment: Read, annotate, and edit PDF documents
+    StartupWMClass: re-edit-pdf
+    Keywords: PDF;Reader;Editor;
+  artifactName: ${name}-${version}-${arch}.${ext}
+deb:
+  compression: gz
+rpm:
+  fpm: ["--rpm-compression", "gzip"]
 appImage:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${name}-${version}-${arch}.${ext}
 npmRebuild: false
-publish:
-  provider: generic
-  url: https://example.com/auto-updates

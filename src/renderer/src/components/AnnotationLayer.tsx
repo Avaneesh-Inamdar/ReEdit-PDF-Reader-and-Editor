@@ -1,3 +1,5 @@
+import { Icon } from './Icon'
+import { requestText } from '../lib/requestText'
 import { useState, useRef, useEffect } from 'react'
 import { useAnnotationStore, type Annotation } from '../stores/useAnnotationStore'
 import { useEditStore } from '../stores/useEditStore'
@@ -18,12 +20,14 @@ export function AnnotationLayer({
   const editStore = useEditStore()
   const { spaceHeld, pointerMode } = useUIStore()
   const svgRef = useRef<SVGSVGElement>(null)
+  const dragOrigin = useRef({ x: 0, y: 0 })
+  const manipulation = useRef<{ annotation: Annotation; latest?: Annotation; origin: { x: number; y: number }; resize: boolean } | null>(null)
   const [draft, setDraft] = useState<Annotation | null>(null)
   const [drawing, setDrawing] = useState(false)
   const [drawPoints, setDrawPoints] = useState<{ x: number; y: number }[]>([])
   const [ctxMenu, setCtxMenu] = useState<{ x:number; y:number; id:string } | null>(null)
 
-  const pageAnnos = annotations.filter((a) => a.page === pageNumber)
+  const pageAnnos = annotations.filter((a) => a.page === pageNumber && !a.sourceText)
 
   useEffect(() => {
     const onDocClick = (): void => setCtxMenu(null)
@@ -36,11 +40,23 @@ export function AnnotationLayer({
     return { x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height }
   }
 
-  const onPointerDown = (e: React.PointerEvent): void => {
+  const onPointerDown = async (e: React.PointerEvent): Promise<void> => {
     if (ctxMenu) setCtxMenu(null)
+    if (tool === 'select' && !spaceHeld && pointerMode !== 'hand') {
+      const target = (e.target as SVGElement).closest('[data-anno-id]') as SVGElement | null
+      const annotation = pageAnnos.find(a => a.id === target?.dataset.annoId)
+      if (annotation) {
+        e.preventDefault()
+        e.currentTarget.setPointerCapture(e.pointerId)
+        setSelected(annotation.id)
+        manipulation.current = { annotation, origin: getNorm(e), resize: (e.target as SVGElement).getAttribute('data-resize') === 'true' }
+      }
+      return
+    }
     if (tool === 'select' || tool === 'eraser' || spaceHeld || pointerMode === 'hand') return
     ;(e.target as Element).setPointerCapture(e.pointerId)
     const p = getNorm(e)
+    dragOrigin.current = p
     setDrawing(true)
     if (tool === 'draw' || tool === 'arrow') {
       setDrawPoints([p])
@@ -50,7 +66,7 @@ export function AnnotationLayer({
       setSelected(note.id)
     } else if (tool === 'text') {
       const pending = editStore.pendingText
-      const text = pending?.text || prompt('Enter text to place:','Sample text') || 'Sample text'
+      const text = pending?.text || await requestText('Enter text to place:', '')
       if (!text) { setDrawing(false); return }
       const sz = pending || { text, color: '#111827', size: 12 }
       const col = (sz as { color?: string }).color || '#111827'
@@ -65,11 +81,13 @@ export function AnnotationLayer({
         setDrawing(false)
         return
       }
-      const imgAnno: Annotation = { id: uid(), page: pageNumber, type: 'image', x: p.x, y: p.y, w: 0.3, h: 0.22, color: '#000', strokeWidth: 1, opacity: 1, text: pi.mime } as never
-      ;(window as unknown as Record<string, unknown>).__imageMap = (window as unknown as Record<string, unknown>).__imageMap || {}
-      ;((window as unknown as Record<string, unknown>).__imageMap as Record<string, { bytes: Uint8Array; mime: string }>)[imgAnno.id] = pi
+      const w = pi.widthNorm || 0.3
+      const h = pi.aspectRatio ? w * width / (height * pi.aspectRatio) : 0.22
+      const imgAnno: Annotation = { id: uid(), page: pageNumber, type: 'image', x: Math.min(p.x, 1 - w), y: Math.min(p.y, 1 - h), w, h, color: '#000', strokeWidth: 1, opacity: 1, image: pi }
       addAnnotation(imgAnno)
       setSelected(imgAnno.id)
+      editStore.setPendingImage(null)
+      useAnnotationStore.getState().setTool('select')
       setDrawing(false)
     } else {
       let col = color
@@ -86,21 +104,43 @@ export function AnnotationLayer({
   }
 
   const onPointerMove = (e: React.PointerEvent): void => {
+    if (manipulation.current) {
+      const { annotation, origin, resize } = manipulation.current
+      const point = getNorm(e)
+      const dx = point.x - origin.x, dy = point.y - origin.y
+      let next: Annotation
+      if (resize) {
+        const w = Math.max(0.02, Math.min(1 - annotation.x, annotation.w + dx))
+        const h = annotation.type === 'image' ? Math.min(1 - annotation.y, annotation.h * w / annotation.w) : Math.max(0.02, Math.min(1 - annotation.y, annotation.h + dy))
+        next = { ...annotation, w, h }
+      } else next = { ...annotation, x: Math.max(0, Math.min(1 - annotation.w, annotation.x + dx)), y: Math.max(0, Math.min(1 - annotation.h, annotation.y + dy)) }
+      manipulation.current.latest = next
+      setDraft(next)
+      return
+    }
     if (!drawing) return
     const p = getNorm(e)
     if (tool === 'draw' || tool === 'arrow') {
       setDrawPoints((prev) => [...prev, p])
     } else if (draft) {
-      const x = Math.min(draft.x, p.x)
-      const y = Math.min(draft.y, p.y)
-      const w = Math.abs(p.x - draft.x)
-      const h = Math.abs(p.y - draft.y)
+      const x = Math.min(dragOrigin.current.x, p.x)
+      const y = Math.min(dragOrigin.current.y, p.y)
+      const w = Math.abs(p.x - dragOrigin.current.x)
+      const h = Math.abs(p.y - dragOrigin.current.y)
       if (tool === 'underline' || tool === 'strike') setDraft({ ...draft, x, y: y + h / 2, w, h: 0.004 })
       else setDraft({ ...draft, x, y, w, h })
     }
   }
 
   const onPointerUp = (e: React.PointerEvent): void => {
+    if (manipulation.current) {
+      const latest = manipulation.current.latest
+      if (latest) updateAnnotation(latest.id, { x: latest.x, y: latest.y, w: latest.w, h: latest.h })
+      manipulation.current = null
+      setDraft(null)
+      try { e.currentTarget.releasePointerCapture(e.pointerId) } catch {}
+      return
+    }
     if (!drawing) return
     setDrawing(false)
     if (tool === 'draw' || tool === 'arrow') {
@@ -160,12 +200,12 @@ export function AnnotationLayer({
         <g key={a.id} data-anno-id={a.id} onClick={() => setSelected(a.id)} style={{ cursor: 'pointer', outline: outline as never, pointerEvents: 'auto' }}>
           <rect x={px} y={py} width={pw} height={ph} fill="rgba(255,255,255,0.92)" stroke={isSelected ? '#38bdf8' : '#d1d5db'} strokeWidth={isSelected ? 1.5 : 1} rx={4} style={{ pointerEvents: 'auto' }} />
           <foreignObject x={px+4} y={py+2} width={pw-8} height={ph-4} style={{ pointerEvents: 'auto' }}>
-            <div style={{ fontSize: Math.max(10, (a.fontSize || 12)), color: a.color, fontFamily: family, fontWeight: a.bold ? 700 : 400, fontStyle: a.italic ? 'italic' : 'normal', lineHeight: 1.2, overflow: 'hidden', wordBreak: 'break-word', width: '100%', height: '100%', pointerEvents: 'auto' }}>{a.text}</div>
+            <div style={{ fontSize: Math.max(10, (a.fontSize || 12)), color: a.color, fontFamily: family, fontWeight: a.bold || /bold/i.test(a.fontFamily || '') ? 700 : 400, fontStyle: a.italic ? 'italic' : 'normal', lineHeight: 1.2, overflow: 'hidden', wordBreak: 'break-word', width: '100%', height: '100%', pointerEvents: 'auto' }}>{a.text}</div>
           </foreignObject>
           {isSelected && (
             <g>
               <circle cx={px} cy={py} r={4} fill="#38bdf8" stroke="#fff" strokeWidth={1} />
-              <circle cx={px+pw} cy={py+ph} r={4} fill="#38bdf8" stroke="#fff" strokeWidth={1} />
+              <circle data-resize="true" cx={px+pw} cy={py+ph} r={5} fill="#38bdf8" stroke="#fff" strokeWidth={1} style={{ cursor: 'nwse-resize' }} />
             </g>
           )}
         </g>
@@ -173,14 +213,15 @@ export function AnnotationLayer({
     }
     if (a.type === 'image') return (
       <g key={a.id} data-anno-id={a.id} onClick={() => setSelected(a.id)} style={{ outline: outline as never, pointerEvents: 'auto' }}>
-        <rect x={px} y={py} width={pw} height={ph} fill="#e5e7eb" stroke={isSelected ? '#38bdf8' : '#6b7280'} strokeWidth={isSelected?2:1} strokeDasharray="4 3" rx={4} style={{ pointerEvents: 'auto' }} />
-        <text x={px + pw / 2} y={py + ph / 2} textAnchor="middle" fontSize={11} fill="#374151" style={{ pointerEvents: 'auto' }}>Image</text>
+        <image href={a.image?.dataUrl} x={px} y={py} width={pw} height={ph} preserveAspectRatio="none" />
+        {isSelected && <rect x={px} y={py} width={pw} height={ph} fill="none" stroke="#38bdf8" strokeWidth={1.5} />}
+        {isSelected && <circle data-resize="true" cx={px+pw} cy={py+ph} r={5} fill="#38bdf8" stroke="white" strokeWidth={1} style={{ cursor: 'nwse-resize' }} />}
       </g>
     )
     if (a.type === 'note') return (
       <g key={a.id} data-anno-id={a.id} onClick={() => setSelected(a.id)} style={{ cursor: 'pointer', outline: outline as never, pointerEvents: 'auto' }}>
         <rect x={px} y={py} width={pw} height={ph} fill="#fef08a" stroke="#eab308" strokeWidth={1} rx={6} style={{ pointerEvents: 'auto' }} />
-        <foreignObject x={px + 6} y={py + 6} width={pw - 12} height={ph - 12} style={{ pointerEvents: 'auto' }}><div className="text-[11px] leading-tight text-zinc-900 font-medium break-words overflow-hidden h-full" style={{ pointerEvents: 'auto' }}>{a.text}<button onClick={(e) => { e.stopPropagation(); const v = prompt('Edit note', a.text || ''); if(v!==null) updateAnnotation(a.id, { text: v }) }} className="ml-1 text-[10px] underline text-zinc-600" style={{ pointerEvents: 'auto' }}>edit</button></div></foreignObject>
+        <foreignObject x={px + 6} y={py + 6} width={pw - 12} height={ph - 12} style={{ pointerEvents: 'auto' }}><div className="text-[11px] leading-tight text-zinc-900 font-medium break-words overflow-hidden h-full" style={{ pointerEvents: 'auto' }}>{a.text}<button onClick={async (e) => { e.stopPropagation(); const v = await requestText('Edit note', a.text || ''); if(v!==null) updateAnnotation(a.id, { text: v }) }} className="ml-1 text-[10px] underline text-zinc-600" style={{ pointerEvents: 'auto' }}>edit</button></div></foreignObject>
       </g>
     )
     return <g key={a.id} />
@@ -204,19 +245,20 @@ export function AnnotationLayer({
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onPointerCancel={() => { manipulation.current = null; setDraft(null); setDrawing(false) }}
         onClick={onSvgClick}
         onContextMenu={onContextMenu}
       >
         <rect x={0} y={0} width={width} height={height} fill="transparent" style={{ pointerEvents: tool === 'select' || spaceHeld || pointerMode === 'hand' ? 'none' : 'auto' }} />
-        {pageAnnos.map(renderAnno)}
+        {pageAnnos.filter(a => a.id !== draft?.id).map(renderAnno)}
         {draftEl}
         {drawPreview}
       </svg>
       {ctxMenu && (
         <div className="ctx-menu" style={{ left: ctxMenu.x, top: ctxMenu.y }} onClick={(e)=> e.stopPropagation()}>
-          <div className="ctx-item" onClick={()=> { const a = annotations.find(x=> x.id===ctxMenu.id); if (a?.type==='text') { const v=prompt('Edit text', a.text||''); if(v!==null) updateAnnotation(ctxMenu.id, { text: v }) } else { const v=prompt('Edit note', annotations.find(x=> x.id===ctxMenu.id)?.text||''); if(v!==null) updateAnnotation(ctxMenu.id, { text: v || '' }) } setCtxMenu(null) }}>✏️ Edit…</div>
-          <div className="ctx-item" onClick={()=> { const a = annotations.find(x=> x.id===ctxMenu.id); if(a) { const dup={...a, id: uid(), x: Math.min(0.85, a.x+0.02), y: Math.min(0.85, a.y+0.02)}; addAnnotation(dup as never); setSelected(dup.id) } setCtxMenu(null) }}>⎘ Duplicate</div>
-          <div className="ctx-item" style={{ color:'#ef5350' }} onClick={()=> { deleteAnnotation(ctxMenu.id); setCtxMenu(null) }}>🗑 Remove</div>
+          <div className="ctx-item" onClick={async ()=> { const a = annotations.find(x=> x.id===ctxMenu.id); if (a?.type==='text') { const v=await requestText('Edit text', a.text||''); if(v!==null) updateAnnotation(ctxMenu.id, { text: v }) } else { const v=await requestText('Edit note', annotations.find(x=> x.id===ctxMenu.id)?.text||''); if(v!==null) updateAnnotation(ctxMenu.id, { text: v || '' }) } setCtxMenu(null) }}><Icon name="edit" /> Edit…</div>
+          <div className="ctx-item" onClick={()=> { const a = annotations.find(x=> x.id===ctxMenu.id); if(a) { const dup={...a, id: uid(), x: Math.min(0.85, a.x+0.02), y: Math.min(0.85, a.y+0.02)}; addAnnotation(dup as never); setSelected(dup.id) } setCtxMenu(null) }}><Icon name="copy" /> Duplicate</div>
+          <div className="ctx-item" style={{ color:'#ef5350' }} onClick={()=> { deleteAnnotation(ctxMenu.id); setCtxMenu(null) }}><Icon name="delete" /> Remove</div>
         </div>
       )}
     </>

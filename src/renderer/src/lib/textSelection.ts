@@ -1,8 +1,11 @@
 import { useAnnotationStore } from '../stores/useAnnotationStore'
 import { usePdfStore } from '../stores/usePdfStore'
 import { useTabStore } from '../stores/useTabStore'
+import { selectedRuns } from './editSelection'
+import type { PdfTextRun } from './pdfText'
 
 export interface TextSelectionInfo {
+  runs?: PdfTextRun[]
   text: string
   pageNum: number
   rects: { x: number; y: number; w: number; h: number }[]
@@ -20,6 +23,8 @@ export function getCurrentTextSelection(): TextSelectionInfo | null {
   const startEl = range.startContainer instanceof Element ? range.startContainer : range.startContainer.parentElement
   const pageEl = startEl?.closest('[id^="page-"]') as HTMLElement | null
   if (!pageEl) return null
+  const endEl = range.endContainer instanceof Element ? range.endContainer : range.endContainer.parentElement
+  if (endEl?.closest('[data-page-slot]') !== pageEl) return null
 
   const pageNum = parseInt(pageEl.id.replace('page-', ''), 10)
   if (!pageNum || isNaN(pageNum)) return null
@@ -50,6 +55,7 @@ export function getCurrentTextSelection(): TextSelectionInfo | null {
   const rangeClient = range.getBoundingClientRect()
 
   return {
+    runs: selectedRuns(range),
     text,
     pageNum,
     rects,

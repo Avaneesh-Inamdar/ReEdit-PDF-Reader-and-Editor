@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 export type AcrobatTheme = 'system' | 'classic' | 'dark' | 'light'
 export type LeftPane = 'thumbnails' | 'bookmarks' | 'attachments' | 'closed'
@@ -6,7 +7,7 @@ export type RightPane = 'none' | 'comment' | 'sign' | 'edit' | 'organize' | 'ocr
 export type PointerMode = 'select' | 'hand' | 'selectGraphics'
 export type DisplayMode = 'continuous' | 'single'
 export type ActiveView = 'home' | 'tools' | 'document'
-export type ActiveModal = 'none' | 'docProperties' | 'preferences' | 'organizePages' | 'signature' | 'about' | 'shortcuts'
+export type ActiveModal = 'none' | 'docProperties' | 'preferences' | 'organizePages' | 'signature' | 'about' | 'shortcuts' | 'combineFiles' | 'updates' | 'certificate'
 export type PageUnits = 'inches' | 'millimeters' | 'points'
 
 export interface BookmarkItem {
@@ -148,7 +149,7 @@ function toggleBookmarkRecursive(items: BookmarkItem[], path: number[]): Bookmar
   })
 }
 
-export const useUIStore = create<UIState>((set, get) => ({
+export const useUIStore = create<UIState>()(persist((set, get) => ({
   activeView: 'home',
   setActiveView: (activeView) => set({ activeView }),
 
@@ -165,10 +166,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   setLeftPaneWidth: (leftPaneWidth) => set({ leftPaneWidth }),
 
   rightPane: 'none',
-  setRightPane: (rightPane) => {
-    const cur = get().rightPane
-    set({ rightPane: cur === rightPane ? 'none' : rightPane })
-  },
+  setRightPane: (rightPane) => set({ rightPane }),
   toggleRightPane: () => {
     set({ rightPane: get().rightPane === 'none' ? 'comment' : 'none' })
   },
@@ -264,4 +262,12 @@ export const useUIStore = create<UIState>((set, get) => ({
     set({ navIndex: nextIdx })
     return navHistory[nextIdx]
   }
+}), {
+  name: 're-edit-preferences',
+  partialize: state => ({ theme: state.theme, displayMode: state.displayMode, pageUnits: state.pageUnits,
+    defaultMagnification: state.defaultMagnification, toolbarVisible: state.toolbarVisible,
+    thumbnailScale: state.thumbnailScale, leftPaneWidth: state.leftPaneWidth,
+    maximizeOnOpen: state.maximizeOnOpen, displayOpenDialog: state.displayOpenDialog,
+    fullScreenLoop: state.fullScreenLoop, fullScreenBg: state.fullScreenBg, fullScreenAutoAdvance: state.fullScreenAutoAdvance,
+    signatures: state.signatures })
 }))

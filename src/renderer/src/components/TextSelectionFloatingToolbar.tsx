@@ -8,6 +8,8 @@ import {
   applyRedactToSelection
 } from '../lib/textSelection'
 import { useAnnotationStore } from '../stores/useAnnotationStore'
+import { editSelection } from '../lib/editSelection'
+import { Icon } from './Icon'
 
 const QUICK_COLORS = ['#ffee58', '#66bb6a', '#42a5f5', '#ef5350', '#ab47bc', '#ffa726', '#111827']
 
@@ -27,7 +29,7 @@ export function TextSelectionFloatingToolbar({
   const { clientPosition } = selection
 
   // Position floating bar centered above the selection (or below if top space is limited)
-  const width = 340
+  const width = 430
   const height = 40
   let top = clientPosition.top - height - 10
   if (top < 70) top = clientPosition.bottom + 10
@@ -92,6 +94,7 @@ export function TextSelectionFloatingToolbar({
           color: 'var(--acrobat-text)'
         }}
       >
+        <button className="tb-btn flex items-center gap-1 px-2" title="Edit selected text" onClick={() => { void editSelection(selection); onClose() }} disabled={!selection.runs?.length}><Icon name="edit" /><span>Edit Text</span></button>
         {/* Highlight button */}
         <button
           className="tb-btn flex items-center gap-1.5 px-2 py-1 rounded hover:bg-zinc-700/20"
@@ -109,7 +112,7 @@ export function TextSelectionFloatingToolbar({
             onClick={() => { setColorMode('highlight'); setShowColorPicker((v) => !v) }}
             title="Highlight Colors"
           >
-            <svg width="8" height="5" viewBox="0 0 8 5" fill="currentColor"><path d="M0 0l4 5 4-5z" /></svg>
+            <Icon name="down" size={14} />
           </button>
         </div>
 
@@ -121,7 +124,7 @@ export function TextSelectionFloatingToolbar({
           onClick={handleUnderline}
           title="Underline text"
         >
-          <span className="font-serif underline font-bold" style={{ textDecorationColor: '#22c55e', textDecorationThickness: 2 }}>U</span>
+          <Icon name="underline" />
           <span>Underline</span>
         </button>
 
@@ -131,7 +134,7 @@ export function TextSelectionFloatingToolbar({
           onClick={handleStrike}
           title="Strikethrough text"
         >
-          <span className="font-serif line-through font-bold" style={{ textDecorationColor: '#ef5350', textDecorationThickness: 2 }}>S</span>
+          <Icon name="strike" />
           <span>Strike</span>
         </button>
 
@@ -143,7 +146,7 @@ export function TextSelectionFloatingToolbar({
           onClick={() => { setColorMode('text'); setShowColorPicker((v) => !v) }}
           title="Change Text Color"
         >
-          <span className="font-bold text-sm" style={{ color: textColor }}>A</span>
+          <Icon name="palette" />
           <span className="w-2.5 h-1 rounded-sm" style={{ background: textColor }} />
         </button>
 
@@ -155,16 +158,16 @@ export function TextSelectionFloatingToolbar({
           onClick={() => void handleCopy()}
           title="Copy selected text (Ctrl+C)"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+          <Icon name="copy" size={14} />
         </button>
 
         {/* Redact */}
         <button
           className="tb-btn p-1 rounded hover:bg-zinc-700/20 text-red-500"
           onClick={handleRedact}
-          title="Redact selected text"
+          title="Visually mask selected text (original content remains)"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="6" width="18" height="12" rx="1" /></svg>
+          <Icon name="mask" size={14} />
         </button>
       </div>
 

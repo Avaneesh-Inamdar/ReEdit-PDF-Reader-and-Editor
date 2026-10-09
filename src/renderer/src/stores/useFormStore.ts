@@ -5,6 +5,9 @@ export interface FormField {
   type: string
   value: string
   required?: boolean
+  readOnly?: boolean
+  options?: string[]
+  multiple?: boolean
 }
 
 interface FormState {

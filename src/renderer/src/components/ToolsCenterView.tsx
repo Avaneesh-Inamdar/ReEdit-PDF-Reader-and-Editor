@@ -1,3 +1,5 @@
+import { Icon, type IconName } from './Icon'
+import { openTool } from '../lib/toolActions'
 import { useUIStore } from '../stores/useUIStore'
 
 /* ── Adobe Acrobat Tools Center Hub ── */
@@ -7,7 +9,7 @@ interface ToolDef {
   label: string
   desc: string
   color: string
-  icon: string
+  icon: IconName
   pane: 'comment' | 'sign' | 'edit' | 'organize' | 'ocr' | 'forms' | 'redact' | 'protect'
 }
 
@@ -15,40 +17,34 @@ const TOOL_CATEGORIES: { category: string; tools: ToolDef[] }[] = [
   {
     category: 'View & Review',
     tools: [
-      { label: 'Comment', desc: 'Add notes, highlights, and text comments to your PDF', color: 'var(--tool-comment)', icon: '💬', pane: 'comment' },
+      { label: 'Comment', desc: 'Add notes, highlights, and text comments to your PDF', color: 'var(--tool-comment)', icon: 'comment', pane: 'comment' },
     ]
   },
   {
     category: 'Edit PDF',
     tools: [
-      { label: 'Edit Text & Images', desc: 'Add and edit text, images on PDF pages', color: 'var(--tool-edit)', icon: '✏️', pane: 'edit' },
-      { label: 'Organize Pages', desc: 'Reorder, rotate, delete, insert, split, and merge pages', color: 'var(--tool-organize)', icon: '📑', pane: 'organize' },
-      { label: 'Scan & OCR', desc: 'Recognize text in scanned documents using local OCR', color: 'var(--tool-ocr)', icon: '🔍', pane: 'ocr' }
+      { label: 'Edit Text & Images', desc: 'Replace visible text and add text or images', color: 'var(--tool-edit)', icon: 'edit', pane: 'edit' },
+      { label: 'Organize Pages', desc: 'Reorder, rotate, delete, insert blank pages, and extract pages', color: 'var(--tool-organize)', icon: 'organize', pane: 'organize' },
+      { label: 'Scan & OCR', desc: 'Recognize text in scanned documents using local OCR', color: 'var(--tool-ocr)', icon: 'ocr', pane: 'ocr' }
     ]
   },
   {
     category: 'Forms & Signatures',
     tools: [
-      { label: 'Fill & Sign', desc: 'Fill form fields and add your signature or initials', color: 'var(--tool-sign)', icon: '✍️', pane: 'sign' },
-      { label: 'Prepare Form', desc: 'Detect and edit form fields in your PDF', color: 'var(--tool-forms)', icon: '📋', pane: 'forms' }
+      { label: 'Fill & Sign', desc: 'Fill form fields and add your signature or initials', color: 'var(--tool-sign)', icon: 'sign', pane: 'sign' },
+      { label: 'Fill Forms', desc: 'Fill existing PDF form fields', color: 'var(--tool-forms)', icon: 'forms', pane: 'forms' }
     ]
   },
   {
     category: 'Protect & Standardize',
     tools: [
-      { label: 'Redact', desc: 'Permanently remove sensitive content from your PDF', color: 'var(--tool-redact)', icon: '█', pane: 'redact' },
-      { label: 'Security Properties', desc: 'View encryption status and document permissions', color: 'var(--tool-protect)', icon: '🔒', pane: 'protect' }
+      { label: 'Redact', desc: 'Remove marked content when saving', color: 'var(--tool-redact)', icon: 'mask', pane: 'redact' },
+      { label: 'Security Properties', desc: 'View encryption and form status', color: 'var(--tool-protect)', icon: 'protect', pane: 'protect' }
     ]
   }
 ]
 
 export function ToolsCenterView(): React.JSX.Element {
-  const { setActiveView, setRightPane } = useUIStore()
-
-  const openTool = (pane: ToolDef['pane']): void => {
-    setRightPane(pane)
-    setActiveView('document')
-  }
 
   return (
     <div className="flex-1 overflow-y-auto p-8" style={{ background: 'var(--acrobat-pane-bg)', color: 'var(--acrobat-pane-text)' }}>
@@ -58,6 +54,7 @@ export function ToolsCenterView(): React.JSX.Element {
           Select a tool to open it in your document workspace.
         </p>
 
+        <button className="tool-card mb-5 flex items-center gap-3" onClick={() => useUIStore.getState().setActiveModal('combineFiles')}><Icon name="organize" size={24} /><span>Combine PDF files</span></button>
         {TOOL_CATEGORIES.map((cat) => (
           <div key={cat.category} className="mb-8">
             <h2 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--acrobat-text-muted)' }}>
@@ -68,7 +65,7 @@ export function ToolsCenterView(): React.JSX.Element {
                 <button
                   key={tool.label}
                   className="tool-card flex items-start gap-3 text-left"
-                  onClick={() => openTool(tool.pane)}
+                  onClick={() => { void openTool(tool.pane) }}
                 >
                   <div
                     style={{
@@ -78,11 +75,11 @@ export function ToolsCenterView(): React.JSX.Element {
                       background: tool.color,
                       display: 'grid',
                       placeItems: 'center',
-                      fontSize: 22,
+                      color: '#fff',
                       flexShrink: 0
                     }}
                   >
-                    {tool.icon}
+                    <Icon name={tool.icon} size={22} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold mb-0.5">{tool.label}</div>
@@ -90,7 +87,7 @@ export function ToolsCenterView(): React.JSX.Element {
                       {tool.desc}
                     </div>
                     <div className="mt-2 text-xs font-medium" style={{ color: 'var(--acrobat-accent)' }}>
-                      Open →
+                      Open <Icon name="right" size={12} />
                     </div>
                   </div>
                 </button>

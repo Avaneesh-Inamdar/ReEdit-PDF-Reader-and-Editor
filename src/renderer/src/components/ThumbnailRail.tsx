@@ -1,50 +1,26 @@
-import { useEffect, useRef, useState } from 'react'
+import { useThumbnails } from '../lib/useThumbnails'
+import { useRef } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { usePdfStore } from '../stores/usePdfStore'
 
 export function ThumbnailRail({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): React.JSX.Element {
   const { currentPage, setCurrentPage, numPages, rotation } = usePdfStore()
-  const [thumbs, setThumbs] = useState<string[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (!pdfDoc) {
-      setThumbs([])
-      return
-    }
-    let cancelled = false
-    const gen = async (): Promise<void> => {
-      const out: string[] = []
-      for (let i = 1; i <= pdfDoc.numPages; i++) {
-        if (cancelled) break
-        const page = await pdfDoc.getPage(i)
-        const viewport = page.getViewport({ scale: 0.22, rotation })
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')!
-        canvas.width = viewport.width
-        canvas.height = viewport.height
-        // @ts-ignore pdf.js render types
-        await page.render({ canvasContext: ctx, viewport }).promise
-        out[i - 1] = canvas.toDataURL('image/png')
-        if (!cancelled) setThumbs([...out])
-      }
-    }
-    gen()
-    return () => {
-      cancelled = true
-    }
-  }, [pdfDoc, rotation])
+  const thumbs = useThumbnails(pdfDoc, rotation, 0.22, containerRef)
 
   return (
     <div ref={containerRef} className="w-[160px] shrink-0 bg-zinc-900 border-r border-zinc-800 overflow-y-auto overflow-x-hidden">
       <div className="p-2 flex flex-col gap-2">
         {!pdfDoc && <div className="text-xs text-zinc-500 p-4 text-center">No PDF opened<br />Ctrl+O to open</div>}
-        {thumbs.map((src, idx) => {
+        {Array.from({ length: numPages }, (_, idx) => {
+              const src = thumbs[idx+1]
           const pageNum = idx + 1
           const active = currentPage === pageNum
           return (
             <button
               key={pageNum}
+                  data-thumbnail={pageNum}
               onClick={() => {
                 setCurrentPage(pageNum)
                 document.getElementById(`page-${pageNum}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -56,7 +32,7 @@ export function ThumbnailRail({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): 
             </button>
           )
         })}
-        {pdfDoc && thumbs.length === 0 && <div className="text-xs text-zinc-500 p-2">Generating thumbnails… {numPages} pages</div>}
+        {pdfDoc && Object.keys(thumbs).length === 0 && <div className="text-xs text-zinc-500 p-2">Generating thumbnails… {numPages} pages</div>}
       </div>
     </div>
   )

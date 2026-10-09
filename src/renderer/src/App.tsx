@@ -1,11 +1,19 @@
+import { editSelection } from './lib/editSelection'
+import { getCurrentTextSelection } from './lib/textSelection'
+import { placeImage } from './lib/imagePlacement'
+import { openTool } from './lib/toolActions'
+import { CombineFilesModal } from './components/CombineFilesModal'
+import UpdatesModal from './components/UpdatesModal'
+import CertificateModal from './components/CertificateModal'
+import { exportWord } from './lib/officeExport'
+import { Icon, BrandLogo } from './components/Icon'
 import { useEffect, useState, useRef } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
-import { pdfjsLib } from './lib/pdfjs'
+import { pdfjsLib, pdfAssetOptions } from './lib/pdfjs'
 import { usePdfStore } from './stores/usePdfStore'
 import { useAnnotationStore } from './stores/useAnnotationStore'
 import { useFormStore } from './stores/useFormStore'
 import { useDetectionStore } from './stores/useDetectionStore'
-import { useEditStore } from './stores/useEditStore'
 import { useUIStore } from './stores/useUIStore'
 import { useTabStore } from './stores/useTabStore'
 import { Titlebar } from './components/Titlebar'
@@ -22,23 +30,31 @@ import { DocumentPropertiesModal } from './components/DocumentPropertiesModal'
 import { SignatureModal } from './components/SignatureModal'
 import { PreferencesModal } from './components/PreferencesModal'
 import { OrganizePagesModal } from './components/OrganizePagesModal'
-import { bakeAnnotationsToPdf, verifyNonDestructive } from './lib/pdfEditing'
-import { fillFormAndSave } from './lib/forms'
+import { printDocument } from './lib/printDocument'
+import { closeDocument, saveDocument } from './lib/documentActions'
 import { analyzeDocument } from './lib/detection'
 import { inspectForms } from './lib/forms'
 import { performUndo, performRedo } from './lib/undoManager'
 
 function App(): React.JSX.Element {
-  const { data, filePath, openFile, closeFile, setNumPages, setMetadata, setError, setLoading, setData } = usePdfStore()
-  const { activeView, setActiveView, theme, activeModal, setActiveModal, setSpaceHeld, setPointerMode } = useUIStore()
+  const { data, setNumPages, setMetadata, setError, setLoading } = usePdfStore()
+  const { activeView, setActiveView, theme, isFullScreen, activeModal, setActiveModal, setSpaceHeld, setPointerMode } = useUIStore()
   const { openTab } = useTabStore()
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null)
+  const [printStatus, setPrintStatus] = useState<string | null>(null)
   const [showSearch, setShowSearch] = useState(false)
+  const internalDrag = useRef(false)
   const [dragOver, setDragOver] = useState(false)
   const imagePickerRef = useRef<HTMLInputElement>(null)
-  const prevAnnoLen = useRef(0)
-  const prevDataRef = useRef<ArrayBuffer | null>(null)
-  const isSavingRef = useRef(false)
+
+  const startupHandled = useRef(false)
+  useEffect(() => {
+    if (startupHandled.current) return
+    startupHandled.current = true
+    const preferences = useUIStore.getState()
+    if (preferences.maximizeOnOpen) void window.api.isMaximized().then(maximized => { if (!maximized) void window.api.maximize() })
+    if (preferences.displayOpenDialog) void window.api.openFile()
+  }, [])
 
   // Apply theme to document
   useEffect(() => {
@@ -58,33 +74,37 @@ function App(): React.JSX.Element {
 
   // Load document when data changes + run detection/forms — with worker fallback for file:// black screen
   useEffect(() => {
+    setPdfDoc(null)
     if (!data) {
       setPdfDoc(null)
       return
     }
     let cancelled = false
+    let loadedDoc: PDFDocumentProxy | null = null
     const load = async (): Promise<void> => {
       try {
         setLoading(true)
         let doc: PDFDocumentProxy
         try {
-          doc = await pdfjsLib.getDocument({ data: data.slice(0) }).promise
+          doc = await pdfjsLib.getDocument({ ...pdfAssetOptions(), data: data.slice(0) }).promise
         } catch (err) {
           console.warn('pdf load failed, retry without worker', err)
-          doc = await pdfjsLib.getDocument({ data: data.slice(0), disableWorker: true } as never).promise
+          doc = await pdfjsLib.getDocument({ ...pdfAssetOptions(), data: data.slice(0), disableWorker: true } as never).promise
         }
-        if (cancelled) return
+        if (cancelled) { await doc.destroy(); return }
+        loadedDoc = doc
         setPdfDoc(doc)
         setNumPages(doc.numPages)
         try {
           const md = await doc.getMetadata().catch(() => null) as unknown as { info?: Record<string,string> } | null
           const info = md?.info
-          setMetadata(info?.Title || null, info?.Author || null)
+          if (!cancelled) setMetadata(info?.Title || null, info?.Author || null)
         } catch {}
         // detection & forms in parallel (with their own fallback)
-        analyzeDocument(data.slice(0)).then(r=>{ if(!cancelled) useDetectionStore.getState().setDetection(r) }).catch(()=>{})
-        inspectForms(data.slice(0)).then(r=>{ if(!cancelled) { useFormStore.getState().setFields(r.fields); useFormStore.getState().setFlags({ hasXfa: r.hasXfa, hasAcroForm: r.hasAcroForm, isEncrypted: r.isEncrypted }) } }).catch(()=>{})
+        analyzeDocument(data, doc).then(r=>{ if(!cancelled) useDetectionStore.getState().setDetection(r) }).catch(()=>{})
+        doc.getFieldObjects().then(objects => objects && Object.keys(objects).length ? inspectForms(data) : { fields: [], hasXfa: !!doc.isPureXfa, hasAcroForm: false, isEncrypted: false }).then(r=>{ if(!cancelled && useFormStore.getState().fields.length === 0) { useFormStore.getState().setFields(r.fields); useFormStore.getState().setFlags({ hasXfa: r.hasXfa, hasAcroForm: r.hasAcroForm, isEncrypted: r.isEncrypted }) } }).catch(()=>{})
       } catch (e) {
+        if (cancelled) return
         const msg = e instanceof Error ? e.message : String(e)
         console.error('Failed to load PDF', msg)
         setError(msg)
@@ -95,7 +115,7 @@ function App(): React.JSX.Element {
       }
     }
     load()
-    return () => { cancelled = true }
+    return () => { cancelled = true; void loadedDoc?.destroy() }
   }, [data, setLoading, setNumPages, setMetadata, setError])
 
   // Full-screen handling (Adobe Guide p10)
@@ -124,202 +144,48 @@ function App(): React.JSX.Element {
     return () => document.removeEventListener('fullscreenchange', onFsChange)
   }, [])
 
-  const handleOpen = async (): Promise<void> => {
-    const res = await window.api.openFile()
-    if (res) {
-      openFile(res.filePath, res.data)
-      openTab(res.filePath, res.data)
-      setActiveView('document')
-    }
-  }
+  const handleOpen = async (): Promise<void> => { await window.api.openFile() }
 
-  // Save logic (unchanged from original, working perfectly)
-  const prepareBytesForSave = async (flatten: boolean): Promise<Uint8Array> => {
-    if (!data) throw new Error('no data')
-    let bytes: Uint8Array
-    const annos = useAnnotationStore.getState().annotations
-    const hasAnnos = annos.length > 0
-    const formVals = useFormStore.getState().fields
-    const hasForms = formVals.length > 0
-    if (hasAnnos) {
-      bytes = await bakeAnnotationsToPdf(data.slice(0), annos, [], { flatten })
-    } else {
-      bytes = new Uint8Array(data.slice(0))
-    }
-    if (hasForms) {
-      const values: Record<string,string> = {}
-      formVals.forEach(f=> values[f.name]= f.value)
-      try {
-        const filled = await fillFormAndSave(bytes.buffer.slice(0) as ArrayBuffer, values, flatten)
-        bytes = filled
-      } catch (e) {
-        console.warn('form fill failed', e)
-      }
-    }
-    try {
-      const origU8 = new Uint8Array(data.slice(0))
-      const v = await verifyNonDestructive(origU8, bytes)
-      if (!v.ok) {
-        console.warn('non-destructive verification failed:', v.reason)
-      }
-    } catch (e) {
-      console.warn('verification check error', e)
-    }
-    return bytes
-  }
-
-  const handleSave = async (flatten: boolean): Promise<void> => {
-    if (!data) return alert('No document open')
-    if (!window.api) { alert('Save not available (window.api missing)'); return }
-    try {
-      const bytes = await prepareBytesForSave(flatten)
-      const currentPath = await window.api.getCurrentPath().catch(()=> null)
-      let saved: string | null = null
-      if (currentPath && !flatten) {
-        saved = await window.api.saveFile(bytes, filePath?.split(/[\\/]/).pop() || 'document.pdf')
-      } else {
-        const name = (filePath?.split(/[\\/]/).pop()?.replace('.pdf','') || 'document') + (flatten ? '-flat.pdf' : '.pdf')
-        saved = await window.api.saveFileAs(bytes, name)
-      }
-      if (saved) {
-        isSavingRef.current = true
-        setData(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer)
-        usePdfStore.getState().setDirty(false)
-        // also mark tab clean if exists
-        const tabId = useTabStore.getState().activeTabId
-        if (tabId) useTabStore.getState().markClean(tabId)
-      } else {
-        // user cancelled save dialog – keep dirty
-        console.log('Save cancelled or failed, dirty remains')
-      }
-    } catch (e) { alert('Save failed: ' + String(e)) }
-  }
-
-  const handleSaveAs = async (flatten: boolean): Promise<void> => {
-    if (!data) return alert('No document open')
-    if (!window.api) { alert('Save not available'); return }
-    try {
-      const bytes = await prepareBytesForSave(flatten)
-      const name = (filePath?.split(/[\\/]/).pop()?.replace('.pdf','') || 'document') + (flatten ? '-flat.pdf' : '.pdf')
-      const saved = await window.api.saveFileAs(bytes, name)
-      if (saved) {
-        isSavingRef.current = true
-        setData(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer)
-        usePdfStore.getState().setDirty(false)
-        const tabId = useTabStore.getState().activeTabId
-        if (tabId) useTabStore.getState().markClean(tabId)
-      }
-    } catch (e) { alert('Save As failed: ' + String(e)) }
-  }
+  const handleSave = async (flatten: boolean): Promise<void> => { await saveDocument(false, flatten) }
+  const handleSaveAs = async (flatten: boolean): Promise<void> => { await saveDocument(true, flatten) }
 
   const onImagePickedForAnnotation = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const f = e.target.files?.[0]
     if (!f) return
-    const buf = await f.arrayBuffer()
-    useEditStore.getState().setPendingImage({ bytes: new Uint8Array(buf), mime: f.type || 'image/png' })
-    useAnnotationStore.getState().setTool('image')
+    const url = URL.createObjectURL(f)
+    try { await placeImage(url, 0.3) } finally { URL.revokeObjectURL(url) }
     e.target.value = ''
   }
 
   // Track navigation history for Go Back/Go Forward (Adobe Guide) + dirty flag like normal readers
   const watchedPage = usePdfStore(s=> s.currentPage)
   const watchedZoom = usePdfStore(s=> s.zoom)
-  const annotationsForDirty = useAnnotationStore(s=> s.annotations)
-  const formFieldsForDirty = useFormStore(s=> s.fields)
-  useEffect(()=> {
+  useEffect(() => {
     if (data) useUIStore.getState().pushNavHistory(watchedPage, watchedZoom)
   }, [watchedPage, watchedZoom, data])
-  // Mark dirty when annotations or data change (like PDF-XChange, Foxit) – track prev to avoid marking on open
-  useEffect(()=> {
-    if (!data) { prevAnnoLen.current = 0; prevDataRef.current = null; isSavingRef.current = false; return }
-    if (isSavingRef.current) {
-      prevDataRef.current = data
-      prevAnnoLen.current = annotationsForDirty.length
-      isSavingRef.current = false
-      return
-    }
-    if (prevDataRef.current !== data) {
-      const wasOpen = prevDataRef.current === null
-      prevDataRef.current = data
-      prevAnnoLen.current = annotationsForDirty.length
-      if (!wasOpen) {
-        // data changed due to page edit (insert/delete/rotate/reorder) – mark dirty
-        usePdfStore.getState().setDirty(true)
-        const tabId = useTabStore.getState().activeTabId
-        if (tabId) useTabStore.getState().markDirty(tabId)
-      }
-      return
-    }
-    if (annotationsForDirty.length !== prevAnnoLen.current) {
-      usePdfStore.getState().setDirty(true)
-      const tabId = useTabStore.getState().activeTabId
-      if (tabId) useTabStore.getState().markDirty(tabId)
-      prevAnnoLen.current = annotationsForDirty.length
-    }
-  }, [annotationsForDirty, data])
-  // Also mark dirty on form field edits
-  useEffect(()=> {
-    if (data && formFieldsForDirty.some(f=> f.value)) {
-      usePdfStore.getState().setDirty(true)
-      const tabId = useTabStore.getState().activeTabId
-      if (tabId) useTabStore.getState().markDirty(tabId)
-    }
-  }, [formFieldsForDirty, data])
-  // beforeunload prompt – normal readers ask Save / Don't Save / Cancel
-  useEffect(()=> {
-    const handler = (e: BeforeUnloadEvent): void => {
-      if (usePdfStore.getState().isDirty) {
-        e.preventDefault()
-        // Standard browser dialog for unsaved changes
-        e.returnValue = ''
-      }
-    }
-    window.addEventListener('beforeunload', handler)
-    return ()=> window.removeEventListener('beforeunload', handler)
-  }, [])
-  // Also handle Electron window close via Ctrl+Q / X button – main will send close, but we intercept via beforeunload
-  const confirmSaveIfDirty = async (): Promise<boolean> => {
-    if (!usePdfStore.getState().isDirty) return true
-    const name = usePdfStore.getState().fileName || 'document.pdf'
-    // Mimic Adobe/Foxit: Do you want to save changes to file? Save / Don't Save / Cancel
-    // Use confirm with Save/Cancel, and second confirm for Don't Save vs Cancel
-    const save = confirm(`Do you want to save changes to "${name}"?\n\nClick OK to Save (will prompt for location if needed), Cancel to Discard changes.`)
-    if (save) {
+
+  useEffect(() => {
+    let closing = false
+    const off = window.api.onCloseRequested(async () => {
+      if (closing) return
+      closing = true
       try {
-        await handleSave(false)
-        // After save, check if still dirty (user may have cancelled save dialog)
-        if (usePdfStore.getState().isDirty) {
-          // Save was cancelled (no file chosen), ask if want to stay
-          const discard = confirm('Save was cancelled. Discard changes and close anyway?\nOK = Discard, Cancel = Stay')
-          return discard
+        for (const tab of [...useTabStore.getState().tabs]) {
+          if (!(await closeDocument(tab.id))) return
         }
-        return true
-      } catch {
-        return false
-      }
-    } else {
-      // User chose Don't Save – confirm discard
-      const discard = confirm(`Discard changes to "${name}"?\nOK = Discard, Cancel = Stay`)
-      return discard
-    }
-  }
+        await window.api.forceClose()
+      } finally { closing = false }
+    })
+    return off
+  }, [])
 
   // IPC listeners
   useEffect(() => {
     const offOpened = window.api.onFileOpened(({ filePath: fp, data: buf }) => {
-      openFile(fp, buf)
       openTab(fp, buf)
       setActiveView('document')
     })
-    const offClosed = window.api.onFileClosed(async () => {
-      if (usePdfStore.getState().isDirty) {
-        const ok = await confirmSaveIfDirty()
-        if (!ok) return
-      }
-      closeFile()
-      setPdfDoc(null)
-      usePdfStore.getState().setDirty(false)
-    })
+    const offClosed = window.api.onFileClosed(() => { void closeDocument() })
     const offMenu = window.api.onMenuAction((action) => {
       const store = usePdfStore.getState()
       if (action === 'find') setShowSearch((v) => !v)
@@ -330,11 +196,25 @@ function App(): React.JSX.Element {
       else if (action === 'fitPage') store.setFitMode('page')
       else if (action === 'rotateCw') store.setRotation((store.rotation + 90) % 360)
       else if (action === 'rotateCcw') store.setRotation((store.rotation + 270) % 360)
+      else if (action === 'preferences') setActiveModal('preferences')
+      else if (action === 'about') setActiveModal('about')
+      else if (action === 'updates') setActiveModal('updates')
+      else if (action === 'certificate' && usePdfStore.getState().data) setActiveModal('certificate')
+      else if (action === 'exportWord') void exportWord()
+      else if (action === 'importOffice') void window.api.importOffice().catch(error=>alert(String(error)))
+      else if (action === 'combineFiles') setActiveModal('combineFiles')
+      else if (['edit','sign','organize','ocr','forms'].includes(action)) void openTool(action as 'edit' | 'sign' | 'organize' | 'ocr' | 'forms')
+      else if (action === 'editSelectedText') { const selection = getCurrentTextSelection(); if (selection) void editSelection(selection) }
+      else if (action === 'docProps') setActiveModal('docProperties')
+      else if (action === 'undo') { const element = document.activeElement; if (element instanceof HTMLElement && (element.matches('input, textarea') || element.isContentEditable)) document.execCommand('undo'); else performUndo() }
+      else if (action === 'redo') { const element = document.activeElement; if (element instanceof HTMLElement && (element.matches('input, textarea') || element.isContentEditable)) document.execCommand('redo'); else performRedo() }
+      else if (action === 'print') window.dispatchEvent(new CustomEvent('acrobat:print'))
       else if (action === 'save') void handleSave(false)
       else if (action === 'saveAs') void handleSaveAs(false)
       else if (action === 'saveFlattened') void handleSaveAs(true)
     })
 
+    void window.api.ready()
     return () => { offOpened(); offClosed(); offMenu() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -342,6 +222,7 @@ function App(): React.JSX.Element {
   // Keyboard shortcuts — full Adobe Acrobat keybindings
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
+      if (e.repeat && (e.ctrlKey || e.metaKey || e.key.startsWith('F'))) { e.preventDefault(); return }
       const active = document.activeElement as HTMLElement | null
       const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)
 
@@ -350,6 +231,8 @@ function App(): React.JSX.Element {
         e.preventDefault()
         setSpaceHeld(true)
       }
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'e' && !isInput) { e.preventDefault(); const selection = getCurrentTextSelection(); if (selection) void editSelection(selection) }
 
       // Modal shortcuts
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setActiveModal('preferences') }
@@ -362,21 +245,9 @@ function App(): React.JSX.Element {
         e.preventDefault()
         if (e.shiftKey) void handleSaveAs(false); else void handleSave(false)
       }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'w') {
-        e.preventDefault()
-        void (async () => {
-          if (!(await confirmSaveIfDirty())) return
-          closeFile(); setPdfDoc(null); usePdfStore.getState().setDirty(false)
-        })()
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'q') {
-        e.preventDefault()
-        void (async () => {
-          if (!(await confirmSaveIfDirty())) return
-          if (window.api) window.api.close()
-          else window.close()
-        })()
-      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'w') { e.preventDefault(); void closeDocument() }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'q') { e.preventDefault(); void window.api.close() }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') { e.preventDefault(); window.dispatchEvent(new CustomEvent('acrobat:print')) }
 
       // Zoom – Ctrl + +/- handle factor 2 and Ctrl+0/1/2 per Adobe & open-source pdf.js viewer
       // Check both e.key and e.code for Numpad and Shift+Equal
@@ -452,7 +323,7 @@ function App(): React.JSX.Element {
     const onFind = (): void => { setShowSearch((v) => !v) }
     const onZoomIn = (): void => { const s = usePdfStore.getState(); s.setZoom(Math.min(5, +(s.zoom + 0.15).toFixed(2))) }
     const onZoomOut = (): void => { const s = usePdfStore.getState(); s.setZoom(Math.max(0.25, +(s.zoom - 0.15).toFixed(2))) }
-    const onPrint = (): void => { void window.api.print() }
+    const onPrint = (): void => { void printDocument(setPrintStatus) }
     const onImageReq = (): void => { imagePickerRef.current?.click() }
 
     window.addEventListener('acrobat:save', onSave)
@@ -484,21 +355,23 @@ function App(): React.JSX.Element {
     // Drag & drop – external PDFs only; ignore internal page reorder drags (like Organize modal)
   const onDragOver = (e: React.DragEvent): void => {
     e.preventDefault()
+    if (internalDrag.current) { setDragOver(false); return }
     const types = Array.from(e.dataTransfer.types || [])
     const hasFiles = types.includes('Files')
     const isInternalMove = types.includes('text/plain') && !hasFiles
     if (isInternalMove) return
-    if (hasFiles) setDragOver(true)
+    const items = Array.from(e.dataTransfer.items || [])
+    if (hasFiles && !types.includes('text/html') && items.some(item => item.kind === 'file' && (!item.type || item.type === 'application/pdf'))) setDragOver(true)
   }
   const onDragLeave = (e: React.DragEvent): void => { e.preventDefault(); setDragOver(false) }
   const onDrop = async (e: React.DragEvent): Promise<void> => {
     e.preventDefault(); setDragOver(false)
+    if (internalDrag.current) { internalDrag.current = false; return }
     // Ignore internal reorder drops
     if (e.dataTransfer.getData('text/plain') && !e.dataTransfer.files?.length) return
     const file = e.dataTransfer.files?.[0]
     if (!file || !file.name.toLowerCase().endsWith('.pdf')) return
     const buf = await file.arrayBuffer()
-    openFile(file.name, buf)
     openTab(file.name, buf)
     setActiveView('document')
   }
@@ -507,26 +380,26 @@ function App(): React.JSX.Element {
   const showDocView = activeView === 'document' || (activeView !== 'home' && activeView !== 'tools' && !!data)
 
   return (
-    <div onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop} className="h-full flex flex-col" style={{ background: 'var(--acrobat-chrome)' }}>
-      <Titlebar />
-      <TabBar />
+    <div onDragStart={e => { if (!e.defaultPrevented) internalDrag.current = true }} onDragEnd={() => { internalDrag.current = false; setDragOver(false) }} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop} className="h-full flex flex-col" style={{ background: 'var(--acrobat-chrome)' }}>
+      {!isFullScreen && <Titlebar />}
+      {!isFullScreen && <TabBar />}
 
       {showDocView ? (
         <>
-          <Toolbar
+          {!isFullScreen && <Toolbar
             onOpen={handleOpen}
             onSave={() => void handleSave(false)}
             onSaveAs={() => void handleSaveAs(false)}
             onToggleSearch={() => setShowSearch((v) => !v)}
-          />
+          />}
           <SearchBar pdfDoc={pdfDoc} open={showSearch} onClose={() => setShowSearch(false)} />
 
           <div className="flex-1 min-h-0 flex">
-            <NavigationPane pdfDoc={pdfDoc} />
+            {!isFullScreen && <NavigationPane pdfDoc={pdfDoc} />}
             <PdfViewer pdfDoc={pdfDoc} />
-            <RightPanel pdfDoc={pdfDoc} />
+            {!isFullScreen && <RightPanel pdfDoc={pdfDoc} />}
           </div>
-          <StatusBar pdfDoc={pdfDoc} />
+          {!isFullScreen && <StatusBar pdfDoc={pdfDoc} />}
         </>
       ) : activeView === 'tools' ? (
         <ToolsCenterView />
@@ -547,17 +420,21 @@ function App(): React.JSX.Element {
         </div>
       )}
 
+      {printStatus && <div className="modal-overlay"><div className="modal-card p-6" role="status" aria-live="polite">{printStatus}</div></div>}
       {/* Modals */}
+      {activeModal === 'combineFiles' && <CombineFilesModal />}
       {activeModal === 'docProperties' && <DocumentPropertiesModal />}
       {activeModal === 'signature' && <SignatureModal />}
       {activeModal === 'preferences' && <PreferencesModal />}
+      {activeModal === 'updates' && <UpdatesModal />}
+      {activeModal === 'certificate' && <CertificateModal />}
       {activeModal === 'organizePages' && <OrganizePagesModal />}
       {activeModal === 'about' && (
         <div className="modal-overlay" onClick={() => setActiveModal('none')}>
           <div className="modal-card p-6 text-center" style={{ width: 360 }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ width: 56, height: 56, borderRadius: 12, background: 'var(--acrobat-accent)', display: 'grid', placeItems: 'center', margin: '0 auto 12px', color: '#fff', fontWeight: 900, fontSize: 24 }}>R</div>
-            <h2 className="text-sm font-bold" style={{ color: 'var(--acrobat-text)' }}>Readit PDF Reader and Editor</h2>
-            <p className="text-xs mt-1" style={{ color: 'var(--acrobat-text-muted)' }}>Created by Avaneesh Inamdar · v1.0.0</p>
+            <div className="flex justify-center mb-3"><BrandLogo size={64} /></div>
+            <h2 className="text-sm font-bold" style={{ color: 'var(--acrobat-text)' }}>Re-Edit PDF</h2>
+            <p className="text-xs mt-1" style={{ color: 'var(--acrobat-text-muted)' }}>Created by Avaneesh Inamdar · v1.4.0 · AGPL-3.0</p>
             <p className="text-xs mt-2" style={{ color: 'var(--acrobat-text-dim)' }}>
               Modern Windows PDF Reader & Editor
             </p>
@@ -570,7 +447,7 @@ function App(): React.JSX.Element {
           <div className="modal-card p-5" style={{ width: 440, maxHeight: '80vh', overflow: 'auto' }} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold" style={{ color: 'var(--acrobat-text)' }}>Keyboard Shortcuts</h2>
-              <button className="tb-btn" onClick={() => setActiveModal('none')} style={{ fontSize: 14 }}>✕</button>
+              <button className="tb-btn" onClick={() => setActiveModal('none')} style={{ fontSize: 14 }}><Icon name="close" /></button>
             </div>
             <div className="space-y-1 text-xs" style={{ color: 'var(--acrobat-text)' }}>
               {[

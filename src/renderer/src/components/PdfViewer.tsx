@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { TextLayer } from 'pdfjs-dist'
+import { pageText, outputScale, renderPage } from '../lib/rendering'
+import { Icon, BrandLogo } from './Icon'
+import { ExistingTextLayer } from './ExistingTextLayer'
+import { textRun, type PdfTextRun } from '../lib/pdfText'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { usePdfStore } from '../stores/usePdfStore'
 import { useAnnotationStore } from '../stores/useAnnotationStore'
 import { useUIStore } from '../stores/useUIStore'
 import { useOcrStore } from '../stores/useOcrStore'
 import { AnnotationLayer } from './AnnotationLayer'
-import { performUndo, performRedo } from '../lib/undoManager'
 import { getCurrentTextSelection, type TextSelectionInfo } from '../lib/textSelection'
 import { TextSelectionFloatingToolbar } from './TextSelectionFloatingToolbar'
 
@@ -22,118 +26,129 @@ function PageCanvas({
   pageNumber,
   zoom,
   rotation,
-  searchQuery
+  searchQuery,
+  onSize
 }: {
   pdfDoc: PDFDocumentProxy
   pageNumber: number
   zoom: number
   rotation: number
   searchQuery: string
+  onSize: (width: number, height: number) => void
 }): React.JSX.Element {
+  const [textRuns, setTextRuns] = useState<PdfTextRun[]>([])
+  const [pageTransform, setPageTransform] = useState<number[]>([1, 0, 0, 1, 0, 0])
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const textLayerRef = useRef<HTMLDivElement>(null)
   const linkLayerRef = useRef<HTMLDivElement>(null)
-  const renderTaskRef = useRef<{ cancel: () => void } | null>(null)
+  const renderVersion = useRef(0)
+  const renderTaskRef = useRef<{ cancel: () => void; promise: Promise<void> } | null>(null)
+  const nativeTextLayer = useRef<TextLayer | null>(null)
   const [viewportSize, setViewportSize] = useState<{ w: number; h: number } | null>(null)
 
   const render = useCallback(async () => {
+    const version = ++renderVersion.current
+    const previous = renderTaskRef.current
+    previous?.cancel()
+    await previous?.promise.catch(() => {})
+    if (version !== renderVersion.current) return
+    nativeTextLayer.current?.cancel()
     const canvas = canvasRef.current
     if (!canvas) return
     const page = await pdfDoc.getPage(pageNumber)
+    if (version !== renderVersion.current) return
 
     let scale = zoom
     if (!Number.isFinite(scale) || scale < 0.1) scale = 1
     if (scale > 10) scale = 10
 
-    const viewport = page.getViewport({ scale, rotation })
+    const viewport = page.getViewport({ scale, rotation: (page.rotate + rotation) % 360 })
+    onSize(viewport.width / scale, viewport.height / scale)
+    setPageTransform(viewport.transform)
     setViewportSize({ w: viewport.width, h: viewport.height })
-    const dpr = window.devicePixelRatio || 1
+    const dpr = outputScale(viewport.width, viewport.height, window.devicePixelRatio)
     canvas.width = Math.floor(viewport.width * dpr)
     canvas.height = Math.floor(viewport.height * dpr)
     canvas.style.width = `${viewport.width}px`
     canvas.style.height = `${viewport.height}px`
 
     const ctx = canvas.getContext('2d')!
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-
-    if (renderTaskRef.current) {
-      try { renderTaskRef.current.cancel() } catch {}
-    }
-    const task = page.render({ canvasContext: ctx as never, viewport } as never) as unknown as { promise: Promise<void>; cancel: () => void }
-    renderTaskRef.current = task
-    try {
-      await task.promise
-    } catch (e) {
-      if ((e as Error)?.name !== 'RenderingCancelledException') console.warn(e)
-    }
-
-    if (textLayerRef.current) {
-      const textContent = await page.getTextContent()
-      textLayerRef.current.innerHTML = ''
-      textLayerRef.current.style.width = `${viewport.width}px`
-      textLayerRef.current.style.height = `${viewport.height}px`
-      textLayerRef.current.style.lineHeight = '1'
-      const textLayerDiv = textLayerRef.current
+    await renderPage(async () => {
+      if (version !== renderVersion.current) return
+      const task = page.render({ canvasContext: ctx, viewport, transform: [dpr, 0, 0, dpr, 0, 0] })
+      renderTaskRef.current = task
       try {
-        const { searchMatches, currentMatch } = usePdfStore.getState()
-        const query = searchQuery.toLowerCase()
-        // Use pdf.js-like positioning: Util.transform(viewport.transform, item.transform)
-        // Items already contain transform in PDF coords; viewport.transform converts to CSS.
-        // y is baseline in CSS, top = y - fontSize*0.8 (ascent)
-        for (let idx = 0; idx < (textContent.items as unknown as Array<{ str: string; transform: number[]; fontName?: string; width?: number }>).length; idx++) {
-          const item = (textContent.items as unknown as Array<{ str: string; transform: number[]; fontName?: string; width?: number }>)[idx]
-          if (!item.str) continue
-          const span = document.createElement('span')
-          span.textContent = item.str
-          span.style.position = 'absolute'
-          span.style.whiteSpace = 'pre'
-          span.style.cursor = 'text'
-          span.style.transformOrigin = '0% 0%'
-          span.style.lineHeight = '1'
-          span.style.color = 'transparent'
-          // Use actual font if available, fallback sans-serif – like pdf.js & Adobe
-          const fontName = (item as unknown as { fontName?: string }).fontName
-          span.style.fontFamily = fontName ? `${fontName}, sans-serif` : 'sans-serif'
-          const [a, b, , , e, f] = item.transform
-          const x = viewport.transform[0] * e + viewport.transform[2] * f + viewport.transform[4]
-          const y = viewport.transform[1] * e + viewport.transform[3] * f + viewport.transform[5]
-          const fontSize = Math.hypot(a, b) * scale
-          // y is baseline (CSS), top is baseline - ascent
-          span.style.left = `${x}px`
-          span.style.top = `${y - fontSize * 0.8}px`
-          span.style.fontSize = `${fontSize}px`
-          span.style.userSelect = 'text'
-          span.style.pointerEvents = 'auto'
-          // Match pdf.js handling of width for accurate selection – set width if known
-          const w = (item as unknown as { width?: number }).width
-          if (w) span.style.width = `${w * scale}px`
-          if (query && item.str.toLowerCase().includes(query)) {
-            const isCurrent = searchMatches[currentMatch]?.page === pageNumber && searchMatches[currentMatch]?.index === idx
-            span.style.background = isCurrent ? 'rgba(255, 193, 7, 0.75)' : 'rgba(255,238,88,0.45)'
-            span.style.color = 'rgba(0,0,0,0.9)'
-            span.style.borderRadius = '2px'
-            if (isCurrent) {
-              span.style.outline = '1px solid #ff9800'
-              span.style.zIndex = '1'
-            }
+        await task.promise
+      } catch (error) {
+        if ((error as Error)?.name !== 'RenderingCancelledException') throw error
+      }
+    })
+
+    if (version !== renderVersion.current) return
+    if (textLayerRef.current) {
+      const textContent = await pageText(pdfDoc, pageNumber)
+      if (version !== renderVersion.current) return
+      const container = textLayerRef.current
+      container.replaceChildren()
+      container.style.setProperty('--scale-factor', String(scale))
+      const layer = new TextLayer({ textContentSource: textContent, container, viewport })
+      nativeTextLayer.current = layer
+      await layer.render()
+      if (version !== renderVersion.current) return
+      let spanIndex = 0
+      textContent.items.forEach((item, index) => {
+        if (!('str' in item)) return
+        const span = layer.textDivs[spanIndex++]
+        if (span) {
+          span.dataset.pdfRun = `${pageNumber}:${index}`
+          span.dataset.textIndex = String(index)
+          const run = textRun(
+            item,
+            textContent.styles[item.fontName] || {},
+            `${pageNumber}:${index}`
+          )
+          if (run) {
+            ;(span as HTMLElement & { pdfRun?: PdfTextRun }).pdfRun = run
+            span.addEventListener('click', () => {
+              if (window.getSelection()?.isCollapsed && useUIStore.getState().rightPane === 'edit')
+                window.dispatchEvent(
+                  new CustomEvent('pdf:editRun', { detail: { page: pageNumber, run } })
+                )
+            })
           }
-          textLayerDiv.appendChild(span)
         }
-      } catch {}
+      })
+      setTextRuns(
+        textContent.items.flatMap((item, index) => {
+          if (!('str' in item)) return []
+          const run = textRun(
+            item,
+            textContent.styles[item.fontName] || {},
+            `${pageNumber}:${index}`
+          )
+          return run ? [run] : []
+        })
+      )
     }
-    // Links layer – Using links (Adobe Guide p? ) : click underlined text / link annotation
+    // Links layer – Using links : click underlined text / link annotation
     if (linkLayerRef.current) {
       const linkDiv = linkLayerRef.current
       linkDiv.innerHTML = ''
       linkDiv.style.width = `${viewport.width}px`
       linkDiv.style.height = `${viewport.height}px`
       try {
-        const annos = await (page as unknown as { getAnnotations: () => Promise<{ subtype:string; rect:number[]; url?:string; dest?:unknown }[]> }).getAnnotations()
+        const annos = await (
+          page as unknown as {
+            getAnnotations: () => Promise<
+              { subtype: string; rect: number[]; url?: string; dest?: unknown }[]
+            >
+          }
+        ).getAnnotations()
         for (const anno of annos) {
           if (anno.subtype !== 'Link' || !anno.rect) continue
-          const [x1,y1,x2,y2] = anno.rect
+          const [x1, y1, x2, y2] = anno.rect
           // rect is in PDF points, need to convert via viewport
-          const rect = viewport.convertToViewportRectangle([x1,y1,x2,y2]) as unknown as number[]
+          const rect = viewport.convertToViewportRectangle([x1, y1, x2, y2]) as unknown as number[]
           const [vx1, vy1, vx2, vy2] = rect
           const left = Math.min(vx1, vx2)
           const top = Math.min(vy1, vy2)
@@ -169,10 +184,15 @@ function PageCanvas({
               try {
                 const dest = anno.dest as string | unknown[]
                 let destArr: unknown[] | null = null
-                if (typeof dest === 'string') destArr = await (pdfDoc as unknown as { getDestination: (d:string)=>Promise<unknown[]> }).getDestination(dest)
+                if (typeof dest === 'string')
+                  destArr = await (
+                    pdfDoc as unknown as { getDestination: (d: string) => Promise<unknown[]> }
+                  ).getDestination(dest)
                 else destArr = dest as unknown[]
                 if (destArr && destArr[0]) {
-                  const idx = await (pdfDoc as unknown as { getPageIndex: (r:unknown)=>Promise<number> }).getPageIndex(destArr[0])
+                  const idx = await (
+                    pdfDoc as unknown as { getPageIndex: (r: unknown) => Promise<number> }
+                  ).getPageIndex(destArr[0])
                   const pg = idx + 1
                   usePdfStore.getState().setCurrentPage(pg)
                   document.getElementById(`page-${pg}`)?.scrollIntoView({ behavior: 'smooth' })
@@ -185,7 +205,21 @@ function PageCanvas({
         }
       } catch {}
     }
-  }, [pdfDoc, pageNumber, zoom, rotation, searchQuery])
+  }, [pdfDoc, pageNumber, zoom, rotation, onSize])
+
+  const currentMatch = usePdfStore((state) => state.currentMatch)
+  useEffect(() => {
+    const match = usePdfStore.getState().searchMatches[currentMatch]
+    for (const span of nativeTextLayer.current?.textDivs || []) {
+      const found =
+        !!searchQuery && span.textContent?.toLowerCase().includes(searchQuery.toLowerCase())
+      span.classList.toggle('search-hit', !!found)
+      span.classList.toggle(
+        'current-hit',
+        !!found && match?.page === pageNumber && match?.index === Number(span.dataset.textIndex)
+      )
+    }
+  }, [searchQuery, currentMatch, textRuns, pageNumber])
 
   // Optional: render OCR overlay if present
   const ocrPage = useOcrStore((state) => state.ocrResults[pageNumber])
@@ -215,10 +249,12 @@ function PageCanvas({
       span.style.top = `${top}%`
       span.style.width = `${width}%`
       span.style.height = `${height}%`
-      const hPx = isNormalised ? (y1 - y0) * viewportSize.h : (y1 - y0)
+      const hPx = isNormalised ? (y1 - y0) * viewportSize.h : y1 - y0
       span.style.fontSize = `${Math.max(8, hPx)}px`
       if (needle && word.text.toLowerCase().includes(needle)) {
-        const isCurrent = searchMatches[currentMatch]?.page === pageNumber && searchMatches[currentMatch]?.index === 100000 + wIdx
+        const isCurrent =
+          searchMatches[currentMatch]?.page === pageNumber &&
+          searchMatches[currentMatch]?.index === 100000 + wIdx
         span.style.background = isCurrent ? 'rgba(255,193,7,0.75)' : 'rgba(255,238,88,0.45)'
         span.style.color = 'rgba(0,0,0,0.9)'
         span.style.borderRadius = '2px'
@@ -228,15 +264,28 @@ function PageCanvas({
     })
   }, [ocrPage, viewportSize, searchQuery])
 
-  useEffect(() => { render() }, [render])
+  useEffect(() => {
+    void render().catch((error) => {
+      if (error?.name !== 'RenderingCancelledException') console.warn(error)
+    })
+    return () => {
+      renderVersion.current++
+      renderTaskRef.current?.cancel()
+      nativeTextLayer.current?.cancel()
+    }
+  }, [render])
 
   useEffect(() => {
-    return () => { if (renderTaskRef.current) try { renderTaskRef.current.cancel() } catch {} }
+    return () => {
+      if (renderTaskRef.current)
+        try {
+          renderTaskRef.current.cancel()
+        } catch {}
+    }
   }, [])
 
   return (
     <div
-      id={`page-${pageNumber}`}
       className="relative overflow-hidden mx-auto shrink-0"
       style={{
         width: viewportSize ? `${viewportSize.w}px` : undefined,
@@ -247,14 +296,88 @@ function PageCanvas({
         background: '#fff'
       }}
     >
-      <canvas ref={canvasRef} className="block" />
-      <div ref={textLayerRef} className="absolute inset-0 overflow-hidden" style={{ pointerEvents: 'auto' }} />
-      <div ref={linkLayerRef} className="absolute inset-0 overflow-hidden" style={{ pointerEvents: 'none' }} />
-      <div ref={ocrLayerRef} className="absolute inset-0 overflow-hidden" style={{ pointerEvents: 'auto' }} />
-      {viewportSize && <AnnotationLayer pageNumber={pageNumber} width={viewportSize.w} height={viewportSize.h} />}
+      <canvas draggable={false} ref={canvasRef} className="block" />
+      <div
+        ref={textLayerRef}
+        className="textLayer absolute inset-0 overflow-hidden"
+        style={{ pointerEvents: 'auto' }}
+      />
+      <div
+        ref={linkLayerRef}
+        className="absolute inset-0 overflow-hidden"
+        style={{ pointerEvents: 'none' }}
+      />
+      <div
+        ref={ocrLayerRef}
+        className="absolute inset-0 overflow-hidden"
+        style={{ pointerEvents: 'none' }}
+      />
+      {viewportSize && (
+        <ExistingTextLayer
+          runs={textRuns}
+          transform={pageTransform}
+          pageNumber={pageNumber}
+          width={viewportSize.w}
+          height={viewportSize.h}
+        />
+      )}
+      {viewportSize && (
+        <AnnotationLayer pageNumber={pageNumber} width={viewportSize.w} height={viewportSize.h} />
+      )}
     </div>
   )
 }
+
+const PageSlot = memo(function PageSlot({
+  pdfDoc,
+  pageNumber,
+  zoom,
+  rotation,
+  searchQuery,
+  visible,
+  baseSize
+}: {
+  pdfDoc: PDFDocumentProxy
+  pageNumber: number
+  zoom: number
+  rotation: number
+  searchQuery: string
+  visible: boolean
+  baseSize: { w: number; h: number }
+}): React.JSX.Element {
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null)
+  useEffect(() => setSize(null), [pdfDoc, rotation])
+  const onSize = useCallback(
+    (w: number, h: number) =>
+      setSize((previous) => (previous?.w === w && previous?.h === h ? previous : { w, h })),
+    []
+  )
+  const dimensions = size || baseSize
+  return (
+    <div
+      id={`page-${pageNumber}`}
+      data-page-slot
+      data-visible={visible}
+      className="relative shrink-0 bg-white"
+      style={{
+        width: dimensions.w * zoom,
+        height: dimensions.h * zoom,
+        boxShadow: 'var(--acrobat-page-shadow)'
+      }}
+    >
+      {visible && (
+        <PageCanvas
+          pdfDoc={pdfDoc}
+          pageNumber={pageNumber}
+          zoom={zoom}
+          rotation={rotation}
+          searchQuery={searchQuery}
+          onSize={onSize}
+        />
+      )}
+    </div>
+  )
+})
 
 /* ── Floating HUD ── */
 function FloatingHUD(): React.JSX.Element {
@@ -262,49 +385,117 @@ function FloatingHUD(): React.JSX.Element {
 
   return (
     <div className="hud-bar">
-      <button className="tb-btn" style={{ width: 24, height: 24 }} onClick={() => {
-        const p = Math.max(1, currentPage - 1)
-        setCurrentPage(p)
-        document.getElementById(`page-${p}`)?.scrollIntoView({ behavior: 'smooth' })
-      }}>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M15 6l-8 6 8 6z" /></svg>
+      <button
+        className="tb-btn"
+        style={{ width: 24, height: 24 }}
+        onClick={() => {
+          const p = Math.max(1, currentPage - 1)
+          setCurrentPage(p)
+          document.getElementById(`page-${p}`)?.scrollIntoView({ behavior: 'smooth' })
+        }}
+      >
+        <Icon name="previous" size={14} />
       </button>
-      <span className="text-xs tabular-nums px-1" style={{ color: 'var(--acrobat-text)', minWidth: 60, textAlign: 'center' }}>
+      <span
+        className="text-xs tabular-nums px-1"
+        style={{ color: 'var(--acrobat-text)', minWidth: 60, textAlign: 'center' }}
+      >
         Page {currentPage} / {numPages}
       </span>
-      <button className="tb-btn" style={{ width: 24, height: 24 }} onClick={() => {
-        const p = Math.min(numPages, currentPage + 1)
-        setCurrentPage(p)
-        document.getElementById(`page-${p}`)?.scrollIntoView({ behavior: 'smooth' })
-      }}>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M9 6l8 6-8 6z" /></svg>
+      <button
+        className="tb-btn"
+        style={{ width: 24, height: 24 }}
+        onClick={() => {
+          const p = Math.min(numPages, currentPage + 1)
+          setCurrentPage(p)
+          document.getElementById(`page-${p}`)?.scrollIntoView({ behavior: 'smooth' })
+        }}
+      >
+        <Icon name="next" size={14} />
       </button>
       <div className="tb-sep" style={{ height: 16 }} />
-      <button className="tb-btn" style={{ width: 24, height: 24 }} onClick={() => setZoom(Math.max(0.25, +(zoom - 0.15).toFixed(2)))}>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="5" y1="12" x2="19" y2="12" /></svg>
+      <button
+        className="tb-btn"
+        style={{ width: 24, height: 24 }}
+        onClick={() => setZoom(Math.max(0.25, +(zoom - 0.15).toFixed(2)))}
+      >
+        <Icon name="minus" size={14} />
       </button>
-      <span className="text-xs tabular-nums px-1" style={{ color: 'var(--acrobat-text)', minWidth: 36, textAlign: 'center' }}>
+      <span
+        className="text-xs tabular-nums px-1"
+        style={{ color: 'var(--acrobat-text)', minWidth: 36, textAlign: 'center' }}
+      >
         {Math.round(zoom * 100)}%
       </span>
-      <button className="tb-btn" style={{ width: 24, height: 24 }} onClick={() => setZoom(Math.min(5, +(zoom + 0.15).toFixed(2)))}>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+      <button
+        className="tb-btn"
+        style={{ width: 24, height: 24 }}
+        onClick={() => setZoom(Math.min(5, +(zoom + 0.15).toFixed(2)))}
+      >
+        <Icon name="plus" size={14} />
       </button>
       <div className="tb-sep" style={{ height: 16 }} />
-      <button className="tb-btn" style={{ width: 24, height: 24, fontSize: 10 }} onClick={() => setFitMode('width')} title="Fit Width">
-        W
+      <button
+        className="tb-btn"
+        style={{ width: 24, height: 24, fontSize: 10 }}
+        onClick={() => setFitMode('width')}
+        title="Fit Width"
+      >
+        <Icon name="fitWidth" size={14} />
       </button>
-      <button className="tb-btn" style={{ width: 24, height: 24, fontSize: 10 }} onClick={() => setFitMode('page')} title="Fit Page">
-        P
+      <button
+        className="tb-btn"
+        style={{ width: 24, height: 24, fontSize: 10 }}
+        onClick={() => setFitMode('page')}
+        title="Fit Page"
+      >
+        <Icon name="fitPage" size={14} />
       </button>
     </div>
   )
 }
 
 export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): React.JSX.Element {
-  const { numPages, zoom, rotation, searchQuery, currentPage, setCurrentPage, fitMode, setFitMode, setZoom } = usePdfStore()
+  const { numPages, zoom, rotation, searchQuery, currentPage, setCurrentPage, fitMode } =
+    usePdfStore()
   const { tool, deleteAnnotation, selectedId } = useAnnotationStore()
-  const { pointerMode, spaceHeld, displayMode } = useUIStore()
+  const { pointerMode, spaceHeld, displayMode, isFullScreen, fullScreenBg } = useUIStore()
   const containerRef = useRef<HTMLDivElement>(null)
+  const [baseSize, setBaseSize] = useState({ w: 612, h: 792 })
+  const [visiblePages, setVisiblePages] = useState<Set<number>>(new Set([1]))
+  useEffect(() => {
+    let cancelled = false
+    if (pdfDoc)
+      void pdfDoc.getPage(1).then((page) => {
+        const size = page.getViewport({ scale: 1, rotation: (page.rotate + rotation) % 360 })
+        if (!cancelled) setBaseSize({ w: size.width, h: size.height })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [pdfDoc, rotation])
+  useEffect(() => {
+    const root = containerRef.current
+    if (!root || !pdfDoc) return
+    const nearby = new Set<number>()
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const page = Number(entry.target.id.slice(5))
+          if (entry.isIntersecting) nearby.add(page)
+          else nearby.delete(page)
+        }
+        setVisiblePages((previous) =>
+          previous.size === nearby.size && [...nearby].every((page) => previous.has(page))
+            ? previous
+            : new Set(nearby)
+        )
+      },
+      { root, rootMargin: '600px 0px' }
+    )
+    root.querySelectorAll('[data-page-slot]').forEach((page) => observer.observe(page))
+    return () => observer.disconnect()
+  }, [pdfDoc, numPages, displayMode, displayMode === 'single' ? currentPage : 0])
   const [hudVisible, setHudVisible] = useState(false)
   const hudTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [textSelection, setTextSelection] = useState<TextSelectionInfo | null>(null)
@@ -339,31 +530,46 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
     hudTimer.current = setTimeout(() => setHudVisible(false), 2500)
   }, [])
 
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
+  useEffect(() => {
+    const element = containerRef.current
+    if (!element) return
+    const observer = new ResizeObserver(([entry]) =>
+      setContainerSize({ width: entry.contentRect.width, height: entry.contentRect.height })
+    )
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
+
   // Fit mode handling
   useEffect(() => {
     if (!pdfDoc || fitMode === 'none') return
     let cancelled = false
     const run = async (): Promise<void> => {
       try {
-        const page = await pdfDoc.getPage(1)
-        const base = page.getViewport({ scale: 1, rotation })
-        const containerW = containerRef.current?.clientWidth || Math.max(400, window.innerWidth - 560)
+        const page = await pdfDoc.getPage(Math.max(1, Math.min(currentPage, pdfDoc.numPages)))
+        const base = page.getViewport({ scale: 1, rotation: (page.rotate + rotation) % 360 })
+        const containerW =
+          containerSize.width ||
+          containerRef.current?.clientWidth ||
+          Math.max(400, window.innerWidth - 560)
         const fitScaleW = (containerW - 32) / base.width
         let fitScale = fitScaleW
         if (fitMode === 'page') {
-          const containerH = Math.max(400, window.innerHeight - 160)
+          const containerH = containerSize.height || Math.max(400, window.innerHeight - 160)
           const fitScaleH = (containerH - 32) / base.height
           fitScale = Math.min(fitScaleW, fitScaleH)
         }
         if (!cancelled && fitScale > 0.1 && fitScale < 10) {
-          setZoom(+fitScale.toFixed(2))
+          usePdfStore.setState({ zoom: +fitScale.toFixed(2) })
         }
       } catch {}
-      if (!cancelled) setFitMode('none')
     }
     run()
-    return () => { cancelled = true }
-  }, [pdfDoc, fitMode, rotation, setFitMode, setZoom])
+    return () => {
+      cancelled = true
+    }
+  }, [pdfDoc, fitMode, rotation, currentPage, containerSize])
 
   // Scroll tracking for current page
   useEffect(() => {
@@ -376,14 +582,14 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
       ticking = true
       requestAnimationFrame(() => {
         ticking = false
-        const pages = el.querySelectorAll('[id^="page-"]')
-        let best = 1
+        const pages = el.querySelectorAll('[data-page-slot][data-visible="true"]')
+        let best = usePdfStore.getState().currentPage
         let bestTop = Infinity
+        const cRect = el.getBoundingClientRect()
         for (const p of pages) {
           const rect = p.getBoundingClientRect()
-          const cRect = el.getBoundingClientRect()
           const top = Math.abs(rect.top - cRect.top)
-          if (rect.top <= cRect.top + 120 && top < bestTop) {
+          if (rect.bottom > cRect.top + 40 && rect.top <= cRect.top + 120 && top < bestTop) {
             bestTop = top
             best = parseInt(p.id.replace('page-', ''), 10) || 1
           }
@@ -391,18 +597,27 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
         setCurrentPage(best)
       })
     }
+    onScroll()
     el.addEventListener('scroll', onScroll, { passive: true })
     return () => el.removeEventListener('scroll', onScroll)
-  }, [setCurrentPage, numPages, showHud])
+  }, [setCurrentPage, numPages, showHud, visiblePages])
 
   // Keyboard shortcuts for viewer
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) { e.preventDefault(); performUndo() }
-      if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) { e.preventDefault(); performRedo() }
+      const target = e.target as HTMLElement
+      if (
+        target instanceof HTMLElement &&
+        (target.matches('input, textarea, select') || target.isContentEditable)
+      )
+        return
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
         const active = document.activeElement as HTMLElement | null
-        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return
+        if (
+          active &&
+          (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)
+        )
+          return
         e.preventDefault()
         deleteAnnotation(selectedId)
       }
@@ -414,7 +629,9 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
 
   // Hand tool mouse handlers
   const onMouseDown = (e: React.MouseEvent): void => {
-    if (!isHandMode || !containerRef.current) return
+    if (!isHandMode || !containerRef.current || e.button !== 0) return
+    e.preventDefault()
+    window.getSelection()?.removeAllRanges()
     isPanning.current = true
     panStart.current = {
       x: e.clientX,
@@ -437,11 +654,17 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
   }
 
   // Show HUD on mouse movement
-  const onMouseMoveHud = useCallback(() => { showHud() }, [showHud])
+  const onMouseMoveHud = useCallback(() => {
+    showHud()
+  }, [showHud])
 
   if (!pdfDoc) {
     return (
-      <div ref={containerRef} className="flex-1 flex items-center justify-center p-8" style={{ background: 'var(--acrobat-canvas)' }}>
+      <div
+        ref={containerRef}
+        className="flex-1 flex items-center justify-center p-8"
+        style={{ background: 'var(--acrobat-canvas)' }}
+      >
         <div
           className="rounded-xl p-8 text-center max-w-md w-full"
           style={{
@@ -463,11 +686,14 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
               fontSize: 22
             }}
           >
-            A
+            <BrandLogo size={56} />
           </div>
-          <h2 className="text-sm font-semibold" style={{ color: 'var(--acrobat-text)' }}>No PDF opened</h2>
+          <h2 className="text-sm font-semibold" style={{ color: 'var(--acrobat-text)' }}>
+            No PDF opened
+          </h2>
           <p className="text-xs mt-2" style={{ color: 'var(--acrobat-text-muted)' }}>
-            Open a PDF via File → Open, the toolbar, or drag & drop.<br />
+            Open a PDF via File → Open, the toolbar, or drag & drop.
+            <br />
             Use the Home tab to browse recent files.
           </p>
         </div>
@@ -476,31 +702,45 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
   }
 
   const cursorStyle = isHandMode
-    ? (isPanning.current ? 'grabbing' : 'grab')
-    : tool === 'select' ? 'default' : 'crosshair'
+    ? isPanning.current
+      ? 'grabbing'
+      : 'grab'
+    : tool === 'select'
+      ? 'default'
+      : 'crosshair'
 
   // Determine pages to render – reactive (fixes stale getState bug)
-  const pages = displayMode === 'single'
-    ? [currentPage]
-    : Array.from({ length: numPages }, (_, i) => i + 1)
+  const pages =
+    displayMode === 'single' ? [currentPage] : Array.from({ length: numPages }, (_, i) => i + 1)
 
   return (
     <div
       ref={containerRef}
       className="flex-1 overflow-auto relative"
       style={{
-        background: 'var(--acrobat-canvas)',
-        cursor: cursorStyle
+        background: isFullScreen ? fullScreenBg : 'var(--acrobat-canvas)',
+        cursor: cursorStyle,
+        userSelect: isHandMode ? 'none' : undefined
       }}
-      onMouseDown={onMouseDown}
-      onMouseMove={(e) => { onMouseMove(e); onMouseMoveHud() }}
+      data-pdf-viewer
+      onDragStart={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+      }}
+      onMouseDownCapture={onMouseDown}
+      onMouseMove={(e) => {
+        onMouseMove(e)
+        onMouseMoveHud()
+      }}
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseUp}
     >
       <div className="flex flex-col items-center gap-4 p-4 pb-20">
         {pages.map((n) => (
-          <PageCanvas
-            key={`${n}-${tool}`}
+          <PageSlot
+            key={n}
+            visible={visiblePages.has(n)}
+            baseSize={baseSize}
             pdfDoc={pdfDoc}
             pageNumber={n}
             zoom={zoom}

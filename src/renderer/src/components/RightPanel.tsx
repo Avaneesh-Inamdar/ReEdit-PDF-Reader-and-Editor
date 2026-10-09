@@ -1,3 +1,7 @@
+import { placeImage, placeMark } from '../lib/imagePlacement'
+import { openTool } from '../lib/toolActions'
+import { useEditStore } from '../stores/useEditStore'
+import { Icon } from './Icon'
 import { useState } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 
@@ -13,14 +17,14 @@ import { DetectionPanel } from './DetectionPanel'
 // Colored tool buttons: Comment, Sign, Edit, Organize, OCR, Forms, Redact, Protect
 // Each expands into its own sub-panel content
 
-const IconComment = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-const IconSign = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-const IconEdit = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-const IconOrganize = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-const IconOCR = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-const IconForms = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-const IconRedact = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-const IconProtect = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+const IconComment = () => <Icon name="comment" size={18} />
+const IconSign = () => <Icon name="sign" size={18} />
+const IconEdit = () => <Icon name="edit" size={18} />
+const IconOrganize = () => <Icon name="organize" size={18} />
+const IconOCR = () => <Icon name="ocr" size={18} />
+const IconForms = () => <Icon name="forms" size={18} />
+const IconRedact = () => <Icon name="mask" size={18} />
+const IconProtect = () => <Icon name="protect" size={18} />
 
 const TOOLS = [
   { id: 'comment' as const, label: 'Comment', color: 'var(--tool-comment)', icon: <IconComment /> },
@@ -28,9 +32,9 @@ const TOOLS = [
   { id: 'edit' as const, label: 'Edit PDF', color: 'var(--tool-edit)', icon: <IconEdit /> },
   { id: 'organize' as const, label: 'Organize Pages', color: 'var(--tool-organize)', icon: <IconOrganize /> },
   { id: 'ocr' as const, label: 'Scan & OCR', color: 'var(--tool-ocr)', icon: <IconOCR /> },
-  { id: 'forms' as const, label: 'Prepare Form', color: 'var(--tool-forms)', icon: <IconForms /> },
+  { id: 'forms' as const, label: 'Fill Forms', color: 'var(--tool-forms)', icon: <IconForms /> },
   { id: 'redact' as const, label: 'Redact', color: 'var(--tool-redact)', icon: <IconRedact /> },
-  { id: 'protect' as const, label: 'Protect', color: 'var(--tool-protect)', icon: <IconProtect /> }
+  { id: 'protect' as const, label: 'Security Summary', color: 'var(--tool-protect)', icon: <IconProtect /> }
 ]
 
 function CommentPanel(): React.JSX.Element {
@@ -47,7 +51,7 @@ function CommentPanel(): React.JSX.Element {
       <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
         <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-3">COMMENTS LIST</h3>
         <div className="relative">
-          <svg className="absolute left-2.5 top-2 text-zinc-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span className="absolute left-2.5 top-2 text-zinc-400"><Icon name="search" size={14} /></span>
           <input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
@@ -60,7 +64,7 @@ function CommentPanel(): React.JSX.Element {
       <div className="flex-1 overflow-y-auto p-4">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center h-40 text-zinc-400">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="mb-2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span className="mb-2"><Icon name="comment" size={32} /></span>
             <p className="text-xs">No comments yet</p>
           </div>
         ) : (
@@ -89,7 +93,7 @@ function CommentPanel(): React.JSX.Element {
                   onClick={(e) => { e.stopPropagation(); useAnnotationStore.getState().deleteAnnotation(a.id) }}
                   title="Delete"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  <Icon name="close" size={14} />
                 </button>
               </div>
             ))}
@@ -113,14 +117,14 @@ function SignPanel(): React.JSX.Element {
             onClick={() => setActiveModal('signature')}
             className="flex items-center gap-3 px-3 py-2 text-sm rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <Icon name="edit" size={16} />
             Add Signature
           </button>
           <button
             onClick={() => setActiveModal('signature')}
             className="flex items-center gap-3 px-3 py-2 text-sm rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <Icon name="highlight" size={16} />
             Add Initials
           </button>
         </div>
@@ -132,8 +136,8 @@ function SignPanel(): React.JSX.Element {
           <div className="space-y-2">
             {signatures.map((sig) => (
               <div key={sig.id} className="flex items-center justify-between p-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group">
-                <img src={sig.dataUrl} alt={sig.label} className="max-h-8 max-w-[150px] object-contain" />
-                <button className="opacity-0 group-hover:opacity-100 tb-btn" style={{ width: 24, height: 24, fontSize: 12 }} onClick={() => useUIStore.getState().removeSignature(sig.id)}>✕</button>
+                <button title="Place saved signature" onClick={() => { void placeImage(sig.dataUrl) }}><img src={sig.dataUrl} alt={sig.label} draggable={false} className="max-h-8 max-w-[150px] object-contain" /></button>
+                <button className="opacity-0 group-hover:opacity-100 tb-btn" style={{ width: 24, height: 24, fontSize: 12 }} onClick={() => useUIStore.getState().removeSignature(sig.id)}><Icon name="close" /></button>
               </div>
             ))}
           </div>
@@ -141,19 +145,23 @@ function SignPanel(): React.JSX.Element {
       )}
 
       <div className="p-4">
+        <p className="text-xs mb-3">Choose a signature or mark, then click the page to place it.</p>
         <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-3">TOOLS</h3>
         <div className="flex gap-1 flex-wrap">
           {[
-            { id: 'text', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>, label: 'Add Text' },
-            { id: 'check', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>, label: 'Add Checkmark' },
-            { id: 'x', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>, label: 'Add Crossmark' },
-            { id: 'dot', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="5"/></svg>, label: 'Add Dot' },
-            { id: 'line', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>, label: 'Add Line' }
+            { id: 'text', icon: <Icon name="text" size={14} />, label: 'Add Text' },
+            { id: 'check', icon: <Icon name="check" size={14} />, label: 'Add Checkmark' },
+            { id: 'x', icon: <Icon name="close" size={14} />, label: 'Add Crossmark' },
+            { id: 'dot', icon: <Icon name="dot" size={14} />, label: 'Add Dot' },
+            { id: 'line', icon: <Icon name="minus" size={14} />, label: 'Add Line' }
           ].map((t) => (
             <button
               key={t.id}
               className="tb-btn h-8 w-8 border border-transparent rounded hover:border-zinc-300 dark:hover:border-zinc-700 flex items-center justify-center"
-              onClick={() => setTool('text')}
+              onClick={() => {
+                if (t.id === 'text') { useEditStore.getState().setPendingText(null); setTool('text') }
+                else placeMark(t.id)
+              }}
               title={t.label}
             >
               {t.icon}
@@ -176,19 +184,14 @@ function RedactPanel(): React.JSX.Element {
             onClick={() => setTool('redact')}
             className="flex items-center gap-3 px-3 py-2 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full transition-colors"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-            Mark for Redaction
+            <Icon name="thumbnails" size={16} />
+            Mark area for redaction
           </button>
-          <button
-            className="flex items-center gap-3 px-3 py-2 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-            Properties
-          </button>
+
         </div>
         
         <div className="rounded p-3 text-xs bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 text-red-800 dark:text-red-300">
-          <strong>Security Warning:</strong> Redaction is visual and opaque on Save. It is not forensic-grade, and underlying text data may still exist in the PDF structure.
+          Saving removes text, image pixels, and graphics in marked areas and rewrites the PDF. Document metadata and embedded files are removed. Review the saved copy before sharing; undo remains available in this editing session.
         </div>
       </div>
     </div>
@@ -243,7 +246,7 @@ export function RightPanel({ pdfDoc: _pdfDoc }: { pdfDoc: PDFDocumentProxy | nul
             key={t.id}
             className="tb-btn"
             style={{ width: 34, height: 34, marginBottom: 2, fontSize: 16 }}
-            onClick={() => setRightPane(t.id)}
+            onClick={() => { void openTool(t.id) }}
             title={t.label}
           >
             {t.icon}
@@ -278,7 +281,7 @@ export function RightPanel({ pdfDoc: _pdfDoc }: { pdfDoc: PDFDocumentProxy | nul
             key={t.id}
             className={`tb-btn ${rightPane === t.id ? 'active' : ''}`}
             style={{ width: 34, height: 34, marginBottom: 2, fontSize: 16 }}
-            onClick={() => setRightPane(t.id)}
+            onClick={() => { void openTool(t.id) }}
             title={t.label}
           >
             {t.icon}
@@ -301,7 +304,7 @@ export function RightPanel({ pdfDoc: _pdfDoc }: { pdfDoc: PDFDocumentProxy | nul
             <span className="text-xs font-semibold">{activeTool?.label}</span>
           </div>
           <button className="tb-btn" style={{ width: 24, height: 24, fontSize: 11 }} onClick={() => setRightPane('none')} title="Close pane">
-            ✕
+            <Icon name="close" />
           </button>
         </div>
 

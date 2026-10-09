@@ -1,3 +1,4 @@
+import { Icon } from './Icon'
 import { useState } from 'react'
 import { usePdfStore } from '../stores/usePdfStore'
 import { useOcrStore } from '../stores/useOcrStore'
@@ -303,7 +304,7 @@ export function DetectionPanel(): React.JSX.Element {
               disabled={converting || !data}
               className="flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold rounded bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50 text-center shadow-sm"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <Icon name="search" size={14} />
               Run OCR ({ocrScope === 'current' ? `Page ${currentPage}` : ocrScope === 'all' ? `All ${numPages} Pages` : `Pages ${customPagesInput}`})
             </button>
           ) : (
@@ -320,7 +321,7 @@ export function DetectionPanel(): React.JSX.Element {
                 className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded bg-red-600 hover:bg-red-700 text-white transition-colors"
                 title="Stop OCR in progress"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>
+                <Icon name="stop" size={12} />
                 Stop OCR
               </button>
             </div>
@@ -331,7 +332,7 @@ export function DetectionPanel(): React.JSX.Element {
             disabled={isProcessing || converting || !data}
             className="flex items-center gap-2 px-3 py-2 text-xs rounded bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 text-left"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <Icon name="edit" size={14} />
             {converting ? 'Converting…' : 'Convert OCR → Editable Text'}
           </button>
           {totalOcred > 0 && (

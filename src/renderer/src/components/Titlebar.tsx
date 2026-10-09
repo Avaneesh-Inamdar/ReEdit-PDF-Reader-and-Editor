@@ -1,4 +1,8 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { openTool } from '../lib/toolActions'
+import { BrandLogo } from './Icon'
+import { exportWord } from '../lib/officeExport'
+import { closeDocument } from '../lib/documentActions'
+import { useEffect, useRef, useCallback } from 'react'
 import { usePdfStore } from '../stores/usePdfStore'
 import { useUIStore } from '../stores/useUIStore'
 import { useTabStore } from '../stores/useTabStore'
@@ -6,7 +10,7 @@ import { canPerformUndo, canPerformRedo } from '../lib/undoManager'
 
 /* ── Adobe Acrobat Windows Titlebar ── */
 // Red "A" logo, interactive dropdown menus (File/Edit/View/Sign/Window/Help),
-// title: "[filename.pdf] - Readit Pdf Reader (64-bit)", Windows controls.
+// title: "[filename.pdf] - Re-Edit PDF", Windows controls.
 
 interface MenuItem {
   label: string
@@ -66,16 +70,8 @@ export function Titlebar(): React.JSX.Element {
   const { fileName, isDirty } = usePdfStore()
   const { openMenu, setOpenMenu, setActiveModal, setActiveView, setTheme } = useUIStore()
   const tabs = useTabStore((s) => s.tabs)
-  const activeTabId = useTabStore((s) => s.activeTabId)
-  const closeTab = useTabStore((s) => s.closeTab)
   const setActiveTab = useTabStore((s) => s.setActiveTab)
-  const [isMax, setIsMax] = useState(false)
-
-  useEffect(() => {
-    window.api.isMaximized().then(setIsMax).catch(() => {})
-    const off = window.api.onMaximizeChanged(setIsMax)
-    return off
-  }, [])
+  useEffect(() => { void window.api.setDocumentTitle(fileName ? `${fileName}${isDirty ? ' •' : ''} — Re-Edit PDF` : 'Re-Edit PDF') }, [fileName, isDirty])
 
   const closeMenu = useCallback(() => setOpenMenu(null), [setOpenMenu])
 
@@ -83,13 +79,16 @@ export function Titlebar(): React.JSX.Element {
 
   const menuDefs: Record<string, MenuItem[]> = {
     File: [
+      { label: 'Convert Office document to PDF…', action: () => { void window.api.importOffice().catch(error=>alert(String(error))) } },
+      { label: 'Export text to Word…', action: () => { void exportWord() }, disabled: !hasDoc },
       { label: 'Open…', shortcut: 'Ctrl+O', action: () => window.api.openFile() },
-      { label: 'Close', shortcut: 'Ctrl+W', action: () => { if (activeTabId) closeTab(activeTabId); usePdfStore.getState().closeFile() }, disabled: !hasDoc },
+      { label: 'Close', shortcut: 'Ctrl+W', action: () => { void closeDocument() }, disabled: !hasDoc },
       { separator: true, label: '' },
       { label: 'Save', shortcut: 'Ctrl+S', action: () => window.dispatchEvent(new CustomEvent('acrobat:save')), disabled: !hasDoc },
       { label: 'Save As…', shortcut: 'Ctrl+Shift+S', action: () => window.dispatchEvent(new CustomEvent('acrobat:saveAs')), disabled: !hasDoc },
       { label: 'Export Flattened…', action: () => window.dispatchEvent(new CustomEvent('acrobat:saveFlattened')), disabled: !hasDoc },
       { separator: true, label: '' },
+      { label: 'Print…', shortcut: 'Ctrl+P', action: () => window.dispatchEvent(new CustomEvent('acrobat:print')), disabled: !hasDoc },
       { label: 'Properties…', shortcut: 'Ctrl+D', action: () => setActiveModal('docProperties'), disabled: !hasDoc },
       { separator: true, label: '' },
       { label: 'Exit', shortcut: 'Ctrl+Q', action: () => window.api.close() }
@@ -108,10 +107,8 @@ export function Titlebar(): React.JSX.Element {
       { label: 'Actual Size', shortcut: 'Ctrl+1', action: () => usePdfStore.getState().setZoom(1) },
       { label: 'Fit Page', shortcut: 'Ctrl+0', action: () => usePdfStore.getState().setFitMode('page') },
       { label: 'Fit Width', shortcut: 'Ctrl+2', action: () => usePdfStore.getState().setFitMode('width') },
-      { label: 'Fit Visible', shortcut: 'Ctrl+Shift+W', action: () => usePdfStore.getState().setFitMode('width') },
       { separator: true, label: '' },
       { label: useUIStore.getState().toolbarVisible ? 'Hide Tool Bar' : 'Show Tool Bar', action: () => useUIStore.getState().setToolbarVisible(!useUIStore.getState().toolbarVisible) },
-      { label: 'Status Bar', action: () => alert('Status bar at bottom shows page number box, magnification box, page size box – per Guide p8') },
       { separator: true, label: '' },
       { label: 'Rotate Clockwise', action: () => usePdfStore.getState().setRotation((usePdfStore.getState().rotation + 90) % 360) },
       { label: 'Rotate Counter-CW', action: () => usePdfStore.getState().setRotation((usePdfStore.getState().rotation + 270) % 360) },
@@ -123,41 +120,29 @@ export function Titlebar(): React.JSX.Element {
       { label: 'Navigation Pane', shortcut: 'F4', action: () => useUIStore.getState().toggleLeftPane() },
       { label: 'Tools Pane', shortcut: 'Shift+F4', action: () => useUIStore.getState().toggleRightPane() },
       { separator: true, label: '' },
-      { label: `Theme: Classic`, action: () => setTheme('classic') },
+      { label: `Theme: Windows`, action: () => setTheme('system') },
       { label: `Theme: Dark`, action: () => setTheme('dark') },
       { label: `Theme: Light`, action: () => setTheme('light') }
     ],
     Sign: [
-      { label: 'Add Signature…', action: () => setActiveModal('signature') },
-      { label: 'Fill & Sign Tools', action: () => { useUIStore.getState().setRightPane('sign'); setActiveView('document') } }
+      { label: 'Sign with a Certificate…', action: () => { if (usePdfStore.getState().data) setActiveModal('certificate') } },
+      { label: 'Add Signature…', action: () => { void openTool('sign').then(() => { if (usePdfStore.getState().data) setActiveModal('signature') }) } },
+      { label: 'Fill & Sign Tools', action: () => { void openTool('sign') } }
     ],
     Window: [
       ...tabs.map((t) => ({
         label: t.fileName + (t.isDirty ? ' •' : ''),
-        action: () => setActiveTab(t.id)
+        action: () => { setActiveTab(t.id); setActiveView('document') }
       })),
       ...(tabs.length ? [{ separator: true, label: '' } as MenuItem] : []),
       { label: 'Home', action: () => setActiveView('home') },
       { label: 'Tools', action: () => setActiveView('tools') }
     ],
     Help: [
-      { label: 'Online Guide…', action: () => {
-        const guide = `Adobe Acrobat Reader Online Guide\n\n`+
-        `• How to use this guide – click underlined links, Go Back, Next Page, First Page, bookmarks triangle\n`+
-        `• About Adobe Acrobat – Exchange, PDF Writer, Search, Distiller, Catalog\n`+
-        `• The Acrobat Reader window – bookmarks/thumbnails overview, tool bar, status bar, scroll bars\n`+
-        `• Status bar – window splitter, page number box (Go to Page), magnification box (Zoom To), page size box (units)\n`+
-        `• Preferences – General: Default Magnification, Max Fit Visible, Display Large Images, Use Page Cache, Greek Text, Substitution Fonts, Page Units, Splash/Open/Maximize; Full-Screen: Loop, Background, Auto-advance\n`+
-        `• Using links – click to follow, Go Back to return, triangle for sub-bookmarks\n`+
-        `• Using notes – double-click note icon, edit, delete\n`+
-        `• Displaying documents in full-screen mode – View → Full Screen, Esc to exit, Loop/Auto-advance\n`+
-        `• Reading an article – follow article thread with arrow, click to jump\n`+
-        `See View → Full Screen, Edit → Preferences, Window splitter at status bar left, and link overlays on pages.`
-        alert(guide)
-      } },
+      { label: 'Check for Updates…', action: () => setActiveModal('updates') },
       { label: 'Keyboard Shortcuts', action: () => setActiveModal('shortcuts') },
       { separator: true, label: '' },
-      { label: 'About Readit Pdf Reader', action: () => setActiveModal('about') }
+      { label: 'About Re-Edit PDF', action: () => setActiveModal('about') }
     ]
   }
 
@@ -167,34 +152,18 @@ export function Titlebar(): React.JSX.Element {
     <div
       className="flex items-center shrink-0 select-none"
       style={{
-        height: 30,
+        height: 38,
         background: 'var(--acrobat-titlebar)',
         borderBottom: '1px solid var(--acrobat-border)',
-        WebkitAppRegion: 'drag'
+        WebkitAppRegion: 'no-drag'
       } as React.CSSProperties}
     >
       {/* Adobe logo */}
       <div
         className="flex items-center gap-2 px-3 shrink-0"
-        style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
       >
-        <div
-          style={{
-            width: 20,
-            height: 20,
-            borderRadius: 3,
-            background: 'var(--acrobat-accent)',
-            display: 'grid',
-            placeItems: 'center',
-            color: '#fff',
-            fontWeight: 900,
-            fontSize: 11,
-            lineHeight: 1,
-            fontFamily: 'Inter, sans-serif'
-          }}
-        >
-          R
-        </div>
+        <BrandLogo size={24} />
       </div>
 
       {/* Menu bar */}
@@ -225,52 +194,14 @@ export function Titlebar(): React.JSX.Element {
       {/* Title */}
       <div
         className="flex-1 min-w-0 text-center"
-        style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
       >
         <span className="text-xs truncate" style={{ color: 'var(--acrobat-text-muted)' }}>
-          {fileName ? `${fileName}${isDirty ? ' •' : ''} - Readit Pdf Reader (64-bit)` : 'Readit Pdf Reader'}
+          {fileName ? `${fileName}${isDirty ? ' •' : ''} - Re-Edit PDF` : 'Re-Edit PDF'}
         </span>
       </div>
 
-      {/* Window controls */}
-      <div className="flex h-full shrink-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-        <button
-          onClick={() => void window.api.minimize()}
-          className="grid place-items-center hover:opacity-80"
-          style={{ width: 46, height: '100%', color: 'var(--acrobat-text-muted)' }}
-          title="Minimize"
-        >
-          <svg width="10" height="1" viewBox="0 0 10 1"><rect width="10" height="1" fill="currentColor" /></svg>
-        </button>
-        <button
-          onClick={() => void window.api.maximize()}
-          className="grid place-items-center hover:opacity-80"
-          style={{ width: 46, height: '100%', color: 'var(--acrobat-text-muted)' }}
-          title={isMax ? 'Restore Down' : 'Maximize'}
-        >
-          {isMax ? (
-            <svg width="10" height="10" viewBox="0 0 10 10"><rect x="2" y="0" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="1" /><rect x="0" y="2" width="8" height="8" fill="var(--acrobat-titlebar)" stroke="currentColor" strokeWidth="1" /></svg>
-          ) : (
-            <svg width="10" height="10" viewBox="0 0 10 10"><rect width="10" height="10" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg>
-          )}
-        </button>
-        <button
-          onClick={() => void window.api.close()}
-          className="grid place-items-center transition-colors"
-          style={{ width: 46, height: '100%', color: 'var(--acrobat-text-muted)' }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#e81123'
-            e.currentTarget.style.color = '#fff'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent'
-            e.currentTarget.style.color = 'var(--acrobat-text-muted)'
-          }}
-          title="Close"
-        >
-          <svg width="10" height="10" viewBox="0 0 10 10"><line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" strokeWidth="1.2" /><line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" strokeWidth="1.2" /></svg>
-        </button>
-      </div>
+
     </div>
   )
 }

@@ -13,11 +13,11 @@ if (pdfjsLib.GlobalWorkerOptions) {
 // Helper: load document with fallback to disableWorker if worker fails (fixes black screen on file://)
 export async function getPdfDoc(data: ArrayBuffer): Promise<import('pdfjs-dist').PDFDocumentProxy> {
   try {
-    const task = pdfjsLib.getDocument({ data: data.slice(0) } as never)
+    const task = pdfjsLib.getDocument({ ...pdfAssetOptions(), data: data.slice(0) } as never)
     return await task.promise
   } catch (e) {
     console.warn('pdf.js getDocument fallback to disableWorker', e)
-    const task = pdfjsLib.getDocument({ data: data.slice(0), disableWorker: true } as never)
+    const task = pdfjsLib.getDocument({ ...pdfAssetOptions(), data: data.slice(0), disableWorker: true } as never)
     return await task.promise
   }
 }
@@ -27,3 +27,7 @@ export async function loadPdfDocument(data: ArrayBuffer): Promise<import('pdfjs-
 
 export { pdfjsLib }
 export const { getDocument } = pdfjsLib
+
+export function pdfAssetOptions(): { standardFontDataUrl: string; cMapUrl: string; cMapPacked: boolean } {
+  return { standardFontDataUrl: new URL('./pdfjs/standard_fonts/', window.location.href).href, cMapUrl: new URL('./pdfjs/cmaps/', window.location.href).href, cMapPacked: true }
+}

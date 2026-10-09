@@ -6,7 +6,7 @@ export interface Redaction extends Annotation { isRedaction: true }
 interface EditState {
   redactions: Annotation[]
   pendingText: { text: string; color: string; size: number } | null
-  pendingImage: { bytes: Uint8Array; mime: string } | null
+  pendingImage: { bytes: Uint8Array; mime: string; dataUrl?: string; widthNorm?: number; aspectRatio?: number } | null
   addRedaction: (r: Annotation) => void
   removeRedaction: (id: string) => void
   clearRedactions: () => void

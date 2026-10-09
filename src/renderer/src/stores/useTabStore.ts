@@ -1,4 +1,8 @@
+import { useUIStore } from './useUIStore'
 import { create } from 'zustand'
+import { captureSession, restoreSession, restoringSession, type DocumentSession } from '../lib/documentSession'
+import { usePdfStore } from './usePdfStore'
+import { useOcrStore } from './useOcrStore'
 
 export interface DocTab {
   id: string
@@ -10,6 +14,7 @@ export interface DocTab {
   rotation: number
   currentPage: number
   scrollTop: number
+  session?: DocumentSession
 }
 
 interface TabState {
@@ -35,11 +40,14 @@ export const useTabStore = create<TabState>((set, get) => ({
   activeTabId: null,
 
   openTab: (filePath, data) => {
+    if (useOcrStore.getState().isProcessing) return get().activeTabId || ''
+    const active = get().activeTabId
+    if (active) get().updateTab(active, { session: captureSession(), data: usePdfStore.getState().data!, isDirty: usePdfStore.getState().isDirty })
     const { tabs } = get()
     // Check if already open
     const existing = tabs.find((t) => t.filePath === filePath && filePath)
     if (existing) {
-      set({ activeTabId: existing.id })
+      get().setActiveTab(existing.id)
       return existing.id
     }
     const id = nextTabId()
@@ -56,6 +64,12 @@ export const useTabStore = create<TabState>((set, get) => ({
       scrollTop: 0
     }
     set({ tabs: [...tabs, tab], activeTabId: id })
+    restoreSession()
+    usePdfStore.getState().openFile(filePath, data)
+    const magnification = useUIStore.getState().defaultMagnification
+    if (magnification === 'Fit Page') usePdfStore.getState().setFitMode('page')
+    else if (magnification === 'Fit Width') usePdfStore.getState().setFitMode('width')
+    else usePdfStore.getState().setZoom(Math.max(0.25, Math.min(5, parseInt(magnification, 10) / 100 || 1)))
     return id
   },
 
@@ -73,9 +87,23 @@ export const useTabStore = create<TabState>((set, get) => ({
       }
     }
     set({ tabs: filtered, activeTabId: newActive })
+    if (activeTabId === id) {
+      const next = filtered.find(tab => tab.id === newActive)
+      restoreSession(next?.session)
+      if (next && !next.session) usePdfStore.getState().openFile(next.filePath || next.fileName, next.data)
+    }
   },
 
-  setActiveTab: (activeTabId) => set({ activeTabId }),
+  setActiveTab: (activeTabId) => {
+    if (activeTabId === get().activeTabId || useOcrStore.getState().isProcessing) return
+    const current = get().activeTabId
+    if (current) get().updateTab(current, { session: captureSession(), data: usePdfStore.getState().data!, isDirty: usePdfStore.getState().isDirty })
+    const tab = get().tabs.find(t => t.id === activeTabId)
+    if (!tab) return
+    set({ activeTabId })
+    restoreSession(tab.session)
+    if (!tab.session) usePdfStore.getState().openFile(tab.filePath || tab.fileName, tab.data)
+  },
 
   updateTab: (id, patch) => {
     set({ tabs: get().tabs.map((t) => (t.id === id ? { ...t, ...patch } : t)) })
@@ -94,3 +122,9 @@ export const useTabStore = create<TabState>((set, get) => ({
     return tabs.find((t) => t.id === activeTabId) || null
   }
 }))
+
+usePdfStore.subscribe((state, previous) => {
+  if (restoringSession || state.isDirty === previous.isDirty) return
+  const id = useTabStore.getState().activeTabId
+  if (id) useTabStore.getState().updateTab(id, { isDirty: state.isDirty })
+})
