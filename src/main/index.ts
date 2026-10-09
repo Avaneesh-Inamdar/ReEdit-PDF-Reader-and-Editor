@@ -1,5 +1,6 @@
 import { app, shell, BrowserWindow, dialog, ipcMain, Menu } from 'electron'
 import { execFile } from 'child_process'
+import { promisify } from 'node:util'
 import { fileURLToPath } from 'url'
 import { join, isAbsolute } from 'path'
 import { randomUUID } from 'crypto'
@@ -470,9 +471,21 @@ app.whenReady().then(() => {
   )
   ipcMain.handle('system:defaultApps', async () => {
     if (process.platform === 'win32') return shell.openExternal('ms-settings:defaultapps')
-    if (process.platform === 'linux') return new Promise<void>((resolve, reject) => {
-      execFile('xdg-mime', ['default', 're-edit-pdf.desktop', 'application/pdf'], error => error ? reject(error) : resolve())
-    })
+    if (process.platform === 'linux') {
+      const execute=promisify(execFile)
+      if (/gnome|unity/i.test(process.env.XDG_CURRENT_DESKTOP || '')) {
+        try {
+          await execute('gio', ['mime', 'application/pdf', 're-edit-pdf.desktop'])
+          const result=await execute('gio', ['mime', 'application/pdf'])
+          if (!result.stdout.split('\n')[0].trim().endsWith('re-edit-pdf.desktop')) throw new Error('Your desktop did not accept the PDF default. Choose it in system application settings.')
+          return
+        } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
+      }
+      await execute('xdg-mime', ['default', 're-edit-pdf.desktop', 'application/pdf'])
+      const result=await execute('xdg-mime', ['query', 'default', 'application/pdf'])
+      if (result.stdout.trim() !== 're-edit-pdf.desktop') throw new Error('Your desktop did not accept the PDF default. Choose it in system application settings.')
+      return
+    }
     throw new Error('Choose Re-Edit PDF in your system file association settings.')
   })
   ipcMain.handle('dialog:saveAttachment', async (_event, bytes: Uint8Array, name: string) => {

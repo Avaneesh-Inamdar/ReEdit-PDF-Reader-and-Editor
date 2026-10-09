@@ -29,7 +29,11 @@ else
   xvfb-run -a -s '-screen 0 1600x1000x24' "$runtime" scripts/smoke-release-features.cjs
 fi
 grep -q '"passed": true' "$READIT_FEATURE_OUTPUT/result.json"
-default_pdf=$(xvfb-run -a sh -c 'XDG_UTILS_DEBUG_LEVEL=2 xdg-mime query default application/pdf')
+if command -v gio >/dev/null 2>&1; then
+  default_pdf=$(gio mime application/pdf | head -1 | sed 's/.*: //')
+else
+  default_pdf=$(xvfb-run -a xdg-mime query default application/pdf)
+fi
 printf '%s\n' "Default PDF application: $default_pdf"
 if [ "$default_pdf" != re-edit-pdf.desktop ]; then
   for defaults_file in "${XDG_CONFIG_HOME:-$HOME/.config}/mimeapps.list" "$HOME/.local/share/applications/mimeapps.list"; do
