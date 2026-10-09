@@ -8,11 +8,11 @@ Developed by **Avaneesh Inamdar**.
 
 Build outputs are written to `release/`. This local build is not automatically published to GitHub:
 
-- **Setup Installer (`.exe`)**: `Re-Edit PDF-Setup-1.3.0.exe` — Windows setup wizard with desktop shortcut, Start Menu shortcut, uninstaller, and PDF Open With registration (Windows controls the default PDF app).
-- **Windows portable**: `Re-Edit PDF-1.3.0-portable.exe`.
+- **Setup Installer (`.exe`)**: `Re-Edit PDF-Setup-1.4.0.exe` — Windows setup wizard with desktop shortcut, Start Menu shortcut, uninstaller, and PDF Open With registration (Windows controls the default PDF app).
+- **Windows portable**: `Re-Edit PDF-1.4.0-portable.exe`.
 - **Debian/Ubuntu**: `re-edit-pdf-1.4.0-amd64.deb`.
 - **Fedora/RPM**: `re-edit-pdf-1.4.0-x86_64.rpm`.
-- **Linux portable**: `re-edit-pdf-1.3.0-x86_64.AppImage` and `re-edit-pdf-1.3.0-x64.tar.gz`.
+- **Linux portable**: `re-edit-pdf-1.4.0-x86_64.AppImage` and `re-edit-pdf-1.4.0-x64.tar.gz`.
 
 These packages are x64. They are unsigned local builds. Linux packages need a glibc desktop environment; native Alpine/musl and ARM64 are not verified.
 
@@ -88,7 +88,7 @@ This is not a complete Acrobat replacement. Text edits use overlays rather than 
 - Selecting text in the document opens a quick action bar with:
   - **Highlight**, **Underline**, and **Strikethrough**
   - **Text Color**: change selected text color non-destructively
-  - **Copy** and a visual mask (underlying text is retained)
+  - **Copy**, **Edit Text** and redaction
 
 ### Annotations & Markup
 - Freehand pen and highlighter with adjustable color palette, stroke width, and opacity.
@@ -111,7 +111,7 @@ This is not a complete Acrobat replacement. Text edits use overlays rather than 
 
 ### Forms & Editing
 - AcroForm detection and filling for text fields, checkboxes, dropdowns, radio groups and option lists.
-- Visible text replacement using a precise white-background overlay. It preserves unrelated image objects, but cannot reconstruct colored backgrounds or remove the original text.
+- Visible text replacement using a precise white-background overlay. It preserves unrelated image objects, and removes the original selected text when saved, but cannot reconstruct colored backgrounds.
 
 ## Keyboard Shortcuts
 
