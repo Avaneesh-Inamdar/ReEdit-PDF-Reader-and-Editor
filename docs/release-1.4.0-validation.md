@@ -102,14 +102,27 @@ keeps fewer than ten page canvases mounted.
 
 ## CI distribution validation
 
-- `Validate Linux distributions` run `37978944068` (commit `b55e5c9`, artifacts
-  from `37976497247`) covers `debian:12`, `ubuntu:24.04`, `fedora:43` via
-  `scripts/test-linux-distribution.sh`. It was still `in_progress` when this
-  report was written locally; do not publish until it reports success, then
-  attach/download its `linux-validation-*` artifacts and record the conclusion
-  here. The workflow reuses the matching Electron runtime prepared on the host
-  (`b55e5c9`) and fails if any distribution's packaged, feature, default-app,
-  or launch check fails.
+- `Validate Linux distributions` run `37982234160` (commit `09dc13e`,
+  artifacts from build `37976497247`): success on all three matrix jobs —
+  `debian:12`, `ubuntu:24.04`, `fedora:43`.
+- Each job reports the same 24 GUI checks plus 5 release-feature checks
+  (update dialog, editable Word export, P12 signing, password cleared, genuine
+  redaction), all `"passed": true`, plus installed-executable file-URI launch
+  checks (`launch.json` for the DEB/RPM install; `appimage-launch.json` and
+  `tar-launch.json` on Debian 12 for the extracted AppImage binary and the
+  tarball binary).
+- Two earlier attempts framed the fix: run `37978944068` timed out at the old
+  20-minute limit after Electron 44's GPU process crashed under `capturePage`
+  (`UnknownVizError`, unhandled rejection hanging the harness). Fixed by
+  launching the test harness with `--disable-gpu --disable-dev-shm-usage`,
+  retrying `capturePage`, failing fast on unhandled rejections, raising the
+  job timeout to 45 minutes, and `chown`-ing the docker-written reports so the
+  upload step can read them. A follow-up run (`37981564846`) then passed
+  Fedora/Ubuntu but exposed the AppRun wrapper failing once extracted
+  (`AppRun: line 45: /re-edit-pdf: No such file or directory`); the check now
+  invokes the extracted `re-edit-pdf` binary directly, matching the local lab
+  (`release/linux-lab/test-appimage.sh`). FUSE mounting itself remains
+  untested, as documented below.
 
 ## Check for Updates
 
