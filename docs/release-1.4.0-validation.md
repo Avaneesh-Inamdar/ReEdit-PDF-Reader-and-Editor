@@ -135,6 +135,20 @@ tested in `tests/updates.test.ts`) then reports available for older versions
 and current for `1.4.0`. Verify with the API and once from the built app before
 announcing.
 
+## Publish and update check
+
+- Published `2026-10-09T19:51:42Z`: `v1.4.0` is now a stable release
+  (`isDraft: false`, `isPrerelease: false`) with all 9 assets.
+  GitHub created `refs/tags/v1.4.0` at `443982c` — the exact commit the
+  release binaries were built from (`Build desktop packages` run
+  `37976497247`). Commits after `443982c` touch only docs, workflows, and
+  Linux/CI test scripts (no `src/`, dependency, or packaging changes), so the
+  published tag is the corresponding source of the shipped application.
+- `GET /repos/.../releases/latest` returns `200` with `tag_name: v1.4.0`
+  (`draft: false`, `prerelease: false`). The app's `isNewerRelease` logic
+  reports update available for `1.3.0` and current for `1.4.0`, matching the
+  `Help > Check for Updates` behavior.
+
 ## Limits (unchanged)
 
 Unsigned x64 builds only. No full Acrobat parity: standard-font visual text
