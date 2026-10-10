@@ -24,6 +24,7 @@ extraResources:
   - from: build/document.png
     to: document.png
 asar: true
+beforePack: scripts/prepare-installer.cjs
 asarUnpack:
   - resources/**
   - node_modules/mupdf/**

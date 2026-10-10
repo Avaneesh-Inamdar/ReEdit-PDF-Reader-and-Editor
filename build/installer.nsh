@@ -2,12 +2,6 @@
   ; Custom header - set installer branding
 !macroend
 
-; Override the legacy electron-builder per-user path reader before initialization.
-; Backport upstream a356198ec7c54c7795659342bff36d9a5162cd93 (#9769).
-!macro customInstallMode
-  !include "safePerUserInstallMode.nsh"
-!macroend
-
 !macro customInstall
   WriteRegStr SHCTX "Software\Classes\ReEdit.PDF" "" "Re-Edit PDF Document"
   WriteRegStr SHCTX "Software\Classes\ReEdit.PDF\DefaultIcon" "" '"$INSTDIR\resources\document.ico",0'
