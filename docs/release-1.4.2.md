@@ -8,6 +8,7 @@ This patch improves text formatting, trackpad zoom, navigation, Find, and instal
 - The navigation button opens and closes the sidebar. Thumbnail size changes the visible thumbnail, rather than only its resolution, and the slider stays accessible above the page list.
 - Find counts every occurrence, including fragmented runs, and marks only matching characters. Case and whole-word filters and F3/Ctrl+G navigation are available. Escape, Ctrl+F and the close button clear marks and cancel queued or in-flight searches.
 - The assisted Windows installer has its standard launch checkbox enabled by default. Finish opens the app using an asynchronous shell launch. Opening a PDF through the system's default-app association restores and maximizes its document window.
+- Backports the upstream Windows installer path-buffer fix to prevent intermittent startup crashes during fresh per-user installation.
 
 ## Downloads
 
