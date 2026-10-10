@@ -18,7 +18,7 @@
   WriteRegStr SHCTX "Software\ReEditPDF\Capabilities\FileAssociations" ".pdf" "ReEdit.PDF"
   WriteRegStr SHCTX "Software\RegisteredApplications" "Re-Edit PDF" "Software\ReEditPDF\Capabilities"
   ; Notify Explorer asynchronously; Finish must not wait for a shell refresh or app startup.
-  System::Call 'Shell32::SHChangeNotify(i 0x08000000, i 0x3000, i 0, i 0)'
+  System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0x3000, p 0, p 0) v'
 !macroend
 
 !macro customUnInstall
@@ -27,5 +27,5 @@
   DeleteRegKey SHCTX "Software\Classes\Applications\${APP_EXECUTABLE_FILENAME}"
   DeleteRegValue SHCTX "Software\RegisteredApplications" "Re-Edit PDF"
   DeleteRegKey SHCTX "Software\ReEditPDF\Capabilities"
-  System::Call 'Shell32::SHChangeNotify(i 0x08000000, i 0x3000, i 0, i 0)'
+  System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0x3000, p 0, p 0) v'
 !macroend
