@@ -43,7 +43,13 @@ while ((Get-Date) -lt $deadline) {
 if (!$finishAt) { throw 'Installer never reached its Finish page' }
 if (!$setup.WaitForExit(10000)) { throw 'Finish did not dismiss the installer promptly' }
 $elapsed = ((Get-Date) - $finishAt).TotalSeconds
-$binary = Join-Path $installPath 'Re-Edit-PDF.exe'
+# The assisted installer deliberately adds the product subdirectory when the
+# selected directory does not already include its name. Discover that installed
+# executable inside this test's own directory rather than assuming silent-mode paths.
+$installed = @(Get-ChildItem -LiteralPath $installPath -Filter 'Re-Edit-PDF.exe' -File -Recurse)
+if ($installed.Count -ne 1) { throw 'Expected one installed app in the test directory' }
+$binary = $installed[0].FullName
+$installedDirectory = $installed[0].DirectoryName
 $deadline = (Get-Date).AddSeconds(40)
 $started = $null
 while ((Get-Date) -lt $deadline) {
@@ -58,7 +64,7 @@ while (!$application.MainWindowHandle -and (Get-Date) -lt $deadline) { Start-Sle
 if (!$application.MainWindowHandle) { throw 'Launched app did not show its window' }
 $application.CloseMainWindow() | Out-Null
 if (!$application.WaitForExit(10000)) { throw 'Test app did not close' }
-$uninstaller = @(Get-ChildItem -LiteralPath $installPath -Filter '*Uninstall*.exe' -File)
+$uninstaller = @(Get-ChildItem -LiteralPath $installedDirectory -Filter '*Uninstall*.exe' -File)
 if ($uninstaller.Count -ne 1) { throw 'Expected one test uninstaller' }
 $cleanup = Start-Process -FilePath $uninstaller[0].FullName -ArgumentList '/S' -WindowStyle Hidden -PassThru -Wait
 if ($cleanup.ExitCode -ne 0) { throw "Test uninstaller failed: $($cleanup.ExitCode)" }
