@@ -25,6 +25,8 @@ $setup = Start-Process -FilePath $installer.FullName -ArgumentList "/D=$installP
 $deadline = (Get-Date).AddMinutes(3)
 $finishAt = $null
 while ((Get-Date) -lt $deadline) {
+  $setup.Refresh()
+  if ($setup.HasExited) { throw "Installer exited before Finish: $($setup.ExitCode)" }
   $wizard = [InstallerWizardTest]::Window($setup.Id)
   if ($wizard -ne [IntPtr]::Zero) {
     $finish = [InstallerWizardTest]::Button($wizard, 'Finish')
