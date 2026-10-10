@@ -11,9 +11,11 @@ $registeredIcon = (Get-Item -LiteralPath 'Registry::HKEY_CURRENT_USER\Software\C
 if ($registeredIcon -ne ('"' + $documentIcon.Replace('/', '\') + '",0')) { throw "Unexpected document icon registration: $registeredIcon" }
 $association = Get-Item -LiteralPath 'Registry::HKEY_CURRENT_USER\Software\ReEditPDF\Capabilities\FileAssociations'
 if ($association.GetValue('.pdf') -ne 'ReEdit.PDF') { throw 'Default-app capabilities missing' }
-$installedFiles = @('resources/app.asar', 'resources/document.ico', 'Uninstall Re-Edit PDF.exe')
+$installedFiles = @('resources/app.asar', 'resources/document.ico')
 foreach ($file in $installedFiles) { if (!(Test-Path -LiteralPath (Join-Path $installPath $file))) { throw "Missing installed file: $file" } }
-$uninstaller = Join-Path $installPath 'Uninstall Re-Edit PDF.exe'
+$uninstallers = @(Get-ChildItem -LiteralPath $installPath -Filter '*Uninstall*.exe' -File)
+if ($uninstallers.Count -ne 1) { throw 'Expected one installed uninstaller' }
+$uninstaller = $uninstallers[0].FullName
 $process = Start-Process -FilePath $uninstaller -ArgumentList '/S' -WindowStyle Hidden -PassThru -Wait
 if ($process.ExitCode -ne 0) { throw "Uninstaller exited $($process.ExitCode)" }
 $deadline = (Get-Date).AddSeconds(45)
