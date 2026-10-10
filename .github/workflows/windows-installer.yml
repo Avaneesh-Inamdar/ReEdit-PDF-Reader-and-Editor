@@ -1,0 +1,33 @@
+name: Validate Windows installer
+on:
+  workflow_dispatch:
+    inputs:
+      build_run:
+        description: Run containing the Windows packages to validate
+        required: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.build_run }}
+          github-token: ${{ github.token }}
+          name: re-edit-pdf-Windows
+          path: release
+      - name: Install and uninstall exact release package
+        run: ./scripts/test-windows-installer.ps1
+      - name: Installer diagnostics
+        if: always()
+        run: |
+          Get-ChildItem -LiteralPath $env:TEMP -Filter 'ReEditPDF-Installer-Test-*' -Directory | ForEach-Object { Get-ChildItem -LiteralPath $_.FullName | Select-Object Name,Length }
+          Get-WinEvent -FilterHashtable @{LogName='Application';StartTime=(Get-Date).AddMinutes(-15)} -ErrorAction SilentlyContinue | Where-Object { $_.ProviderName -in @('Application Error','Windows Error Reporting') } | Select-Object TimeCreated,Message | Format-List
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-installer-validation
+          path: release/windows-installer-result.json
