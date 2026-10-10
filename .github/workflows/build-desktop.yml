@@ -43,6 +43,9 @@ jobs:
         env:
           READIT_141_APP: release/win-unpacked/resources/app.asar
         run: npx electron scripts/smoke-1.4.1.cjs
+      - name: Windows installer and uninstaller
+        if: runner.os == 'Windows'
+        run: ./scripts/test-windows-installer.ps1
       - name: Linux packages
         if: runner.os == 'Linux'
         env:
@@ -68,3 +71,4 @@ jobs:
             release/linux-launch.json
             release/linux-tests/**/result.json
             release/smoke-1.4.1/result.json
+            release/windows-installer-result.json
