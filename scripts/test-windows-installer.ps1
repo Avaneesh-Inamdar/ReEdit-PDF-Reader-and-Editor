@@ -14,6 +14,9 @@ $association = Get-Item -LiteralPath 'Registry::HKEY_CURRENT_USER\Software\ReEdi
 if ($association.GetValue('.pdf') -ne 'ReEdit.PDF') { throw 'Default-app capabilities missing' }
 $installedFiles = @('resources/app.asar', 'resources/document.ico')
 foreach ($file in $installedFiles) { if (!(Test-Path -LiteralPath (Join-Path $installPath $file))) { throw "Missing installed file: $file" } }
+foreach ($font in @('fontkit', 'lato', 'libre-baskerville', 'noto-sans', 'noto-serif', 'open-sans', 'roboto', 'source-code-pro', 'ubuntu')) {
+  if (!(Test-Path -LiteralPath (Join-Path $installPath "resources/font-licenses/$font-LICENSE.txt"))) { throw "Missing license notice: $font" }
+}
 $uninstallers = @(Get-ChildItem -LiteralPath $installPath -Filter '*Uninstall*.exe' -File)
 if ($uninstallers.Count -ne 1) { throw 'Expected one installed uninstaller' }
 $uninstaller = $uninstallers[0].FullName

@@ -4,6 +4,9 @@ set -eu
 binary=${1:-/opt/Re-Edit PDF/re-edit-pdf}
 label=${2:-${READIT_TEST_LABEL:-linux}}
 test -x "$binary"
+for font in fontkit lato libre-baskerville noto-sans noto-serif open-sans roboto source-code-pro ubuntu; do
+  test -f "$(dirname "$binary")/resources/font-licenses/$font-LICENSE.txt"
+done
 runtime=${READIT_TEST_ELECTRON:-node_modules/electron/dist/electron}
 test -x "$runtime"
 desktop-file-validate /usr/share/applications/re-edit-pdf.desktop
