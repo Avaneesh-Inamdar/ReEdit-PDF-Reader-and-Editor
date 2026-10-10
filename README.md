@@ -8,11 +8,11 @@ Developed by **Avaneesh Inamdar**.
 
 Build outputs are written to `release/`. This local build is not automatically published to GitHub:
 
-- **Setup Installer (`.exe`)**: `Re-Edit PDF-Setup-1.4.0.exe` — Windows setup wizard with desktop shortcut, Start Menu shortcut, uninstaller, and PDF Open With registration (Windows controls the default PDF app).
-- **Windows portable**: `Re-Edit PDF-1.4.0-portable.exe`.
-- **Debian/Ubuntu**: `re-edit-pdf-1.4.0-amd64.deb`.
-- **Fedora/RPM**: `re-edit-pdf-1.4.0-x86_64.rpm`.
-- **Linux portable**: `re-edit-pdf-1.4.0-x86_64.AppImage` and `re-edit-pdf-1.4.0-x64.tar.gz`.
+- **Setup Installer (`.exe`)**: `Re-Edit PDF-Setup-1.4.1.exe` — Windows setup wizard with desktop shortcut, Start Menu shortcut, uninstaller, and PDF Open With registration (Windows controls the default PDF app).
+- **Windows portable**: `Re-Edit PDF-1.4.1-portable.exe`.
+- **Debian/Ubuntu**: `re-edit-pdf-1.4.1-amd64.deb`.
+- **Fedora/RPM**: `re-edit-pdf-1.4.1-x86_64.rpm`.
+- **Linux portable**: `re-edit-pdf-1.4.1-x86_64.AppImage` and `re-edit-pdf-1.4.1-x64.tar.gz`.
 
 These packages are x64. They are unsigned local builds. Linux packages need a glibc desktop environment; native Alpine/musl and ARM64 are not verified.
 
@@ -140,8 +140,8 @@ This is not a complete Acrobat replacement. Text edits use overlays rather than 
 
 ### Setup
 ```bash
-git clone https://github.com/Avaneesh-Inamdar/Readit-Pdf-Reader-and-Editor.git
-cd Readit-Pdf-Reader-and-Editor
+git clone https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor.git
+cd ReEdit-PDF-Reader-and-Editor
 npm install
 ```
 
@@ -180,8 +180,8 @@ Build on Linux with Node.js 22, npm, `binutils`, `rpm`, and `fakeroot` installed
 npm ci
 npm test
 ELECTRON_BUILDER_COMPRESSION_LEVEL=5 npm run build:linux
-sudo apt-get install ./release/re-edit-pdf-1.4.0-amd64.deb
-# Fedora: sudo dnf install ./release/re-edit-pdf-1.4.0-x86_64.rpm
+sudo apt-get install ./release/re-edit-pdf-1.4.1-amd64.deb
+# Fedora: sudo dnf install ./release/re-edit-pdf-1.4.1-x86_64.rpm
 ```
 
 For AppImage, mark it executable. Hosts without FUSE can extract it with `--appimage-extract` and run `squashfs-root/AppRun`. Portable packages do not install a desktop entry; use DEB/RPM for automatic desktop and PDF association integration.
@@ -207,6 +207,6 @@ The workflow harness uses the matching development Electron runtime to load the 
 
 Re-Edit PDF is licensed under AGPL-3.0-only. See LICENSE and THIRD-PARTY-NOTICES.md. Corresponding source for published binaries is available in each tagged GitHub release.
 
-## Version 1.4.0
+## Version 1.4.1
 
-See docs/release-1.4.0.md for content removal, redaction, certificate signing, Word export, Office import, update checking and current limitations.
+See docs/release-1.4.1.md for selection, OCR, document icons, recent-file controls and workspace improvements. The earlier 1.4.0 release added real content removal/redaction, certificate signing, Word export, Office import and update checking.

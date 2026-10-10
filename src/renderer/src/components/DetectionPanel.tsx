@@ -1,5 +1,5 @@
 import { Icon } from './Icon'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { usePdfStore } from '../stores/usePdfStore'
 import { useOcrStore } from '../stores/useOcrStore'
 import { useDetectionStore } from '../stores/useDetectionStore'
@@ -10,7 +10,7 @@ import { prepareDocument } from '../lib/documentActions'
 import { parsePageRange } from '../lib/pageRange'
 
 export function DetectionPanel(): React.JSX.Element {
-  const { data, currentPage, numPages, setData } = usePdfStore()
+  const { data, filePath, currentPage, numPages, setData } = usePdfStore()
   const det = useDetectionStore()
   const { setProcessing, setOcrResult, isProcessing, ocrResults, clearOcrResults, cancelOcr } =
     useOcrStore()
@@ -19,6 +19,11 @@ export function DetectionPanel(): React.JSX.Element {
   const [converting, setConverting] = useState(false)
   const [ocrScope, setOcrScope] = useState<'current' | 'all' | 'custom'>('current')
   const [customPagesInput, setCustomPagesInput] = useState('1')
+
+  useEffect(() => {
+    setStatus('')
+    setProgress(0)
+  }, [filePath])
 
   const hasOcrCurrent = !!ocrResults[currentPage]
   const totalOcred = Object.keys(ocrResults).length
@@ -295,10 +300,9 @@ export function DetectionPanel(): React.JSX.Element {
         <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-2">
           SCAN & OCR
         </h3>
-        {det.isScanned && (
+        {det.textChars === 0 && !totalOcred && (
           <div className="mb-3 rounded p-2 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/40 text-amber-800 dark:text-amber-200">
-            Scanned document detected (avg {det.avgCharsPerPage} chars/page). No embedded text – OCR
-            recommended.
+            This document has no selectable text. Run OCR to make its scanned pages searchable.
           </div>
         )}
         <div className="flex flex-col gap-3">
@@ -433,11 +437,8 @@ export function DetectionPanel(): React.JSX.Element {
           </div>
         ) : (
           <div className="rounded p-3 text-xs bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400">
-            Scanned PDFs have no text layer. Run OCR to recognise text. Uses Tesseract.js locally
-            (no network, bundled <code>/tessdata</code> per{' '}
-            <code>scripts/download-tessdata.js</code>). After OCR, text becomes selectable;
-            “Convert” creates editable text boxes you can edit like in PDF-XChange / Master PDF
-            Editor.
+            Recognize English text in scanned pages offline. The original scan stays intact. Save
+            the PDF to keep its searchable text layer.
           </div>
         )}
         <div className="text-xs" style={{ color: 'var(--acrobat-text-dim)' }}>
