@@ -6,15 +6,15 @@ Developed by **Avaneesh Inamdar**.
 
 ## Download
 
-Build outputs are written to `release/`. This local build is not automatically published to GitHub:
+Download [Re-Edit PDF 1.4.1](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/tag/v1.4.1), including checksums and validation details. Local build outputs are written to `release/`; local builds do not publish automatically:
 
-- **Setup Installer (`.exe`)**: `Re-Edit PDF-Setup-1.4.1.exe` — Windows setup wizard with desktop shortcut, Start Menu shortcut, uninstaller, and PDF Open With registration (Windows controls the default PDF app).
-- **Windows portable**: `Re-Edit PDF-1.4.1-portable.exe`.
+- **Setup Installer (`.exe`)**: `Re-Edit-PDF-Setup-1.4.1.exe` — Windows setup wizard with desktop shortcut, Start Menu shortcut, uninstaller, and PDF Open With registration (Windows controls the default PDF app).
+- **Windows portable**: `Re-Edit-PDF-1.4.1-portable.exe`.
 - **Debian/Ubuntu**: `re-edit-pdf-1.4.1-amd64.deb`.
 - **Fedora/RPM**: `re-edit-pdf-1.4.1-x86_64.rpm`.
 - **Linux portable**: `re-edit-pdf-1.4.1-x86_64.AppImage` and `re-edit-pdf-1.4.1-x64.tar.gz`.
 
-These packages are x64. They are unsigned local builds. Linux packages need a glibc desktop environment; native Alpine/musl and ARM64 are not verified.
+These packages are x64. The release builds are unsigned. Linux packages need a glibc desktop environment; native Alpine/musl and ARM64 are not verified.
 
 ## Version 1.3.0 selection and performance update
 
