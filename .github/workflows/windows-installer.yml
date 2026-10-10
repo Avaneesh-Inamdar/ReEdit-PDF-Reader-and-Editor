@@ -21,6 +21,8 @@ jobs:
           path: release
       - name: Install and uninstall exact release package
         run: ./scripts/test-windows-installer.ps1
+      - name: Finish launches the installed app
+        run: ./scripts/test-windows-finish.ps1
       - name: Installer diagnostics
         if: always()
         run: |
@@ -30,4 +32,6 @@ jobs:
         if: always()
         with:
           name: windows-installer-validation
-          path: release/windows-installer-result.json
+          path: |
+            release/windows-installer-result.json
+            release/windows-finish-result.json

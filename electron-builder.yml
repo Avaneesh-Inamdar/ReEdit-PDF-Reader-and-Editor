@@ -12,6 +12,8 @@ files:
   - LICENSE
   - THIRD-PARTY-NOTICES.md
 extraResources:
+  - from: build/fontkit-LICENSE.txt
+    to: font-licenses/fontkit-LICENSE.txt
   - from: src/renderer/src/assets/fonts
     to: font-licenses
     filter: ["*-LICENSE.txt"]

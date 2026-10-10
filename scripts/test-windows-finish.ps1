@@ -47,7 +47,7 @@ $binary = Join-Path $installPath 'Re-Edit-PDF.exe'
 $deadline = (Get-Date).AddSeconds(40)
 $started = $null
 while ((Get-Date) -lt $deadline) {
-  $started = Get-CimInstance Win32_Process -Filter "Name = 'Re-Edit-PDF.exe'" | Where-Object { $_.ExecutablePath -eq $binary } | Select-Object -First 1
+  $started = Get-CimInstance Win32_Process -Filter "Name = 'Re-Edit-PDF.exe'" | Where-Object { $_.ExecutablePath -eq $binary -and $_.CommandLine -notmatch '--type=' } | Select-Object -First 1
   if ($started) { break }
   Start-Sleep -Milliseconds 200
 }
