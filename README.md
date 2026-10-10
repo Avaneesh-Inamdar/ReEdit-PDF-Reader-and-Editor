@@ -220,4 +220,4 @@ Re-Edit PDF is licensed under AGPL-3.0-only. See LICENSE and THIRD-PARTY-NOTICES
 
 ## Version 1.4.3
 
-See docs/release-1.4.3.md for selection, OCR, document icons, recent-file controls and workspace improvements. The earlier 1.4.0 release added real content removal/redaction, certificate signing, Word export, Office import and update checking.
+See [release notes](docs/release-1.4.3.md) for repeated editing, long selection, font imports and rendering changes. The earlier 1.4.0 release added real content removal/redaction, certificate signing, Word export, Office import and update checking.
