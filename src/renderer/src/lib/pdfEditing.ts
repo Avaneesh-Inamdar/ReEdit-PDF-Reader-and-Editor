@@ -1,4 +1,7 @@
-import { PDFDocument, rgb, StandardFonts, degrees, PDFName, PDFString, PDFNumber, breakTextIntoLines } from 'pdf-lib'
+import { PDFDocument, rgb, StandardFonts, degrees, PDFName, PDFString, PDFNumber, breakTextIntoLines, pushGraphicsState, popGraphicsState, concatTransformationMatrix, setCharacterSpacing, setWordSpacing } from 'pdf-lib'
+import fontkit from '@pdf-lib/fontkit'
+import { bundledFontData, originalFontSelected } from './fonts'
+import { fontkitForPdfGlyphs } from './embeddedFont'
 import type { Annotation } from '../stores/useAnnotationStore'
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
@@ -46,6 +49,7 @@ export async function bakeAnnotationsToPdf(
 ): Promise<Uint8Array> {
   const flatten = opts.flatten ?? false
   const pdf = await PDFDocument.load(data)
+  pdf.registerFontkit(fontkit)
   const pages = pdf.getPages()
   const fonts = new Map<string, Awaited<ReturnType<typeof pdf.embedFont>>>()
   for (const name of [StandardFonts.Helvetica, StandardFonts.HelveticaBold, StandardFonts.HelveticaOblique, StandardFonts.HelveticaBoldOblique,
@@ -66,6 +70,26 @@ export async function bakeAnnotationsToPdf(
     return fonts.get(name)!
   }
 
+  const customFonts = new Map<Uint8Array, Awaited<ReturnType<typeof pdf.embedFont>>>()
+  const annotationFont = async (annotation: Annotation) => {
+    const original = originalFontSelected(annotation) ? annotation.sourceText : undefined
+    const data = annotation.fontData || original?.fontData || await bundledFontData(annotation.fontFamily || '', annotation.bold, annotation.italic)
+    if (data) {
+      let embedded = customFonts.get(data)
+      if (!embedded) {
+        pdf.registerFontkit(original?.fontData === data ? fontkitForPdfGlyphs(original.fontGlyphs, original.fontGlyphWidths) : fontkit)
+        embedded = await pdf.embedFont(data, { subset: true })
+        customFonts.set(data, embedded)
+      }
+      // Check coverage before saving, rather than silently producing missing glyphs.
+      embedded.encodeText((annotation.text || '').replace(/[\r\n]/g, ''))
+      return embedded
+    }
+    if (original && !/helvetica|arial|times|courier/i.test(original.fontFamily))
+      throw new Error(`The PDF does not embed ${original.fontFamily}. Choose a bundled font or import the original font in Format.`)
+    return resolveFont(annotation.fontFamily, annotation.bold, annotation.italic)
+  }
+
   // For editable mode, create Annots; for flatten mode, draw directly (existing behavior)
   for (const anno of [...annotations, ...redactions]) {
     const pageIdx = anno.page - 1
@@ -82,6 +106,13 @@ export async function bakeAnnotationsToPdf(
     if (anno.sourceText) {
       const source = anno.sourceText
       for (const mask of anno.maskTexts || [source]) {
+      if (mask.matrix && mask.matrix.some((value, index) => Math.abs(value - [1, 0, 0, 1][index]) > 0.00001)) {
+        const [a, b, c, d] = mask.matrix
+        page.pushOperators(pushGraphicsState(), concatTransformationMatrix(a, b, c, d, mask.x, mask.y))
+        page.drawRectangle({ x: -0.5, y: -mask.descent - 0.5, width: mask.width + 1, height: mask.ascent + mask.descent + 1, color: rgb(1, 1, 1) })
+        page.pushOperators(popGraphicsState())
+        continue
+      }
       const sin = Math.sin(mask.angle), cos = Math.cos(mask.angle)
       const bottom = mask.descent + 0.5
       const left = -0.5
@@ -89,9 +120,17 @@ export async function bakeAnnotationsToPdf(
         width: mask.width + 1, height: mask.ascent + mask.descent + 1,
         rotate: degrees(mask.angle * 180 / Math.PI), color: rgb(1, 1, 1), borderWidth: 0 })
       }
-      if (anno.text) page.drawText(anno.text, { x: source.x, y: source.y, size: anno.fontSize || source.size,
+      if (anno.text) {
+      const matrix = source.matrix || [Math.cos(source.angle), Math.sin(source.angle), -Math.sin(source.angle), Math.cos(source.angle)]
+      const transformed = matrix.some((value, index) => Math.abs(value - [1, 0, 0, 1][index]) > 0.00001)
+      page.pushOperators(pushGraphicsState())
+      if (transformed) page.pushOperators(concatTransformationMatrix(matrix[0], matrix[1], matrix[2], matrix[3], source.x, source.y))
+      page.pushOperators(setCharacterSpacing((source.characterSpacing || 0) * (anno.fontSize || source.size) / source.size), setWordSpacing((source.wordSpacing || 0) * (anno.fontSize || source.size) / source.size))
+      page.drawText(anno.text, { x: transformed ? 0 : source.x, y: transformed ? 0 : source.y, size: anno.fontSize || source.size,
         lineHeight: anno.lineHeight || (anno.fontSize || source.size) * 1.2,
-        font: resolveFont(anno.fontFamily, anno.bold, anno.italic), color: rgb(col.r, col.g, col.b), rotate: degrees(source.angle * 180 / Math.PI) })
+        font: await annotationFont(anno), color: rgb(col.r, col.g, col.b) })
+      page.pushOperators(popGraphicsState())
+      }
       continue
     }
 
@@ -127,7 +166,7 @@ export async function bakeAnnotationsToPdf(
         const text = (anno.text || '').slice(0, 500)
         const col2 = hexToRgb(anno.color)
         const size = anno.fontSize || 12
-        const f = resolveFont(anno.fontFamily, anno.bold, anno.italic)
+        const f = await annotationFont(anno)
         page.drawText(text, { x, y: y + h - size, size, font: f, color: rgb(col2.r, col2.g, col2.b), maxWidth: w, lineHeight: size + 2 })
       } else if (anno.type === 'image') {
         const map = (globalThis as unknown as Record<string, unknown>).__imageMap as Record<string, { bytes: Uint8Array; mime: string }> | undefined
@@ -202,7 +241,7 @@ export async function bakeAnnotationsToPdf(
     } else if (anno.type === 'text') {
       // FreeText annotation — visible text that is editable in Acrobat
       const size = anno.fontSize || 12
-      const selectedFont = resolveFont(anno.fontFamily, anno.bold, anno.italic)
+      const selectedFont = await annotationFont(anno)
       const lines = breakTextIntoLines(anno.text || '', [' '], Math.max(1, w - 8), text => selectedFont.widthOfTextAtSize(text, size))
       const commands = lines.map((line, index) => `1 0 0 1 4 ${h - size - 2 - index * (size + 2)} Tm ${selectedFont.encodeText(line)} Tj`).join('\n')
       const appearance = ctx.register(ctx.flateStream(`q 1 1 1 rg 0 0 ${w} ${h} re f BT /F0 ${size} Tf ${col.r} ${col.g} ${col.b} rg ${commands} ET Q`, {

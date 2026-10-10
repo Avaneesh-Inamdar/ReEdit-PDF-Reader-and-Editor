@@ -195,7 +195,7 @@ export function AnnotationLayer({
     }
     if (a.type === 'text') {
       const fam = (a.fontFamily || 'Helvetica').toLowerCase()
-      const family = fam.includes('times') ? 'Times New Roman, serif' : fam.includes('courier') ? 'Courier New, monospace' : 'Inter, sans-serif'
+      const family = a.previewFont || (fam.includes('times') ? 'Times New Roman, serif' : fam.includes('courier') ? 'Courier New, monospace' : fam.includes('helvetica') ? 'Arial, sans-serif' : a.fontFamily || 'Arial')
       return (
         <g key={a.id} data-anno-id={a.id} onClick={() => setSelected(a.id)} style={{ cursor: 'pointer', outline: outline as never, pointerEvents: 'auto' }}>
           <rect x={px} y={py} width={pw} height={ph} fill="rgba(255,255,255,0.92)" stroke={isSelected ? '#38bdf8' : '#d1d5db'} strokeWidth={isSelected ? 1.5 : 1} rx={4} style={{ pointerEvents: 'auto' }} />

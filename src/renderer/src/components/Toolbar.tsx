@@ -95,7 +95,7 @@ export function Toolbar({
         }}
       >
         {/* Adobe Guide: Page Only | Bookmarks and Page | Thumbnails and Page */}
-        <button className={`tb-btn ${leftPane==='closed'?'active':''}`} onClick={()=> setLeftPane('closed')} disabled={!hasDoc} title="Page Only – close overview area">
+        <button className={`tb-btn ${leftPane!=='closed'?'active':''}`} onClick={()=> useUIStore.getState().toggleLeftPane()} disabled={!hasDoc} title="Toggle navigation sidebar (F4)" aria-label="Toggle navigation sidebar" aria-expanded={leftPane!=='closed'}>
           <Icon name="pageOnly" />
         </button>
         <button className={`tb-btn ${leftPane==='bookmarks'?'active':''}`} onClick={()=> setLeftPane('bookmarks')} disabled={!hasDoc} title="Bookmarks and Page – show bookmarks">

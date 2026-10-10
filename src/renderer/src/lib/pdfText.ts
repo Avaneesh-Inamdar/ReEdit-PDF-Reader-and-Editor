@@ -9,6 +9,17 @@ export interface PdfTextRun {
   descent: number
   angle: number
   fontFamily: string
+  previewFont?: string
+  fontData?: Uint8Array
+  fontGlyphs?: Record<string, string>
+  fontGlyphWidths?: Record<string, number>
+  color?: string
+  bold?: boolean
+  italic?: boolean
+  characterSpacing?: number
+  wordSpacing?: number
+  // Normalized PDF text matrix, including horizontal stretch and shear.
+  matrix?: number[]
 }
 
 export function textRun(
@@ -26,11 +37,12 @@ export function textRun(
     text: item.str,
     x,
     y,
-    width: item.width,
+    width: item.width / (Math.hypot(a, b) / size || 1),
     size,
     ascent: (style.ascent ?? 0.8) * size,
     descent: Math.abs(style.descent ?? -0.2) * size,
     angle: Math.atan2(b, a),
+    matrix: [a / size, b / size, c / size, d / size],
     fontFamily: /mono/i.test(family)
       ? 'Courier'
       : /serif/i.test(family) && !/sans/i.test(family)
@@ -41,15 +53,14 @@ export function textRun(
 
 // SVG local coordinates point down, PDF coordinates point up. Compose both with the viewport.
 export function textMatrix(run: PdfTextRun, viewport: number[]): number[] {
-  const cos = Math.cos(run.angle),
-    sin = Math.sin(run.angle)
+  const [ra, rb, rc, rd] = run.matrix || [Math.cos(run.angle), Math.sin(run.angle), -Math.sin(run.angle), Math.cos(run.angle)]
   const [a, b, c, d, e, f] = viewport
   return [
-    a * cos + c * sin,
-    b * cos + d * sin,
-    a * sin - c * cos,
-    b * sin - d * cos,
+    a * ra + c * rb,
+    b * ra + d * rb,
+    -(a * rc + c * rd),
+    -(b * rc + d * rd),
     a * run.x + c * run.y + e,
     b * run.x + d * run.y + f
-  ]
+  ].map(value => value || 0)
 }

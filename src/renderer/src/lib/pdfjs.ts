@@ -28,6 +28,6 @@ export async function loadPdfDocument(data: ArrayBuffer): Promise<import('pdfjs-
 export { pdfjsLib }
 export const { getDocument } = pdfjsLib
 
-export function pdfAssetOptions(): { standardFontDataUrl: string; cMapUrl: string; cMapPacked: boolean } {
-  return { standardFontDataUrl: new URL('./pdfjs/standard_fonts/', window.location.href).href, cMapUrl: new URL('./pdfjs/cmaps/', window.location.href).href, cMapPacked: true }
+export function pdfAssetOptions(): { standardFontDataUrl: string; cMapUrl: string; cMapPacked: boolean; fontExtraProperties: boolean } {
+  return { standardFontDataUrl: new URL('./pdfjs/standard_fonts/', window.location.href).href, cMapUrl: new URL('./pdfjs/cmaps/', window.location.href).href, cMapPacked: true, fontExtraProperties: true }
 }

@@ -3,11 +3,13 @@ import { Icon } from './Icon'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { usePdfStore } from '../stores/usePdfStore'
-import { useOcrStore } from '../stores/useOcrStore'
+import { findTextMatches, type SearchMatch } from '../lib/pdfSearch'
 
 export function SearchBar({ pdfDoc, open, onClose }: { pdfDoc: PDFDocumentProxy | null; open: boolean; onClose: () => void }): React.JSX.Element | null {
   const { searchQuery, searchMatches, currentMatch, setSearch, setCurrentMatch } = usePdfStore()
   const [local, setLocal] = useState(searchQuery)
+  const [matchCase, setMatchCase] = useState(false)
+  const [wholeWords, setWholeWords] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const searchVersion = useRef(0)
@@ -15,10 +17,26 @@ export function SearchBar({ pdfDoc, open, onClose }: { pdfDoc: PDFDocumentProxy 
   const [isSearching, setIsSearching] = useState(false)
 
   useEffect(() => {
+    if (!open) {
+      searchVersion.current++
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      setSearch('', [])
+      setLocal('')
+      setIsSearching(false)
+    }
+  }, [open, setSearch])
+
+  useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 0)
   }, [open])
 
-  useEffect(() => setLocal(searchQuery), [searchQuery])
+  useEffect(() => {
+    searchVersion.current++
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    setSearch('', [])
+    setLocal('')
+    setIsSearching(false)
+  }, [pdfDoc, setSearch])
 
   const scrollToMatch = useCallback((idx: number, matches: { page: number; index: number }[]) => {
     const m = matches[idx]
@@ -28,64 +46,21 @@ export function SearchBar({ pdfDoc, open, onClose }: { pdfDoc: PDFDocumentProxy 
     usePdfStore.getState().setCurrentPage(m.page)
   }, [])
 
-  const doSearch = useCallback(async (q: string) => {
+  const doSearch = useCallback(async (q: string, caseSensitive = matchCase, whole = wholeWords) => {
     const version = ++searchVersion.current
     const needle = q.trim().toLowerCase()
     if (!pdfDoc || !needle) {
       setSearch('', [])
+      setIsSearching(false)
       return
     }
     setIsSearching(true)
     try {
-      const matches: { page: number; index: number }[] = []
-      // Search PDF text layer (pdf.js) — combine fragmented items like pdf.js PDFFindController
-      for (let p = 1; p <= pdfDoc.numPages; p++) {
+      const matches: SearchMatch[] = []
+      for (let page = 1; page <= pdfDoc.numPages; page++) {
         if (version !== searchVersion.current) return
-        const tc = await pageText(pdfDoc, p)
-        const items = tc.items as unknown as { str: string }[]
-        // Build combined string with offsets to catch cross-item matches (e.g. "Hello" split as "Hel" + "lo")
-        let combined = ''
-        const offsets: number[] = []
-        for (const it of items) {
-          offsets.push(combined.length)
-          combined += (it.str || '') + ' '
-        }
-        const lower = combined.toLowerCase()
-        let pos = lower.indexOf(needle)
-        // if needle found anywhere on page, push all items that intersect it
-        if (pos !== -1) {
-          // naive: mark every item that contains substring, or if combined match spans items, mark first intersecting item
-          for (let i = 0; i < items.length; i++) {
-            const s = (items[i].str || '').toLowerCase()
-            if (s && s.includes(needle)) matches.push({ page: p, index: i })
-          }
-          // if no single item contains needle but combined does (fragmented), push a synthetic match for page
-          if (!matches.some(m => m.page === p)) {
-            // find first item index that contains part of needle position
-            for (let i = 0; i < items.length; i++) {
-              const start = offsets[i]
-              const end = start + (items[i].str?.length || 0)
-              if (pos >= start - needle.length && pos < end) {
-                matches.push({ page: p, index: i })
-                break
-              }
-            }
-            if (!matches.some(m => m.page === p)) matches.push({ page: p, index: 0 })
-          }
-        }
-      }
-      // Search OCR layer (Tesseract words) — like Stirling-PDF OCR overlay
-      const ocrState = useOcrStore.getState().ocrResults
-      for (const [pageStr, pageData] of Object.entries(ocrState)) {
-        const pageNum = Number(pageStr)
-        if (!pageData?.words) continue
-        pageData.words.forEach((w: { text: string }, idx: number) => {
-          if (w.text.toLowerCase().includes(needle)) {
-            // avoid duplicate if already have a match for same page+index (ocr index offset)
-            // encode ocr matches with high index offset to avoid collision
-            matches.push({ page: pageNum, index: 100000 + idx })
-          }
-        })
+        const content = await pageText(pdfDoc, page)
+        matches.push(...findTextMatches(content.items, q, page, caseSensitive, whole))
       }
       if (version !== searchVersion.current) return
       setSearch(q, matches)
@@ -98,12 +73,14 @@ export function SearchBar({ pdfDoc, open, onClose }: { pdfDoc: PDFDocumentProxy 
     } finally {
       if (version === searchVersion.current) setIsSearching(false)
     }
-  }, [pdfDoc, setSearch, setCurrentMatch, scrollToMatch])
+  }, [pdfDoc, setSearch, setCurrentMatch, scrollToMatch, matchCase, wholeWords])
 
   // Debounced live search like Acrobat / pdf.js viewer
   const onChange = (v: string): void => {
     searchVersion.current++
     setLocal(v)
+    setSearch('', [])
+    setIsSearching(!!v.trim())
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => { void doSearch(v) }, 280)
   }
@@ -116,6 +93,18 @@ export function SearchBar({ pdfDoc, open, onClose }: { pdfDoc: PDFDocumentProxy 
     setCurrentMatch(next)
     scrollToMatch(next, searchMatches)
   }
+
+  useEffect(() => {
+    if (!open) return
+    const keyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'F3' || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'g')) {
+        event.preventDefault()
+        navigate(event.shiftKey ? -1 : 1)
+      }
+    }
+    window.addEventListener('keydown', keyDown)
+    return () => window.removeEventListener('keydown', keyDown)
+  }, [open, searchMatches, currentMatch])
 
   if (!open) return null
 
@@ -139,8 +128,9 @@ export function SearchBar({ pdfDoc, open, onClose }: { pdfDoc: PDFDocumentProxy 
             else if (searchMatches.length) navigate(1)
             else void doSearch(local)
           }
-          if (e.key === 'Escape') onClose()
+          if (e.key === 'Escape' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f')) { e.preventDefault(); e.stopPropagation(); onClose() }
         }}
+        aria-label="Find in document"
         placeholder="Find in document…"
         className="text-xs"
         style={{
@@ -169,9 +159,23 @@ export function SearchBar({ pdfDoc, open, onClose }: { pdfDoc: PDFDocumentProxy 
           <button className="tb-btn" style={{ width: 22, height: 22 }} onClick={() => navigate(-1)} title="Previous (Shift+Enter)">‹</button>
           <button className="tb-btn" style={{ width: 22, height: 22 }} onClick={() => navigate(1)} title="Next (Enter)">›</button>
         </span>
-      ) : local.trim() ? (
+      ) : local.trim() && !isSearching ? (
         <span className="text-xs" style={{ color: 'var(--acrobat-text-dim)' }}>No matches</span>
       ) : null}
+      <label className="flex items-center gap-1 text-xs whitespace-nowrap">
+        <input type="checkbox" checked={matchCase} onChange={event => {
+          setMatchCase(event.target.checked)
+          if (debounceRef.current) clearTimeout(debounceRef.current)
+          void doSearch(local, event.target.checked, wholeWords)
+        }} />Match case
+      </label>
+      <label className="flex items-center gap-1 text-xs whitespace-nowrap">
+        <input type="checkbox" checked={wholeWords} onChange={event => {
+          setWholeWords(event.target.checked)
+          if (debounceRef.current) clearTimeout(debounceRef.current)
+          void doSearch(local, matchCase, event.target.checked)
+        }} />Whole words
+      </label>
       <div className="flex-1" />
       <button className="tb-btn" onClick={() => { setSearch('', []); onClose() }} style={{ fontSize: 12 }}><Icon name="close" /></button>
     </div>

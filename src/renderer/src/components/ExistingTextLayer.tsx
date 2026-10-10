@@ -3,6 +3,8 @@ import { useAnnotationStore } from '../stores/useAnnotationStore'
 import { useUIStore } from '../stores/useUIStore'
 import { usePdfStore } from '../stores/usePdfStore'
 import { requestText } from '../lib/requestText'
+import { previewFont, originalFontSelected, previewSpaceAdjustment } from '../lib/fonts'
+import { encodedPreview } from '../lib/pdfTextStyle'
 import { textMatrix, type PdfTextRun } from '../lib/pdfText'
 
 export function ExistingTextLayer({
@@ -52,7 +54,9 @@ export function ExistingTextLayer({
       text: replacement,
       fontSize: run.size,
       fontFamily: run.fontFamily,
-      color: '#000000',
+      color: run.color || '#000000',
+      bold: run.bold,
+      italic: run.italic,
       opacity: 1,
       strokeWidth: 0,
       sourceText: run
@@ -95,23 +99,19 @@ export function ExistingTextLayer({
             <text
               transform={`matrix(${textMatrix(source, transform).join(' ')})`}
               fontSize={size}
+              letterSpacing={(source.characterSpacing || 0) * size / source.size}
+              wordSpacing={(source.wordSpacing || 0) * size / source.size + previewSpaceAdjustment(annotation)}
               fill={annotation.color}
-              fontFamily={
-                annotation.fontFamily?.includes('Times')
-                  ? 'Times New Roman'
-                  : annotation.fontFamily?.includes('Courier')
-                    ? 'Courier New'
-                    : 'Arial'
-              }
+              fontFamily={previewFont(annotation)}
               fontWeight={
-                annotation.bold || annotation.fontFamily?.includes('Bold') ? 'bold' : 'normal'
+                originalFontSelected(annotation) && source.fontData ? 'normal' : annotation.bold || annotation.fontFamily?.includes('Bold') ? 'bold' : 'normal'
               }
-              fontStyle={annotation.italic ? 'italic' : 'normal'}
+              fontStyle={originalFontSelected(annotation) && source.fontData ? 'normal' : annotation.italic ? 'italic' : 'normal'}
               xmlSpace="preserve"
             >
               {(annotation.text || '').split('\n').map((line, index) => (
                 <tspan key={index} x={0} y={index * (annotation.lineHeight || size * 1.2)}>
-                  {line || ' '}
+                  {originalFontSelected(annotation) ? encodedPreview(line || ' ', source.fontGlyphs) : line || ' '}
                 </tspan>
               ))}
             </text>

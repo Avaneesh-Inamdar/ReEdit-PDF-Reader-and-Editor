@@ -12,6 +12,9 @@ files:
   - LICENSE
   - THIRD-PARTY-NOTICES.md
 extraResources:
+  - from: src/renderer/src/assets/fonts
+    to: font-licenses
+    filter: ["*-LICENSE.txt"]
   - from: build/document.ico
     to: document.ico
   - from: build/document.png
@@ -46,7 +49,7 @@ nsis:
   differentialPackage: false
   deleteAppDataOnUninstall: false
   displayLanguageSelector: false
-  runAfterFinish: false
+  runAfterFinish: true
   include: build/installer.nsh
 mac:
   entitlementsInherit: build/entitlements.mac.plist

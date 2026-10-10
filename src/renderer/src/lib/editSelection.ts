@@ -32,8 +32,8 @@ export function selectedRuns(range: Range): PdfTextRun[] {
       key: `${run.key}:${start}-${end}`,
       text: run.text.slice(start, end),
       width,
-      x: run.x + offset * Math.cos(run.angle),
-      y: run.y + offset * Math.sin(run.angle)
+      x: run.x + offset * (run.matrix?.[0] ?? Math.cos(run.angle)),
+      y: run.y + offset * (run.matrix?.[1] ?? Math.sin(run.angle))
     })
   }
   return fragments
@@ -81,7 +81,9 @@ export async function editSelection(selection: TextSelectionInfo): Promise<void>
       text: replacement,
       fontSize: first.size,
       fontFamily: first.fontFamily,
-      color: '#000000',
+      color: first.color || '#000000',
+      bold: first.bold,
+      italic: first.italic,
       strokeWidth: 0,
       opacity: 1
     })

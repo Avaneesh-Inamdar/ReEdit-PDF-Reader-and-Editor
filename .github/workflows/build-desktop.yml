@@ -46,6 +46,14 @@ jobs:
       - name: Windows installer and uninstaller
         if: runner.os == 'Windows'
         run: ./scripts/test-windows-installer.ps1
+      - name: Windows font, gestures, sidebar and Find regressions
+        if: runner.os == 'Windows'
+        env:
+          READIT_142_APP: release/win-unpacked/resources/app.asar
+        run: npx electron scripts/smoke-1.4.2.cjs
+      - name: Windows Finish launches installed app
+        if: runner.os == 'Windows'
+        run: ./scripts/test-windows-finish.ps1
       - name: Linux packages
         if: runner.os == 'Linux'
         env:
@@ -71,4 +79,6 @@ jobs:
             release/linux-launch.json
             release/linux-tests/**/result.json
             release/smoke-1.4.1/result.json
+            release/smoke-1.4.2/result.json
+            release/windows-finish-result.json
             release/windows-installer-result.json

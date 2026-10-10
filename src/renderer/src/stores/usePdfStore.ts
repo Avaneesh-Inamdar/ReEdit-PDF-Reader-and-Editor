@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { useAnnotationStore } from './useAnnotationStore'
 import { useEditStore } from './useEditStore'
+import type { SearchMatch } from '../lib/pdfSearch'
 
 const editSnapshots = new WeakMap<ArrayBuffer, {
   annotations: ReturnType<typeof useAnnotationStore.getState>
@@ -29,7 +30,7 @@ export interface PdfState {
   fitMode: 'none' | 'width' | 'page'
   rotation: number
   searchQuery: string
-  searchMatches: { page: number; index: number }[]
+  searchMatches: SearchMatch[]
   currentMatch: number
   isLoading: boolean
   error: string | null

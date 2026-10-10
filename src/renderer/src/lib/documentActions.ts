@@ -18,10 +18,10 @@ export async function prepareDocument(flatten = false): Promise<Uint8Array> {
   const fields = useFormStore.getState().fields
   let bytes: Uint8Array = new Uint8Array(data.slice(0))
   const masks: RemovalRegion[] = annotations.flatMap(a => (a.maskTexts || (a.sourceText ? [a.sourceText] : [])).map(r => {
-    const c=Math.cos(r.angle), s=Math.sin(r.angle)
-    const x=r.x-s*r.ascent, y=r.y+c*r.ascent
-    const bx=r.x+s*r.descent, by=r.y-c*r.descent
-    return {page:a.page,quad:[x,y,x+c*r.width,y+s*r.width,bx,by,bx+c*r.width,by+s*r.width] as RemovalRegion['quad']}
+    const [ma, mb, c, d] = r.matrix || [Math.cos(r.angle), Math.sin(r.angle), -Math.sin(r.angle), Math.cos(r.angle)]
+    const x=r.x+c*r.ascent, y=r.y+d*r.ascent
+    const bx=r.x-c*r.descent, by=r.y-d*r.descent
+    return {page:a.page,quad:[x,y,x+ma*r.width,y+mb*r.width,bx,by,bx+ma*r.width,by+mb*r.width] as RemovalRegion['quad']}
   }))
   if (masks.length) bytes = new Uint8Array(await window.api.removePdfContent(bytes, masks, false))
   const normal=annotations.filter(a => a.type !== 'redact')

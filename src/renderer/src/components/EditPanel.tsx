@@ -2,6 +2,7 @@ import { Icon } from './Icon'
 import { editSelection } from '../lib/editSelection'
 import { placeImage } from '../lib/imagePlacement'
 import { requestText } from '../lib/requestText'
+import { bundledFonts, standardFonts, previewFont } from '../lib/fonts'
 import { useEffect, useState, useRef } from 'react'
 import { usePdfStore } from '../stores/usePdfStore'
 import { useAnnotationStore } from '../stores/useAnnotationStore'
@@ -17,13 +18,7 @@ import {
   type TextSelectionInfo
 } from '../lib/textSelection'
 
-const FONT_OPTIONS = [
-  { label: 'Helvetica', value: 'Helvetica' },
-  { label: 'Helvetica Bold', value: 'Helvetica-Bold' },
-  { label: 'Times Roman', value: 'Times-Roman' },
-  { label: 'Times Bold', value: 'Times-Bold' },
-  { label: 'Courier', value: 'Courier' },
-]
+const FONT_OPTIONS = [...standardFonts, ...bundledFonts.map(([name]) => name)].map(value => ({ label: value, value }))
 
 const SIZE_OPTIONS = [8,10,12,14,16,18,24,32,48]
 
@@ -31,6 +26,7 @@ export function EditPanel(): React.JSX.Element {
   const { data, currentPage } = usePdfStore()
   const { annotations, selectedId, updateAnnotation, deleteAnnotation, addAnnotation } = useAnnotationStore()
   const imageInputRef = useRef<HTMLInputElement>(null)
+  const fontInputRef = useRef<HTMLInputElement>(null)
   const det = useDetectionStore()
 
   const selected = annotations.find(a => a.id === selectedId) || null
@@ -113,11 +109,30 @@ export function EditPanel(): React.JSX.Element {
   const onFontChange = (field: 'fontFamily'|'fontSize'|'color'|'text'|'bold'|'italic', value: string|number|boolean): void => {
     if (!selected) return
     if (field === 'fontSize') updateAnnotation(selected.id, { fontSize: Number(value) })
-    else if (field === 'fontFamily') updateAnnotation(selected.id, { fontFamily: String(value) })
+    else if (field === 'fontFamily') updateAnnotation(selected.id, { fontFamily: String(value), fontData: undefined, previewFont: undefined })
     else if (field === 'color') updateAnnotation(selected.id, { color: String(value) })
     else if (field === 'text') updateAnnotation(selected.id, { text: String(value) })
-    else if (field === 'bold') updateAnnotation(selected.id, { bold: Boolean(value) })
-    else if (field === 'italic') updateAnnotation(selected.id, { italic: Boolean(value) })
+    else if (field === 'bold' || field === 'italic') {
+      const family = selected.fontFamily || 'Helvetica'
+      const bundled = bundledFonts.find(([name]) => family.toLowerCase().replace(/[^a-z]/g, '').startsWith(name.toLowerCase().replace(/[^a-z]/g, '')))
+      const base = bundled?.[0] || (/courier/i.test(family) ? 'Courier' : /times/i.test(family) ? 'Times-Roman' : /helvetica|arial/i.test(family) ? 'Helvetica' : null)
+      if (!base) { alert('Choose a bundled font or import the desired font face before changing its weight or style.'); return }
+      updateAnnotation(selected.id, { fontFamily: base, [field]: Boolean(value), fontData: undefined, previewFont: undefined })
+    }
+  }
+
+  const importFont = async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file || !selected) return
+    try {
+      const data = new Uint8Array(await file.arrayBuffer())
+      const family = file.name.replace(/\.[^.]+$/, '')
+      const preview = `imported-${crypto.randomUUID()}`
+      const face = await new FontFace(preview, data.slice().buffer).load()
+      document.fonts.add(face)
+      updateAnnotation(selected.id, { fontFamily: family, fontData: data, previewFont: preview, bold: false, italic: false })
+    } catch (error) { alert('Unable to import this font: ' + String(error)) }
   }
 
   return (
@@ -135,6 +150,7 @@ export function EditPanel(): React.JSX.Element {
                 className="flex-1 h-7 text-xs px-2 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200"
                 title="Font family"
               >
+                {selected?.fontFamily && !FONT_OPTIONS.some(option => option.value === selected.fontFamily) && <option value={selected.fontFamily}>{selected.fontFamily} ({selected.fontData ? 'imported font' : 'document font'})</option>}
                 {FONT_OPTIONS.map(o=> <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
               <select
@@ -143,11 +159,13 @@ export function EditPanel(): React.JSX.Element {
                 className="w-20 h-7 text-xs px-2 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200"
                 title="Font size"
               >
-                {SIZE_OPTIONS.map(n=> <option key={n} value={String(n)}>{n}</option>)}
+                {[...new Set([...SIZE_OPTIONS, selected?.fontSize || 12])].sort((a, b) => a - b).map(n=> <option key={n} value={String(n)}>{n}</option>)}
               </select>
             </div>
+            <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff" hidden onChange={event => void importFont(event)} />
+            <button className="tb-btn text-xs px-2" onClick={() => fontInputRef.current?.click()} title="Import a licensed TTF, OTF, or WOFF font">Import font…</button>
             <div className="flex items-center gap-1">
-              <button onClick={()=> onFontChange('bold', !selected?.bold)} className={`tb-btn h-7 w-7 border rounded ${selected?.bold ? 'bg-zinc-800 text-white dark:bg-zinc-700' : 'border-transparent'}`} title="Bold (uses Helvetica-Bold)"><Icon name="bold" /></button>
+              <button onClick={()=> onFontChange('bold', !selected?.bold)} className={`tb-btn h-7 w-7 border rounded ${selected?.bold ? 'bg-zinc-800 text-white dark:bg-zinc-700' : 'border-transparent'}`} title="Bold"><Icon name="bold" /></button>
               <button onClick={()=> onFontChange('italic', !selected?.italic)} className={`tb-btn h-7 w-7 border rounded ${selected?.italic ? 'bg-zinc-800 text-white dark:bg-zinc-700' : 'border-transparent'}`} title="Italic"><Icon name="italic" /></button>
               <div className="tb-sep mx-1" />
               <input
@@ -167,7 +185,7 @@ export function EditPanel(): React.JSX.Element {
               rows={2}
               className="w-full text-xs p-2 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 resize-y"
               placeholder="Text content"
-              style={{ fontFamily: selected?.fontFamily?.includes('Courier') ? 'monospace' : selected?.fontFamily?.includes('Times') ? 'serif' : 'sans-serif', fontSize: Math.min(14, (selected?.fontSize||12)) }}
+              style={{ fontFamily: selected ? previewFont(selected) : 'sans-serif', fontSize: Math.min(14, (selected?.fontSize||12)), color: selected?.color }}
             />
           </div>
         ) : liveSelection ? (
@@ -223,7 +241,7 @@ export function EditPanel(): React.JSX.Element {
         )}
         {/* Quick font preview */}
         {isTextSelected && (
-          <div className="mt-2 text-xs p-2 rounded bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700" style={{ color: selected?.color, fontFamily: selected?.fontFamily?.includes('Courier') ? 'monospace' : selected?.fontFamily?.includes('Times') ? 'serif' : 'sans-serif', fontSize: selected?.fontSize, fontWeight: selected?.bold ? 700 : 400, fontStyle: selected?.italic ? 'italic' : 'normal' }}>
+          <div className="mt-2 text-xs p-2 rounded bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700" style={{ color: selected?.color, fontFamily: selected ? previewFont(selected) : 'sans-serif', fontSize: selected?.fontSize, fontWeight: selected?.sourceText?.fontData && selected.fontFamily === selected.sourceText.fontFamily ? 400 : selected?.bold ? 700 : 400, fontStyle: selected?.sourceText?.fontData && selected.fontFamily === selected.sourceText.fontFamily ? 'normal' : selected?.italic ? 'italic' : 'normal' }}>
             Preview: {selected?.text || 'Sample'}
           </div>
         )}
@@ -259,7 +277,7 @@ export function EditPanel(): React.JSX.Element {
 
         <p className="mt-4 text-xs" style={{ color: 'var(--acrobat-pane-text)' }}>
           Click existing text on the page to edit it. Apply your change, then save with Ctrl+S.
-          Scanned pages need OCR first. Text is replaced visually using the original position and a standard font; paragraph reflow is not supported.
+          Scanned pages need OCR first. Edits retain the document font when it is embedded. If a subset lacks a new character, choose a bundled font or import the full font. Paragraph reflow is not supported.
         </p>
 
         <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mt-6 mb-3">PAGES</h3>

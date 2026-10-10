@@ -55,6 +55,10 @@ function openFromShell(args: string[]): void {
     }
     try {
       const data = readFileSync(filePath)
+      if (mainWindow?.isMinimized()) mainWindow.restore()
+      mainWindow?.maximize()
+      mainWindow?.show()
+      mainWindow?.focus()
       currentFilePath = filePath
       addRecentFile(filePath)
       buildMenu()

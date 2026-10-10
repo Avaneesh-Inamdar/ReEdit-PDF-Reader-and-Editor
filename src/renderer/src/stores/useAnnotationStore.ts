@@ -24,6 +24,8 @@ export interface Annotation {
   text?: string // for note/text
   fontSize?: number // for text
   fontFamily?: string // for text: Helvetica, TimesRoman, Courier, etc (pdf-lib StandardFonts)
+  fontData?: Uint8Array
+  previewFont?: string
   bold?: boolean
   italic?: boolean
 }
