@@ -8,6 +8,8 @@ Other dependencies include Electron (MIT), React (MIT), PDF.js (Apache-2.0), pdf
 
 ## Bundled fonts
 
+The Windows installer includes a bounded shell-path copy backported from electron-builder (MIT), Copyright (c) 2015 Loopline Systems. The full notice is installed as `resources/installer-LICENSE.txt`; its source is `build/electron-builder-LICENSE.txt`.
+
 Font embedding uses @pdf-lib/fontkit (MIT), by Andrew Dillon and Devon Govett. Its notice is installed in `resources/font-licenses/fontkit-LICENSE.txt`; the source copy is `build/fontkit-LICENSE.txt`. Upstream: https://github.com/Hopding/fontkit.
 
 Lato, Libre Baskerville, Noto Sans, Noto Serif, Open Sans, Roboto, Source Code Pro and Ubuntu are bundled through Fontsource. Their authors' copyright and license texts are in `resources/font-licenses` in installed builds and `src/renderer/src/assets/fonts/*-LICENSE.txt` in the source. Most use the SIL Open Font License; Ubuntu uses the Ubuntu Font License. Imported fonts remain the user's responsibility to license.
