@@ -28,7 +28,9 @@ export const standardFonts = [
   'Courier',
   'Courier-Bold',
   'Courier-Oblique',
-  'Courier-BoldOblique'
+  'Courier-BoldOblique',
+  'Symbol',
+  'ZapfDingbats'
 ]
 const bytes = new Map<string, Promise<Uint8Array>>()
 export async function bundledFontData(

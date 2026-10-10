@@ -1,5 +1,6 @@
 import { useUIStore } from '../stores/useUIStore'
 import { useAnnotationStore } from '../stores/useAnnotationStore'
+import { readingOrder } from './readingOrder'
 // Resolve drag endpoints against glyphs rather than Chromium's page-sized
 // absolutely positioned container. Blank space must never select the page tail.
 export function installPdfDragSelection(container: HTMLElement): () => void {
@@ -9,19 +10,12 @@ export function installPdfDragSelection(container: HTMLElement): () => void {
     (span) => span.textContent?.trim()
   )
   const measured = spans.map((span) => ({ span, box: span.getBoundingClientRect() }))
-  const lefts = measured.map((item) => item.box.left)
-  const sameColumn =
-    lefts.length > 1 && Math.max(...lefts) - Math.min(...lefts) < container.clientWidth * 0.15
   const upright = spans.every(
     (span) =>
       Math.abs((span as HTMLElement & { pdfRun?: { angle: number } }).pdfRun?.angle || 0) < 0.01
   )
-  if (sameColumn && upright) {
-    measured.sort((a, b) =>
-      Math.abs(a.box.top - b.box.top) < Math.min(a.box.height, b.box.height) * 0.35
-        ? a.box.left - b.box.left
-        : a.box.top - b.box.top
-    )
+  if (upright) {
+    measured.splice(0, measured.length, ...readingOrder(measured))
     const fragment = document.createDocumentFragment()
     measured.forEach((item, index) => {
       if (
@@ -42,14 +36,16 @@ export function installPdfDragSelection(container: HTMLElement): () => void {
   let pointer: number | null = null
   let boxes: { span: HTMLElement; box: DOMRect }[] | null = null
   let scrollTop = 0
+  let scrollLeft = 0
   const caret = (x: number, y: number): Caret | null => {
     const viewer = container.closest('[data-pdf-viewer]')
-    if (!boxes || scrollTop !== viewer?.scrollTop) {
-      boxes = Array.from(container.querySelectorAll<HTMLElement>('[data-pdf-run]')).map((span) => ({
+    if (!boxes || scrollTop !== viewer?.scrollTop || scrollLeft !== viewer?.scrollLeft) {
+      boxes = Array.from(container.querySelectorAll<HTMLElement>('[data-pdf-run]')).filter(span => span.dataset.removed !== 'true').map((span) => ({
         span,
         box: span.getBoundingClientRect()
       }))
       scrollTop = viewer?.scrollTop || 0
+      scrollLeft = viewer?.scrollLeft || 0
     }
     let closest: HTMLElement | null = null
     let distance = Infinity
@@ -106,6 +102,7 @@ export function installPdfDragSelection(container: HTMLElement): () => void {
     if (!anchor) return
     event.preventDefault()
     pointer = event.pointerId
+    container.dataset.selecting = 'true'
     container.setPointerCapture(pointer)
     window.getSelection()?.setBaseAndExtent(anchor.node, anchor.offset, anchor.node, anchor.offset)
   }
@@ -140,18 +137,35 @@ export function installPdfDragSelection(container: HTMLElement): () => void {
         )
     }
     anchor = null
+    delete container.dataset.selecting
     if (container.hasPointerCapture(event.pointerId))
       container.releasePointerCapture(event.pointerId)
     pointer = null
+  }
+  const doubleClick = (event: MouseEvent): void => {
+    const ui = useUIStore.getState()
+    if (ui.pointerMode !== 'select' || ui.spaceHeld || useAnnotationStore.getState().tool !== 'select') return
+    const hit = caret(event.clientX, event.clientY)
+    if (!hit) return
+    const value = hit.node.data
+    const segments = new Intl.Segmenter(undefined, { granularity: 'word' }).segment(value)
+    const word = [...segments].find(segment => segment.isWordLike && hit.offset >= segment.index && hit.offset <= segment.index + segment.segment.length)
+    if (word) {
+      window.getSelection()?.setBaseAndExtent(hit.node, word.index, hit.node, word.index + word.segment.length)
+      event.preventDefault()
+    }
   }
   container.addEventListener('pointerdown', down)
   container.addEventListener('pointermove', move)
   container.addEventListener('pointerup', up)
   container.addEventListener('pointercancel', up)
+  container.addEventListener('dblclick', doubleClick)
   return () => {
     container.removeEventListener('pointerdown', down)
     container.removeEventListener('pointermove', move)
     container.removeEventListener('pointerup', up)
     container.removeEventListener('pointercancel', up)
+    container.removeEventListener('dblclick', doubleClick)
+    delete container.dataset.selecting
   }
 }

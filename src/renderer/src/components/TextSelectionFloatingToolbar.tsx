@@ -94,7 +94,7 @@ export function TextSelectionFloatingToolbar({
           color: 'var(--acrobat-text)'
         }}
       >
-        <button className="tb-btn flex items-center gap-1 px-2" title="Edit selected text" onClick={() => { void editSelection(selection); onClose() }} disabled={!selection.runs?.length}><Icon name="edit" /><span>Edit Text</span></button>
+        <button className="tb-btn flex items-center gap-1 px-2" title="Edit selected text" onClick={() => { void editSelection(selection); onClose() }} disabled={!selection.runs?.length && !selection.annotationId}><Icon name="edit" /><span>Edit Text</span></button>
         {/* Highlight button */}
         <button
           className="tb-btn flex items-center gap-1.5 px-2 py-1 rounded hover:bg-zinc-700/20"

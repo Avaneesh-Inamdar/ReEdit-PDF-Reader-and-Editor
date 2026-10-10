@@ -8,6 +8,8 @@ Other dependencies include Electron (MIT), React (MIT), PDF.js (Apache-2.0), pdf
 
 ## Bundled fonts
 
+WOFF2 import uses wawoff2 2.0.1, a WebAssembly build of Google's WOFF2 decoder (MIT, Copyright 2013–2017 the WOFF2 Authors). Its complete license is retained in the packaged dependency. The decoder loads only when importing WOFF2; font outlines are reconstructed before embedding.
+
 The Windows installer includes a bounded shell-path copy backported from electron-builder (MIT), Copyright (c) 2015 Loopline Systems. The full notice is installed as `resources/installer-LICENSE.txt`; its source is `build/electron-builder-LICENSE.txt`.
 
 Font embedding uses @pdf-lib/fontkit (MIT), by Andrew Dillon and Devon Govett. Its notice is installed in `resources/font-licenses/fontkit-LICENSE.txt`; the source copy is `build/fontkit-LICENSE.txt`. Upstream: https://github.com/Hopding/fontkit.

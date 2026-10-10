@@ -13,6 +13,7 @@ export interface PdfApi {
   exportWord: (pages: {text:string;size:number}[][], name: string) => Promise<string | null>
   importOffice: () => Promise<string | null>
   removePdfContent: (bytes: Uint8Array, regions: RemovalRegion[], secure: boolean) => Promise<Uint8Array>
+  normalizeImportedFont: (bytes: Uint8Array) => Promise<Uint8Array>
   checkForUpdates: () => Promise<{current: string; latest?: string; available: boolean; message: string}>
   openReleases: () => Promise<void>
   openFile: () => Promise<PdfOpenResult | null>
@@ -48,6 +49,7 @@ const api: PdfApi = {
   exportWord: (pages,name) => ipcRenderer.invoke('office:exportWord',pages,name),
   importOffice: () => ipcRenderer.invoke('office:import'),
   removePdfContent: (bytes, regions, secure) => ipcRenderer.invoke('pdf:removeContent', bytes, regions, secure),
+  normalizeImportedFont: bytes => ipcRenderer.invoke('font:normalize', bytes),
   checkForUpdates: () => ipcRenderer.invoke('app:checkUpdates'),
   openReleases: () => ipcRenderer.invoke('app:openReleases'),
   openFile: () => ipcRenderer.invoke('dialog:openPdf'),

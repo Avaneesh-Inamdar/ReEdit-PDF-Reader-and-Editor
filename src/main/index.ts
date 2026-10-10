@@ -9,6 +9,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import Store from 'electron-store'
 import { Worker } from 'node:worker_threads'
 import { isNewerRelease, releasesUrl } from './updates'
+import { normalizeImportedFont } from './fontImport'
 import type { RemovalRegion } from '../shared/pdfOperations'
 import { signPdfWithCertificate } from './certificateSigning'
 import { createWordDocument, convertOfficeToPdf, type WordLine } from './officeConversion'
@@ -438,6 +439,7 @@ app.whenReady().then(() => {
     openFromShell([output.filePath])
     return output.filePath
   })
+  ipcMain.handle('font:normalize', (_event, bytes: Uint8Array) => normalizeImportedFont(bytes))
   ipcMain.handle('pdf:removeContent', (_event, bytes: Uint8Array, regions: RemovalRegion[], secure: boolean) => new Promise<Uint8Array>((resolve, reject) => {
     if (!(bytes instanceof Uint8Array) || !Array.isArray(regions) || !regions.length || regions.length > 100000) { reject(new Error('Invalid content removal request')); return }
     const worker = new Worker(join(__dirname, 'pdfEngineWorker.js'), { workerData: {bytes, regions, secure: !!secure} })

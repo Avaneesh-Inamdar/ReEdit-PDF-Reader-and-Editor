@@ -23,6 +23,7 @@ interface Style {
   size: number
   characterSpacing: number
   wordSpacing: number
+  annotationId?: string
 }
 const cachedPages: PDFPageProxy[] = []
 const pages = new WeakMap<
@@ -55,7 +56,9 @@ async function styles(page: PDFPageProxy) {
       for (let i = 0; i < operators.fnArray.length; i++) {
         const operation = operators.fnArray[i],
           args = operators.argsArray[i]
-        if (operation === OPS.save) stack.push({ ...current })
+        if (operation === OPS.beginAnnotation) current = { ...current, annotationId: args[0] }
+        else if (operation === OPS.endAnnotation) current = { ...current, annotationId: undefined }
+        else if (operation === OPS.save) stack.push({ ...current })
         else if (operation === OPS.restore) current = stack.pop() || current
         else if (operation === OPS.setFont)
           current = { ...current, font: args[0], size: Math.abs(args[1]) || 1 }
@@ -109,7 +112,7 @@ export async function styledTextRuns(
   content: TextContent,
   pageNumber: number
 ): Promise<Map<number, PdfTextRun>> {
-  const drawing = await styles(page)
+  const drawing = await styles(page).catch(() => ({ characters: [], glyphs: new Map<string, Record<string, string>>(), widths: new Map<string, Record<string, number>>(), extended: new Set<string>() }))
   let position = 0
   const runs = new Map<number, PdfTextRun>()
   for (let index = 0; index < content.items.length; index++) {
@@ -117,9 +120,21 @@ export async function styledTextRuns(
     if (!('str' in item)) continue
     const run = textRun(item, content.styles[item.fontName] || {}, `${pageNumber}:${index}`)
     if (!run) continue
+    const annotationItem = item as typeof item & { pdfAnnotationId?: string; pdfAnnotationColor?: number[] }
+    run.pdfAnnotationId = annotationItem.pdfAnnotationId
     const text = item.str.normalize('NFKC').replace(/\s/g, '')
     const length = Array.from(text).length
-    const candidate = drawing.characters.slice(position, position + length)
+    let candidate = drawing.characters.slice(position, position + length)
+    if (candidate.map(character => character.value).join('') !== text || candidate[0]?.style.font !== item.fontName) {
+      // Extraction can omit invisible/clipped glyphs or reorder RTL text.
+      // Resynchronize rather than losing every subsequent run's formatting.
+      for (let next = position; next < Math.min(drawing.characters.length, position + 512); next++) {
+        const match = drawing.characters.slice(next, next + length)
+        if (match[0]?.style.font === item.fontName && match.map(character => character.value).join('') === text) {
+          position = next; candidate = match; break
+        }
+      }
+    }
     if (candidate.map((character) => character.value).join('') === text) {
       run.color = candidate[0]?.style.color || '#000000'
       run.characterSpacing =
@@ -130,7 +145,9 @@ export async function styledTextRuns(
       position += length
     }
     try {
-      const font = page.commonObjs.get(item.fontName) as FontInfo
+      const paintedFont = run.pdfAnnotationId ? drawing.characters.find(character => character.style.annotationId === run.pdfAnnotationId)?.style.font : undefined
+      const fontId = paintedFont || item.fontName
+      const font = page.commonObjs.get(fontId) as FontInfo
       const name = (font.name || run.fontFamily).replace(/^[A-Z]{6}\+/, '')
       run.fontFamily = name
       run.bold = !!font.bold || /bold|black|heavy|semibold/i.test(name)
@@ -138,21 +155,24 @@ export async function styledTextRuns(
       if (font.data?.length) {
         run.fontData = font.data
         run.previewFont = font.loadedName
-        const encoding = drawing.glyphs.get(item.fontName) || {}
-        if (!drawing.extended.has(item.fontName))
+        const encoding = drawing.glyphs.get(fontId) || {}
+        if (!drawing.extended.has(fontId))
           font.toUnicode?._map?.forEach((unicode, code) => {
             const mapped = font.toFontChar?.[code]
             if (unicode !== undefined && mapped !== undefined)
               encoding[typeof unicode === 'number' ? String.fromCodePoint(unicode) : unicode] =
                 typeof mapped === 'number' ? String.fromCodePoint(mapped) : mapped
           })
-        drawing.extended.add(item.fontName)
+        drawing.extended.add(fontId)
         run.fontGlyphs = encoding
-        run.fontGlyphWidths = drawing.widths.get(item.fontName)
+        run.fontGlyphWidths = drawing.widths.get(fontId)
       }
     } catch {
-      /* Non-embedded fonts still retain the extracted metrics. */
+      // Retain the document identity; do not label an unknown face Helvetica.
+      run.fontFamily = item.fontName
     }
+    if (run.pdfAnnotationId && annotationItem.pdfAnnotationColor)
+      run.color = '#' + Array.from(annotationItem.pdfAnnotationColor).map(value => Math.round(value).toString(16).padStart(2, '0')).join('')
     runs.set(index, run)
   }
   return runs

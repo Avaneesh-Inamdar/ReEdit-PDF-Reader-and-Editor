@@ -54,11 +54,12 @@ export async function bakeAnnotationsToPdf(
   const fonts = new Map<string, Awaited<ReturnType<typeof pdf.embedFont>>>()
   for (const name of [StandardFonts.Helvetica, StandardFonts.HelveticaBold, StandardFonts.HelveticaOblique, StandardFonts.HelveticaBoldOblique,
     StandardFonts.TimesRoman, StandardFonts.TimesRomanBold, StandardFonts.TimesRomanItalic, StandardFonts.TimesRomanBoldItalic,
-    StandardFonts.Courier, StandardFonts.CourierBold, StandardFonts.CourierOblique, StandardFonts.CourierBoldOblique]) {
+    StandardFonts.Courier, StandardFonts.CourierBold, StandardFonts.CourierOblique, StandardFonts.CourierBoldOblique, StandardFonts.Symbol, StandardFonts.ZapfDingbats]) {
     fonts.set(name, await pdf.embedFont(name))
   }
   const font = fonts.get(StandardFonts.Helvetica)!
   const resolveFont = (fam = '', bold = false, italic = false) => {
+    if (fam === 'Symbol' || fam === 'ZapfDingbats') return fonts.get(fam)!
     const family = fam.toLowerCase()
     const weight = bold || family.includes('bold')
     const slant = italic || /italic|oblique/.test(family)
@@ -85,7 +86,7 @@ export async function bakeAnnotationsToPdf(
       embedded.encodeText((annotation.text || '').replace(/[\r\n]/g, ''))
       return embedded
     }
-    if (original && !/helvetica|arial|times|courier/i.test(original.fontFamily))
+    if (original && !Object.values(StandardFonts).includes(original.fontFamily as StandardFonts))
       throw new Error(`The PDF does not embed ${original.fontFamily}. Choose a bundled font or import the original font in Format.`)
     return resolveFont(annotation.fontFamily, annotation.bold, annotation.italic)
   }
@@ -105,21 +106,6 @@ export async function bakeAnnotationsToPdf(
 
     if (anno.sourceText) {
       const source = anno.sourceText
-      for (const mask of anno.maskTexts || [source]) {
-      if (mask.matrix && mask.matrix.some((value, index) => Math.abs(value - [1, 0, 0, 1][index]) > 0.00001)) {
-        const [a, b, c, d] = mask.matrix
-        page.pushOperators(pushGraphicsState(), concatTransformationMatrix(a, b, c, d, mask.x, mask.y))
-        page.drawRectangle({ x: -0.5, y: -mask.descent - 0.5, width: mask.width + 1, height: mask.ascent + mask.descent + 1, color: rgb(1, 1, 1) })
-        page.pushOperators(popGraphicsState())
-        continue
-      }
-      const sin = Math.sin(mask.angle), cos = Math.cos(mask.angle)
-      const bottom = mask.descent + 0.5
-      const left = -0.5
-      page.drawRectangle({ x: mask.x + cos*left + sin*bottom, y: mask.y + sin*left - cos*bottom,
-        width: mask.width + 1, height: mask.ascent + mask.descent + 1,
-        rotate: degrees(mask.angle * 180 / Math.PI), color: rgb(1, 1, 1), borderWidth: 0 })
-      }
       if (anno.text) {
       const matrix = source.matrix || [Math.cos(source.angle), Math.sin(source.angle), -Math.sin(source.angle), Math.cos(source.angle)]
       const transformed = matrix.some((value, index) => Math.abs(value - [1, 0, 0, 1][index]) > 0.00001)
@@ -163,7 +149,7 @@ export async function bakeAnnotationsToPdf(
         const text = (anno.text || 'Note').slice(0, 200)
         page.drawText(text, { x: x+4, y: y+h-14, size: 8, font, color: rgb(0.1,0.1,0.1), maxWidth: w-8, lineHeight: 10 })
       } else if (anno.type === 'text') {
-        const text = (anno.text || '').slice(0, 500)
+        const text = anno.text || ''
         const col2 = hexToRgb(anno.color)
         const size = anno.fontSize || 12
         const f = await annotationFont(anno)
@@ -243,15 +229,16 @@ export async function bakeAnnotationsToPdf(
       const size = anno.fontSize || 12
       const selectedFont = await annotationFont(anno)
       const lines = breakTextIntoLines(anno.text || '', [' '], Math.max(1, w - 8), text => selectedFont.widthOfTextAtSize(text, size))
-      const commands = lines.map((line, index) => `1 0 0 1 4 ${h - size - 2 - index * (size + 2)} Tm ${selectedFont.encodeText(line)} Tj`).join('\n')
-      const appearance = ctx.register(ctx.flateStream(`q 1 1 1 rg 0 0 ${w} ${h} re f BT /F0 ${size} Tf ${col.r} ${col.g} ${col.b} rg ${commands} ET Q`, {
-        Type: 'XObject', Subtype: 'Form', BBox: [0, 0, w, h], Resources: { Font: { F0: selectedFont.ref } }
+      const textHeight = Math.max(h, lines.length * (size + 2) + 4)
+      const commands = lines.map((line, index) => `1 0 0 1 4 ${textHeight - size - 2 - index * (size + 2)} Tm ${selectedFont.encodeText(line)} Tj`).join('\n')
+      const appearance = ctx.register(ctx.flateStream(`q BT /F0 ${size} Tf ${col.r} ${col.g} ${col.b} rg ${commands} ET Q`, {
+        Type: 'XObject', Subtype: 'Form', BBox: [0, 0, w, textHeight], Resources: { Font: { F0: selectedFont.ref } }
       }))
-      addPdfAnnotation(pdf, pageIdx, 'FreeText', rect, {
+      addPdfAnnotation(pdf, pageIdx, 'FreeText', [x, y + h - textHeight, x + w, y + h], {
         AP: ctx.obj({ N: appearance }),
         Contents: PDFString.of(anno.text || ''),
         DA: PDFString.of(`${col.r.toFixed(2)} ${col.g.toFixed(2)} ${col.b.toFixed(2)} rg /Helv ${size} Tf`),
-        C: ctx.obj([PDFNumber.of(col.r), PDFNumber.of(col.g), PDFNumber.of(col.b)]),
+        C: ctx.obj([]),
       })
       // If flatten mode is true, the draw path below handles actual font embedding; for editable keep annot
       if (opts.flatten) {

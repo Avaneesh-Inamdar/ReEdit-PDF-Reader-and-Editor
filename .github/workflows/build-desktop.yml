@@ -54,6 +54,11 @@ jobs:
       - name: Windows Finish launches installed app
         if: runner.os == 'Windows'
         run: ./scripts/test-windows-finish.ps1
+      - name: Windows long selection, repeated edits and font import regressions
+        if: runner.os == 'Windows'
+        env:
+          READIT_143_APP: release/win-unpacked/resources/app.asar
+        run: npx electron scripts/smoke-1.4.3.cjs
       - name: Linux packages
         if: runner.os == 'Linux'
         env:
@@ -80,5 +85,6 @@ jobs:
             release/linux-tests/**/result.json
             release/smoke-1.4.1/result.json
             release/smoke-1.4.2/result.json
+            release/smoke-1.4.3/result.json
             release/windows-finish-result.json
             release/windows-installer-result.json

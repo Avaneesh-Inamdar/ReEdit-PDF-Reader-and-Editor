@@ -46,11 +46,12 @@ export function useThumbnails(
         if (cancelled) return
         const viewport = page.getViewport({ scale, rotation: (page.rotate + rotation) % 360 })
         const canvas = document.createElement('canvas')
-        canvas.width = Math.ceil(viewport.width)
-        canvas.height = Math.ceil(viewport.height)
+        const ratio = Math.max(2, window.devicePixelRatio || 1)
+        canvas.width = Math.ceil(viewport.width * ratio)
+        canvas.height = Math.ceil(viewport.height * ratio)
         await renderPage(async () => {
           if (cancelled) return
-          const task = page.render({ canvasContext: canvas.getContext('2d')!, viewport })
+          const task = page.render({ canvasContext: canvas.getContext('2d')!, viewport, transform: [ratio, 0, 0, ratio, 0, 0] })
           tasks.push(task)
           await task.promise
         })

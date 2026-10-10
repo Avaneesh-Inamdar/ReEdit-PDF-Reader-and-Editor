@@ -8,7 +8,7 @@ import { useOcrStore } from '../stores/useOcrStore'
 import { captureSession } from './documentSession'
 import { bakeAnnotationsToPdf } from './pdfEditing'
 import { fillFormAndSave } from './forms'
-import type { RemovalRegion } from '../../../shared/pdfOperations'
+import { textRemovalRegions } from './textRemoval'
 
 export async function prepareDocument(flatten = false): Promise<Uint8Array> {
   const data = usePdfStore.getState().data
@@ -17,12 +17,7 @@ export async function prepareDocument(flatten = false): Promise<Uint8Array> {
   const redactions = [...useEditStore.getState().redactions, ...annotations.filter(a => a.type === 'redact')]
   const fields = useFormStore.getState().fields
   let bytes: Uint8Array = new Uint8Array(data.slice(0))
-  const masks: RemovalRegion[] = annotations.flatMap(a => (a.maskTexts || (a.sourceText ? [a.sourceText] : [])).map(r => {
-    const [ma, mb, c, d] = r.matrix || [Math.cos(r.angle), Math.sin(r.angle), -Math.sin(r.angle), Math.cos(r.angle)]
-    const x=r.x+c*r.ascent, y=r.y+d*r.ascent
-    const bx=r.x-c*r.descent, by=r.y-d*r.descent
-    return {page:a.page,quad:[x,y,x+ma*r.width,y+mb*r.width,bx,by,bx+ma*r.width,by+mb*r.width] as RemovalRegion['quad']}
-  }))
+  const masks = textRemovalRegions(annotations)
   if (masks.length) bytes = new Uint8Array(await window.api.removePdfContent(bytes, masks, false))
   const normal=annotations.filter(a => a.type !== 'redact')
   if (normal.length) bytes = new Uint8Array(await bakeAnnotationsToPdf(bytes.slice().buffer as ArrayBuffer, normal, [], {flatten}))

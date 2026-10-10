@@ -3,8 +3,13 @@ import { usePdfStore } from '../stores/usePdfStore'
 import { useTabStore } from '../stores/useTabStore'
 import { selectedRuns } from './editSelection'
 import type { PdfTextRun } from './pdfText'
+import { mapPdfGlyphs } from './fontEncoding'
+import { originalFontSelected } from './fonts'
 
 export interface TextSelectionInfo {
+  annotationId?: string
+  annotationStart?: number
+  annotationEnd?: number
   runs?: PdfTextRun[]
   text: string
   pageNum: number
@@ -16,7 +21,7 @@ export interface TextSelectionInfo {
 export function getCurrentTextSelection(): TextSelectionInfo | null {
   const sel = window.getSelection()
   if (!sel || sel.isCollapsed || !sel.rangeCount) return null
-  const text = sel.toString().trim()
+  let text = sel.toString().trim()
   if (!text) return null
 
   const range = sel.getRangeAt(0)
@@ -25,6 +30,24 @@ export function getCurrentTextSelection(): TextSelectionInfo | null {
   if (!pageEl) return null
   const endEl = range.endContainer instanceof Element ? range.endContainer : range.endContainer.parentElement
   if (endEl?.closest('[data-page-slot]') !== pageEl) return null
+  const object = startEl?.closest<HTMLElement>('[data-edited-text], [data-annotation-object]')
+  const annotation = object && endEl?.closest('[data-edited-text], [data-annotation-object]') === object
+    ? useAnnotationStore.getState().annotations.find(a => a.id === (object.dataset.editedText || object.dataset.annotationObject) && a.type === 'text') : undefined
+  const offset = (node: Node, index: number): number => {
+    const prefix = document.createRange()
+    const element = node instanceof Element ? node : node.parentElement
+    const line = element?.closest('tspan')
+    prefix.selectNodeContents(line || object!)
+    prefix.setEnd(node, index)
+    const reverse = Object.fromEntries(Object.entries(annotation && originalFontSelected(annotation) ? annotation.sourceText?.fontGlyphs || {} : {}).map(([unicode, glyph]) => [glyph, unicode]))
+    const length = mapPdfGlyphs(prefix.toString(), reverse, true).length
+    if (!line) return length
+    const lineIndex = [...line.parentElement!.querySelectorAll('tspan')].indexOf(line)
+    return (annotation?.text || '').split('\n').slice(0, lineIndex).reduce((sum, value) => sum + value.length + 1, 0) + length
+  }
+  const annotationStart = annotation ? offset(range.startContainer, range.startOffset) : undefined
+  const annotationEnd = annotation ? offset(range.endContainer, range.endOffset) : undefined
+  if (annotation) text = (annotation.text || '').slice(annotationStart, annotationEnd)
 
   const pageNum = parseInt(pageEl.id.replace('page-', ''), 10)
   if (!pageNum || isNaN(pageNum)) return null
@@ -55,6 +78,9 @@ export function getCurrentTextSelection(): TextSelectionInfo | null {
   const rangeClient = range.getBoundingClientRect()
 
   return {
+    annotationId: annotation?.id,
+    annotationStart,
+    annotationEnd,
     runs: selectedRuns(range),
     text,
     pageNum,

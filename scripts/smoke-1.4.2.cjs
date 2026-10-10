@@ -156,7 +156,7 @@ app.whenReady().then(async () => {
       'src/renderer/src/assets/fonts/lato-latin-400-normal.woff'
     ).toString('base64')
     await js(
-      `(()=>{const input=document.querySelector('input[accept=".ttf,.otf,.woff"]'),data=new DataTransfer();data.items.add(new File([Uint8Array.from(atob(${JSON.stringify(imported)}),c=>c.charCodeAt(0))],'Imported-Lato.woff'));input.files=data.files;input.dispatchEvent(new Event('change',{bubbles:true}))})()`
+      `(()=>{const input=document.querySelector('input[accept=".ttf,.otf,.woff,.woff2"]'),data=new DataTransfer();data.items.add(new File([Uint8Array.from(atob(${JSON.stringify(imported)}),c=>c.charCodeAt(0))],'Imported-Lato.woff'));input.files=data.files;input.dispatchEvent(new Event('change',{bubbles:true}))})()`
     )
     await wait(`document.querySelector('select[title="Font family"]').value==='Imported-Lato'`)
     destination = join(directory, 'imported-font-edit.pdf')
@@ -183,19 +183,12 @@ app.whenReady().then(async () => {
       `document.querySelector('[aria-label="Toggle navigation sidebar"]').getAttribute('aria-expanded')==='false'`
     )
     await js(`document.querySelector('[aria-label="Toggle navigation sidebar"]').click()`)
-    await wait(`!!document.querySelector('[aria-label="Thumbnail size"]')`)
-    await setInput('input[aria-label="Thumbnail size"]', '0.12')
-    await pause(200)
-    const small = await js(
-      'document.querySelector("[data-thumbnail]").getBoundingClientRect().width'
-    )
-    await setInput('input[aria-label="Thumbnail size"]', '0.22')
-    await pause(200)
-    assert.ok(
-      (await js('document.querySelector("[data-thumbnail]").getBoundingClientRect().width')) >
-        small + 30
-    )
-    checks.push('sidebar button closes/reopens and size slider changes visible thumbnail width')
+    await wait('!!document.querySelector("[data-thumbnail] img")')
+    assert.equal(await js(`!!document.querySelector('[aria-label="Thumbnail size"]')`), false)
+    const thumb = await js('document.querySelector("[data-thumbnail]").getBoundingClientRect().width')
+    assert.ok(thumb > 100 && thumb <= 184)
+    checks.push('sidebar button closes/reopens and thumbnails have a fixed readable size')
+
     const initial = await js('document.querySelector("#page-1").getBoundingClientRect().width')
     const pinch = (delta) =>
       js(

@@ -6,21 +6,23 @@ Developed by **Avaneesh Inamdar**.
 
 ## Download
 
-Download [Re-Edit PDF 1.4.2](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/tag/v1.4.2), including checksums and validation details. Local build outputs are written to `release/`; local builds do not publish automatically:
+Download [Re-Edit PDF 1.4.3](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/tag/v1.4.3), including checksums and validation details. Local build outputs are written to `release/`; local builds do not publish automatically:
 
-- **Setup Installer (`.exe`)**: `Re-Edit-PDF-Setup-1.4.2.exe` — Windows setup wizard with desktop shortcut, Start Menu shortcut, uninstaller, and PDF Open With registration (Windows controls the default PDF app).
-- **Windows portable**: `Re-Edit-PDF-1.4.2-portable.exe`.
-- **Debian/Ubuntu**: `re-edit-pdf-1.4.2-amd64.deb`.
-- **Fedora/RPM**: `re-edit-pdf-1.4.2-x86_64.rpm`.
-- **Linux portable**: `re-edit-pdf-1.4.2-x86_64.AppImage` and `re-edit-pdf-1.4.2-x64.tar.gz`.
+- **Setup Installer (`.exe`)**: `Re-Edit-PDF-Setup-1.4.3.exe` — Windows setup wizard with desktop shortcut, Start Menu shortcut, uninstaller, and PDF Open With registration (Windows controls the default PDF app).
+- **Windows portable**: `Re-Edit-PDF-1.4.3-portable.exe`.
+- **Debian/Ubuntu**: `re-edit-pdf-1.4.3-amd64.deb`.
+- **Fedora/RPM**: `re-edit-pdf-1.4.3-x86_64.rpm`.
+- **Linux portable**: `re-edit-pdf-1.4.3-x86_64.AppImage` and `re-edit-pdf-1.4.3-x64.tar.gz`.
 
 These packages are x64. The release builds are unsigned. Linux packages need a glibc desktop environment; native Alpine/musl and ARM64 are not verified.
 
-## Version 1.4.2
+## Version 1.4.3
 
-- Adds eight font families and 32 offline faces, plus TTF/OTF/WOFF font import. Document edits keep embedded font outlines, size, color, weight, slant, spacing and affine text transforms where supported. Missing subset glyphs report a useful save error rather than silently switching fonts.
+- Fixes long text selection and double-click word selection, repeated editing of appended text, and selection of placed text/annotations. Saved FreeText annotations can be detected and edited again.
+- Text replacements remove actual content in previews and saved copies, preserving the background without white masking rectangles. WOFF2 import decodes valid font tables before embedding.
+- Adds eight font families and 32 offline faces, plus TTF/OTF/WOFF/WOFF2 font import. Document edits keep embedded font outlines, size, color, weight, slant, spacing and affine text transforms where supported. Missing subset glyphs report a useful save error rather than silently switching fonts.
 - Precision-trackpad pinch zoom follows the pointer; ordinary two-finger scrolling remains native. Large zoom levels keep the full page reachable horizontally.
-- The navigation button toggles its sidebar. Thumbnail size changes its visible width, with a reachable size control at the top of the pane.
+- The navigation button toggles its sidebar. Thumbnails have a fixed readable size and render at double display resolution.
 - Find highlights only matching characters and counts repeated/fragmented matches. Match case, whole words, F3/Shift+F3, and Ctrl+G/Shift+Ctrl+G work. Escape, Ctrl+F and the close button clear highlights and cancel pending searches.
 - Installer Finish launches the app through the standard checked launch option. PDFs opened through the operating system open the document window maximized.
 
@@ -30,7 +32,7 @@ These packages are x64. The release builds are unsigned. Linux packages need a g
 - Select PDF text, then use **Edit Text** on the floating toolbar, **Ctrl+E**, the context menu, or **Edit selected text** in the Format panel. Partial selections and multiple lines retain source positions and line spacing.
 - The text dialog grows in height and width with its content; Ctrl+Enter applies changes. Text-input undo stays in the input.
 - Page canvases and thumbnails render near the viewport. Canvas work is limited to three concurrent jobs, and parsed text uses a bounded cache. Search updates do not repaint PDF canvases, and superseded searches stop early.
-- Corrects high-DPI rendering using the PDF renderer's output transform, with a 12-megapixel cap per canvas. Bundles standard PDF fonts and CMaps locally.
+- Corrects high-DPI rendering using the PDF renderer's output transform, with a 24-megapixel cap per canvas. Bundles standard PDF fonts and CMaps locally.
 - Document analysis samples at most three pages, shares the existing PDF worker, and skips pdf-lib form parsing for documents without fields.
 - Uses consistent Lucide icons throughout the toolbar, panels, tabs, and navigation. The logo is a manually drawn vector.
 - Linux DEB/RPM packages register `application/pdf`, a desktop launcher, and an icon. Preferences can explicitly set the PDF default through `xdg-mime`. File paths and local file URIs open through the installed executable.
@@ -189,8 +191,8 @@ Build on Linux with Node.js 22, npm, `binutils`, `rpm`, and `fakeroot` installed
 npm ci
 npm test
 ELECTRON_BUILDER_COMPRESSION_LEVEL=5 npm run build:linux
-sudo apt-get install ./release/re-edit-pdf-1.4.2-amd64.deb
-# Fedora: sudo dnf install ./release/re-edit-pdf-1.4.2-x86_64.rpm
+sudo apt-get install ./release/re-edit-pdf-1.4.3-amd64.deb
+# Fedora: sudo dnf install ./release/re-edit-pdf-1.4.3-x86_64.rpm
 ```
 
 For AppImage, mark it executable. Hosts without FUSE can extract it with `--appimage-extract` and run `squashfs-root/AppRun`. Portable packages do not install a desktop entry; use DEB/RPM for automatic desktop and PDF association integration.
@@ -216,6 +218,6 @@ The workflow harness uses the matching development Electron runtime to load the 
 
 Re-Edit PDF is licensed under AGPL-3.0-only. See LICENSE and THIRD-PARTY-NOTICES.md. Corresponding source for published binaries is available in each tagged GitHub release.
 
-## Version 1.4.2
+## Version 1.4.3
 
-See docs/release-1.4.2.md for selection, OCR, document icons, recent-file controls and workspace improvements. The earlier 1.4.0 release added real content removal/redaction, certificate signing, Word export, Office import and update checking.
+See docs/release-1.4.3.md for selection, OCR, document icons, recent-file controls and workspace improvements. The earlier 1.4.0 release added real content removal/redaction, certificate signing, Word export, Office import and update checking.

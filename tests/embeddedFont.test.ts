@@ -6,11 +6,20 @@ import { fontkitForPdfGlyphs } from '../src/renderer/src/lib/embeddedFont'
 import { bakeAnnotationsToPdf } from '../src/renderer/src/lib/pdfEditing'
 import { PDFDocument as MuPdfDocument } from 'mupdf'
 import { textRun } from '../src/renderer/src/lib/pdfText'
+import { normalizeImportedFont } from '../src/main/fontImport'
 
 const font = new Uint8Array(
   readFileSync('src/renderer/src/assets/fonts/lato-latin-700-italic.woff')
 )
 describe('embedded font preservation', () => {
+  it('embeds imported WOFF2 outlines as real searchable text', async () => {
+    const pdf = await PDFDocument.create(); pdf.registerFontkit(fontkit)
+    const face = await pdf.embedFont(await normalizeImportedFont(readFileSync('node_modules/@fontsource/lato/files/lato-latin-400-normal.woff2')), { subset: true })
+    pdf.addPage().drawText('WOFF2 sample', { font: face, x: 72, y: 700, size: 16 })
+    const document = new MuPdfDocument(await pdf.save()), page = document.loadPage(0), text = page.toStructuredText('')
+    expect(text.asText().trim()).toBe('WOFF2 sample')
+    text.destroy(); page.destroy(); document.destroy()
+  })
   it('embeds all 32 bundled faces as searchable font outlines', async () => {
     const files = readdirSync('src/renderer/src/assets/fonts').filter((file) =>
       file.endsWith('.woff')

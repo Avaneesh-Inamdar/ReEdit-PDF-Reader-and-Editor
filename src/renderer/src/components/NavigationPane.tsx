@@ -56,7 +56,7 @@ function BookmarkTree({
 
 export function NavigationPane({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): React.JSX.Element | null {
   const { currentPage, setCurrentPage, numPages, rotation } = usePdfStore()
-  const { leftPane, setLeftPane, leftPaneWidth, thumbnailScale, setThumbnailScale, bookmarks, setBookmarks, attachments, setAttachments } = useUIStore()
+  const { leftPane, setLeftPane, leftPaneWidth, bookmarks, setBookmarks, attachments, setAttachments } = useUIStore()
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export function NavigationPane({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }):
     return () => { cancelled = true }
   }, [pdfDoc, setAttachments])
 
-  const thumbs = useThumbnails(pdfDoc, rotation, thumbnailScale, containerRef, leftPane === 'thumbnails')
+  const thumbs = useThumbnails(pdfDoc, rotation, 0.3, containerRef, leftPane === 'thumbnails')
 
   // Extract bookmarks / outline
   useEffect(() => {
@@ -163,22 +163,6 @@ export function NavigationPane({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }):
         {leftPane === 'thumbnails' && (
           <div className="p-2 flex flex-col gap-2">
             {!pdfDoc && <div className="text-xs p-3 text-center" style={{ color: 'var(--acrobat-text-dim)' }}>No PDF opened</div>}
-            {/* Thumbnail size slider */}
-            {pdfDoc && (
-              <div className="sticky top-0 z-10 flex items-center gap-2 px-1 py-2" style={{ background: 'var(--acrobat-pane-bg)' }}>
-                <span className="text-xs" style={{ color: 'var(--acrobat-text-dim)' }}>Size:</span>
-                <input
-                  type="range"
-                  min="0.12"
-                  max={String((leftPaneWidth - 54) / 612)}
-                  step="0.02"
-                  value={thumbnailScale}
-                  aria-label="Thumbnail size"
-                  onChange={(e) => setThumbnailScale(Number(e.target.value))}
-                  style={{ flex: 1, minWidth: 0, accentColor: 'var(--acrobat-accent)' }}
-                />
-              </div>
-            )}
             {Array.from({ length: numPages }, (_, idx) => {
               const src = thumbs[idx+1]
               const pageNum = idx + 1
@@ -193,7 +177,7 @@ export function NavigationPane({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }):
                   }}
                   className="relative rounded overflow-hidden"
                   style={{
-                    width: Math.min(leftPaneWidth - 54, 612 * thumbnailScale),
+                    width: Math.min(leftPaneWidth - 54, 184),
                     alignSelf: 'center',
                     border: active ? '2px solid var(--acrobat-accent)' : '1px solid var(--acrobat-pane-border)',
                     background: '#fff'

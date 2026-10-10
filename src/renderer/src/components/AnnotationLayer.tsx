@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import { useAnnotationStore, type Annotation } from '../stores/useAnnotationStore'
 import { useEditStore } from '../stores/useEditStore'
 import { useUIStore } from '../stores/useUIStore'
+import { usePdfStore } from '../stores/usePdfStore'
+import { placedTextHeight } from '../lib/placedTextHeight'
 
 function uid(): string { return Math.random().toString(36).slice(2, 9) }
 
@@ -19,6 +21,7 @@ export function AnnotationLayer({
   const { tool, color, strokeWidth, annotations, addAnnotation, deleteAnnotation, selectedId, setSelected, updateAnnotation } = useAnnotationStore()
   const editStore = useEditStore()
   const { spaceHeld, pointerMode } = useUIStore()
+  const zoom = usePdfStore(state => state.zoom)
   const svgRef = useRef<SVGSVGElement>(null)
   const dragOrigin = useRef({ x: 0, y: 0 })
   const manipulation = useRef<{ annotation: Annotation; latest?: Annotation; origin: { x: number; y: number }; resize: boolean } | null>(null)
@@ -46,10 +49,13 @@ export function AnnotationLayer({
       const target = (e.target as SVGElement).closest('[data-anno-id]') as SVGElement | null
       const annotation = pageAnnos.find(a => a.id === target?.dataset.annoId)
       if (annotation) {
+        if (annotation.type === 'text' && pointerMode === 'select' && (e.target as Element).closest('foreignObject')) {
+          setSelected(annotation.id)
+          return
+        }
         e.preventDefault()
-        e.currentTarget.setPointerCapture(e.pointerId)
         setSelected(annotation.id)
-        manipulation.current = { annotation, origin: getNorm(e), resize: (e.target as SVGElement).getAttribute('data-resize') === 'true' }
+        manipulation.current = { annotation: { ...annotation, h: placedTextHeight(annotation, width, height, zoom) / height }, origin: getNorm(e), resize: (e.target as SVGElement).getAttribute('data-resize') === 'true' }
       }
       return
     }
@@ -73,6 +79,8 @@ export function AnnotationLayer({
       const t: Annotation = { id: uid(), page: pageNumber, type: 'text', x: p.x, y: p.y, w: 0.32, h: 0.05, color: col, strokeWidth: 1, opacity: 1, text, fontSize: (pending as { size?: number })?.size || 12, fontFamily: 'Helvetica' }
       addAnnotation(t)
       setSelected(t.id)
+      useAnnotationStore.getState().setTool('select')
+      useUIStore.getState().setPointerMode('selectGraphics')
       setDrawing(false)
     } else if (tool === 'image') {
       const pi = editStore.pendingImage
@@ -108,6 +116,9 @@ export function AnnotationLayer({
       const { annotation, origin, resize } = manipulation.current
       const point = getNorm(e)
       const dx = point.x - origin.x, dy = point.y - origin.y
+      if (Math.abs(dx * width) + Math.abs(dy * height) < 3) return
+      if (!e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.setPointerCapture(e.pointerId)
+      e.preventDefault()
       let next: Annotation
       if (resize) {
         const w = Math.max(0.02, Math.min(1 - annotation.x, annotation.w + dx))
@@ -175,7 +186,7 @@ export function AnnotationLayer({
   }
 
   const renderAnno = (a: Annotation): React.JSX.Element => {
-    const px = a.x * width, py = a.y * height, pw = a.w * width, ph = a.h * height
+    const px = a.x * width, py = a.y * height, pw = a.w * width, ph = placedTextHeight(a, width, height, zoom)
     const isSelected = selectedId === a.id
     const outline = isSelected ? '2px solid #38bdf8' : undefined
     const pe: React.CSSProperties = { pointerEvents: 'auto' as const }
@@ -197,10 +208,10 @@ export function AnnotationLayer({
       const fam = (a.fontFamily || 'Helvetica').toLowerCase()
       const family = a.previewFont || (fam.includes('times') ? 'Times New Roman, serif' : fam.includes('courier') ? 'Courier New, monospace' : fam.includes('helvetica') ? 'Arial, sans-serif' : a.fontFamily || 'Arial')
       return (
-        <g key={a.id} data-anno-id={a.id} onClick={() => setSelected(a.id)} style={{ cursor: 'pointer', outline: outline as never, pointerEvents: 'auto' }}>
-          <rect x={px} y={py} width={pw} height={ph} fill="rgba(255,255,255,0.92)" stroke={isSelected ? '#38bdf8' : '#d1d5db'} strokeWidth={isSelected ? 1.5 : 1} rx={4} style={{ pointerEvents: 'auto' }} />
+        <g key={a.id} data-anno-id={a.id} onClick={() => setSelected(a.id)} onDoubleClick={async (e) => { e.stopPropagation(); setSelected(a.id); const value = await requestText('Edit placed text', a.text || ''); if (value !== null) updateAnnotation(a.id, { text: value }) }} style={{ cursor: 'text', outline: outline as never, pointerEvents: 'auto' }}>
+          <rect x={px} y={py} width={pw} height={ph} fill="transparent" stroke={isSelected ? '#38bdf8' : 'transparent'} strokeWidth={isSelected ? 1.5 : 1} style={{ pointerEvents: 'all' }} />
           <foreignObject x={px+4} y={py+2} width={pw-8} height={ph-4} style={{ pointerEvents: 'auto' }}>
-            <div style={{ fontSize: Math.max(10, (a.fontSize || 12)), color: a.color, fontFamily: family, fontWeight: a.bold || /bold/i.test(a.fontFamily || '') ? 700 : 400, fontStyle: a.italic ? 'italic' : 'normal', lineHeight: 1.2, overflow: 'hidden', wordBreak: 'break-word', width: '100%', height: '100%', pointerEvents: 'auto' }}>{a.text}</div>
+            <div style={{ fontSize: (a.fontSize || 12) * zoom, color: a.color, fontFamily: family, fontWeight: a.bold || /bold/i.test(a.fontFamily || '') ? 700 : 400, fontStyle: a.italic ? 'italic' : 'normal', lineHeight: 1.2, overflow: 'visible', whiteSpace: 'pre-wrap', wordBreak: 'break-word', width: '100%', height: '100%', pointerEvents: 'auto', userSelect: 'text' }}>{a.text}</div>
           </foreignObject>
           {isSelected && (
             <g>
@@ -250,7 +261,11 @@ export function AnnotationLayer({
         onContextMenu={onContextMenu}
       >
         <rect x={0} y={0} width={width} height={height} fill="transparent" style={{ pointerEvents: tool === 'select' || spaceHeld || pointerMode === 'hand' ? 'none' : 'auto' }} />
-        {pageAnnos.filter(a => a.id !== draft?.id).map(renderAnno)}
+        {pageAnnos.filter(a => a.id !== draft?.id).map(a => <g key={a.id} data-annotation-object={a.id} data-annotation-type={a.type} data-selected={selectedId === a.id}>
+          {pointerMode === 'selectGraphics' && tool === 'select' && <rect data-anno-id={a.id} x={a.x * width} y={a.y * height} width={Math.max(6, a.w * width)} height={Math.max(6, placedTextHeight(a, width, height, zoom))} fill="transparent" style={{ pointerEvents: 'all' }} />}
+          {renderAnno(a)}
+          {selectedId === a.id && !['text', 'image'].includes(a.type) && <rect x={a.x * width} y={a.y * height} width={a.w * width} height={Math.max(4, a.h * height)} fill="none" stroke="#1473e6" strokeWidth={1} strokeDasharray="3 2" style={{ pointerEvents: 'none' }} />}
+        </g>)}
         {draftEl}
         {drawPreview}
       </svg>

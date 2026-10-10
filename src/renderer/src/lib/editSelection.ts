@@ -40,6 +40,18 @@ export function selectedRuns(range: Range): PdfTextRun[] {
 }
 
 export async function editSelection(selection: TextSelectionInfo): Promise<void> {
+  if (selection.annotationId) {
+    const store = useAnnotationStore.getState()
+    const annotation = store.annotations.find(a => a.id === selection.annotationId)
+    if (!annotation) return
+    const replacement = await requestText('Edit selected text', selection.text)
+    if (replacement === null || useAnnotationStore.getState().annotations.find(a => a.id === annotation.id) !== annotation) return
+    const value = annotation.text || ''
+    store.updateAnnotation(annotation.id, { text: value.slice(0, selection.annotationStart) + replacement + value.slice(selection.annotationEnd) })
+    store.setSelected(annotation.id)
+    window.getSelection()?.removeAllRanges()
+    return
+  }
   const fragments = selection.runs || []
   if (!fragments.length) return
   const source = usePdfStore.getState().data

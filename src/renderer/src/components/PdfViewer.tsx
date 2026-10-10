@@ -5,6 +5,7 @@ import { Icon, BrandLogo } from './Icon'
 import { ExistingTextLayer } from './ExistingTextLayer'
 import { type PdfTextRun } from '../lib/pdfText'
 import { styledTextRuns } from '../lib/pdfTextStyle'
+import { useTextRemovalPreview } from '../lib/useTextRemovalPreview'
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { usePdfStore } from '../stores/usePdfStore'
@@ -38,6 +39,8 @@ function PageCanvas({
   onSize: (width: number, height: number) => void
 }): React.JSX.Element {
   const [textRuns, setTextRuns] = useState<PdfTextRun[]>([])
+  const annotations = useAnnotationStore(state => state.annotations)
+  const removalPreview = useTextRemovalPreview(pageNumber)
   const [pageTransform, setPageTransform] = useState<number[]>([1, 0, 0, 1, 0, 0])
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const textLayerRef = useRef<HTMLDivElement>(null)
@@ -47,6 +50,14 @@ function PageCanvas({
   const nativeTextLayer = useRef<TextLayer | null>(null)
   const selectionCleanup = useRef<(() => void) | null>(null)
   const [viewportSize, setViewportSize] = useState<{ w: number; h: number } | null>(null)
+  useLayoutEffect(() => {
+    for (const span of textLayerRef.current?.querySelectorAll<HTMLElement & { pdfRun?: PdfTextRun }>('[data-pdf-run]') || []) {
+      const run = span.pdfRun
+      const removed = !!run && annotations.some(a => a.page === pageNumber && (a.maskTexts || (a.sourceText ? [a.sourceText] : [])).some(mask => mask.key === run.key || (mask.key.startsWith(run.key + ':') && mask.text === run.text)))
+      span.dataset.removed = String(removed)
+      span.style.visibility = removed ? 'hidden' : ''
+    }
+  }, [annotations, textRuns, pageNumber])
 
   const render = useCallback(async () => {
     const version = ++renderVersion.current
@@ -77,7 +88,7 @@ function PageCanvas({
     const ctx = canvas.getContext('2d')!
     await renderPage(async () => {
       if (version !== renderVersion.current) return
-      const task = page.render({ canvasContext: ctx, viewport, transform: [dpr, 0, 0, dpr, 0, 0] })
+      const task = (removalPreview || page).render({ canvasContext: ctx, viewport, transform: [dpr, 0, 0, dpr, 0, 0] })
       renderTaskRef.current = task
       try {
         await task.promise
@@ -191,7 +202,7 @@ function PageCanvas({
         }
       } catch {}
     }
-  }, [pdfDoc, pageNumber, zoom, rotation, onSize])
+  }, [pdfDoc, pageNumber, zoom, rotation, onSize, removalPreview])
 
   const currentMatch = usePdfStore(state => state.currentMatch)
   const searchMatches = usePdfStore(state => state.searchMatches)
@@ -480,9 +491,17 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
       }, 60)
     }
     document.addEventListener('selectionchange', checkSelection)
+    const copy = (event: ClipboardEvent): void => {
+      const selection = getCurrentTextSelection()
+      if (!selection?.annotationId || !event.clipboardData) return
+      event.clipboardData.setData('text/plain', selection.text)
+      event.preventDefault()
+    }
+    document.addEventListener('copy', copy)
     window.addEventListener('mouseup', checkSelection)
     return () => {
       document.removeEventListener('selectionchange', checkSelection)
+      document.removeEventListener('copy', copy)
       window.removeEventListener('mouseup', checkSelection)
       if (timer) clearTimeout(timer)
     }
@@ -546,6 +565,7 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
     let cancelled = false
     const run = async (): Promise<void> => {
       try {
+        if (containerRef.current?.querySelector('[data-selecting="true"]')) return
         const page = await pdfDoc.getPage(Math.max(1, Math.min(currentPage, pdfDoc.numPages)))
         const base = page.getViewport({ scale: 1, rotation: (page.rotate + rotation) % 360 })
         const containerW =

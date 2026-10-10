@@ -1,7 +1,7 @@
 {
   "name": "re-edit-pdf",
-  "version": "1.4.2",
-  "description": "Re-Edit PDF \u00e2\u20ac\u201d desktop PDF reader and editor",
+  "version": "1.4.3",
+  "description": "Re-Edit PDF â€” desktop PDF reader and editor",
   "main": "./out/main/index.js",
   "author": "Avaneesh Inamdar",
   "homepage": "https://github.com/Avaneesh-Inamdar/Readit-Pdf-Reader-and-Editor",
@@ -42,6 +42,7 @@
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.7.77",
     "tesseract.js": "^5.1.1",
+    "wawoff2": "^2.0.1",
     "zustand": "^4.5.5"
   },
   "devDependencies": {

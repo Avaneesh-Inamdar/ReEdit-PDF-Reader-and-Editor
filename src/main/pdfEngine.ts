@@ -18,6 +18,13 @@ export async function removePdfContent(bytes: Uint8Array, regions: RemovalRegion
       const page = doc.loadPage(number - 1)
       try {
         for (const r of regions.filter(r => r.page === number)) {
+          if (r.annotationId) {
+            const reference = /^(\d+)R(?:\d+)?$/.exec(r.annotationId)
+            if (!reference) throw new Error('Invalid annotation reference')
+            for (const existing of page.getAnnotations())
+              if (existing.getType() === 'FreeText' && existing.getObject().asIndirect() === Number(reference[1])) page.deleteAnnotation(existing)
+            continue
+          }
           let rectangle: import('mupdf').Rect | undefined
           if (r.quad) {
             if (r.quad.length !== 8 || !r.quad.every(Number.isFinite)) throw new Error('Invalid text region')

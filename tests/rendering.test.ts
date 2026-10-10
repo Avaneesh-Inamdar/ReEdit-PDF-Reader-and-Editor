@@ -5,9 +5,9 @@ import { outputScale, pageText, renderPage } from '../src/renderer/src/lib/rende
 describe('bounded PDF rendering', () => {
   it('renders sharply at device scale without allocating oversized canvases', () => {
     expect(outputScale(612, 792, 2)).toBe(2)
-    expect(outputScale(612, 792, 1)).toBe(1.5)
+    expect(outputScale(612, 792, 1)).toBe(2)
     const scale = outputScale(6120, 7920, 3)
-    expect(6120 * 7920 * scale * scale).toBeCloseTo(12000000)
+    expect(6120 * 7920 * scale * scale).toBeCloseTo(24000000)
   })
   it('shares text extraction and bounds its working set', async () => {
     let extracted = 0

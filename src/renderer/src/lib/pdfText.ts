@@ -20,29 +20,33 @@ export interface PdfTextRun {
   wordSpacing?: number
   // Normalized PDF text matrix, including horizontal stretch and shear.
   matrix?: number[]
+  vertical?: boolean
+  pdfAnnotationId?: string
 }
 
 export function textRun(
-  item: { str: string; transform: number[]; width: number; fontName: string },
+  item: { str: string; transform: number[]; width: number; height?: number; fontName: string },
   style: { ascent?: number; descent?: number; fontFamily?: string; vertical?: boolean },
   key: string
 ): PdfTextRun | null {
-  if (!item.str.trim() || style.vertical) return null
+  if (!item.str.trim()) return null
   const [a, b, c, d, x, y] = item.transform
   const size = Math.hypot(c, d)
-  if (!size || !item.width) return null
+  const extent = style.vertical ? item.height || item.width : item.width
+  if (!size || !extent) return null
   const family = style.fontFamily || ''
   return {
     key,
     text: item.str,
     x,
     y,
-    width: item.width / (Math.hypot(a, b) / size || 1),
+    width: extent / (Math.hypot(a, b) / size || 1),
     size,
     ascent: (style.ascent ?? 0.8) * size,
     descent: Math.abs(style.descent ?? -0.2) * size,
-    angle: Math.atan2(b, a),
-    matrix: [a / size, b / size, c / size, d / size],
+    angle: Math.atan2(b, a) - (style.vertical ? Math.PI / 2 : 0),
+    matrix: style.vertical ? [-c / size, -d / size, a / size, b / size] : [a / size, b / size, c / size, d / size],
+    vertical: !!style.vertical,
     fontFamily: /mono/i.test(family)
       ? 'Courier'
       : /serif/i.test(family) && !/sans/i.test(family)

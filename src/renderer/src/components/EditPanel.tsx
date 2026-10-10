@@ -126,7 +126,7 @@ export function EditPanel(): React.JSX.Element {
     event.target.value = ''
     if (!file || !selected) return
     try {
-      const data = new Uint8Array(await file.arrayBuffer())
+      const data = new Uint8Array(await window.api.normalizeImportedFont(new Uint8Array(await file.arrayBuffer())))
       const family = file.name.replace(/\.[^.]+$/, '')
       const preview = `imported-${crypto.randomUUID()}`
       const face = await new FontFace(preview, data.slice().buffer).load()
@@ -162,8 +162,8 @@ export function EditPanel(): React.JSX.Element {
                 {[...new Set([...SIZE_OPTIONS, selected?.fontSize || 12])].sort((a, b) => a - b).map(n=> <option key={n} value={String(n)}>{n}</option>)}
               </select>
             </div>
-            <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff" hidden onChange={event => void importFont(event)} />
-            <button className="tb-btn text-xs px-2" onClick={() => fontInputRef.current?.click()} title="Import a licensed TTF, OTF, or WOFF font">Import font…</button>
+            <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff,.woff2" hidden onChange={event => void importFont(event)} />
+            <button className="tb-btn text-xs px-2" onClick={() => fontInputRef.current?.click()} title="Import a licensed TTF, OTF, WOFF, or WOFF2 font">Import font…</button>
             <div className="flex items-center gap-1">
               <button onClick={()=> onFontChange('bold', !selected?.bold)} className={`tb-btn h-7 w-7 border rounded ${selected?.bold ? 'bg-zinc-800 text-white dark:bg-zinc-700' : 'border-transparent'}`} title="Bold"><Icon name="bold" /></button>
               <button onClick={()=> onFontChange('italic', !selected?.italic)} className={`tb-btn h-7 w-7 border rounded ${selected?.italic ? 'bg-zinc-800 text-white dark:bg-zinc-700' : 'border-transparent'}`} title="Italic"><Icon name="italic" /></button>
