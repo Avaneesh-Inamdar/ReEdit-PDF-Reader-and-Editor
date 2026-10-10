@@ -53,14 +53,16 @@ export function installPdfDragSelection(container: HTMLElement): () => void {
     }
     let closest: HTMLElement | null = null
     let distance = Infinity
+    let verticalDistance = Infinity
     for (const { span, box } of boxes) {
       if (!box.width || !box.height || !(span.firstChild instanceof Text)) continue
       const dx = Math.max(box.left - x, 0, x - box.right)
       const dy = Math.max(box.top - y, 0, y - box.bottom)
-      // Prefer the intended line, including its trailing whitespace.
-      const score = dy * dy * 16 + dx * dx
-      if (score < distance) {
-        distance = score
+      // First choose the line. A longer adjacent line must not win merely
+      // because the pointer is far into this line's trailing whitespace.
+      if (dy < verticalDistance || (dy === verticalDistance && dx < distance)) {
+        verticalDistance = dy
+        distance = dx
         closest = span
       }
     }

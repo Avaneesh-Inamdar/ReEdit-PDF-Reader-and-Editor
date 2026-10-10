@@ -56,7 +56,7 @@ app.whenReady().then(async () => {
     const pdf = await PDFDocument.create(),
       page = pdf.addPage([612, 792])
     for (const n of [8, 1, 9, 2, 10, 3, 7, 4, 6, 5])
-      page.drawText(`Line ${String(n).padStart(2, '0')} selectable text`, {
+      page.drawText(`Line ${String(n).padStart(2, '0')} selectable text${n===3 ? ' with a much longer neighboring line' : ''}`, {
         x: 72,
         y: 750 - n * 24,
         size: 14
@@ -69,7 +69,7 @@ app.whenReady().then(async () => {
     await pause(300)
     const point = async (line, offset, outside = false) =>
       window.webContents.executeJavaScript(
-        `(() => { const span=Array.from(document.querySelectorAll('#page-1 [data-pdf-run]')).find(s=>s.textContent.startsWith('Line ${String(line).padStart(2, '0')} ')); const r=document.createRange(); r.setStart(span.firstChild,${offset}); r.collapse(true); const b=r.getBoundingClientRect(); return {x:Math.round(${outside ? 'span.getBoundingClientRect().right+20' : 'b.left'}),y:Math.round(b.top+b.height/2)} })()`
+        `(() => { const span=Array.from(document.querySelectorAll('#page-1 [data-pdf-run]')).find(s=>s.textContent.startsWith('Line ${String(line).padStart(2, '0')} ')); const r=document.createRange(); r.setStart(span.firstChild,${offset}); r.collapse(true); const b=r.getBoundingClientRect(); return {x:Math.round(${outside ? 'span.getBoundingClientRect().right+140' : 'b.left'}),y:Math.round(b.top+b.height/2)} })()`
       )
     for (const [a, b, outside] of [
       [1, 2, false],

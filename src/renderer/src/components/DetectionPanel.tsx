@@ -179,6 +179,11 @@ export function DetectionPanel(): React.JSX.Element {
       }
     } finally {
       await doc?.destroy()
+      if (useOcrStore.getState().isCancelled) {
+        const results = { ...useOcrStore.getState().ocrResults }
+        for (const page of Object.keys(completedPages)) delete results[Number(page)]
+        useOcrStore.setState({ ocrResults: results })
+      }
       setProcessing(false, null)
     }
   }
