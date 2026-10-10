@@ -4,7 +4,7 @@
 
 !macro customInstall
   WriteRegStr SHCTX "Software\Classes\ReEdit.PDF" "" "Re-Edit PDF Document"
-  WriteRegStr SHCTX "Software\Classes\ReEdit.PDF\DefaultIcon" "" '"$INSTDIR\${APP_EXECUTABLE_FILENAME}",0'
+  WriteRegStr SHCTX "Software\Classes\ReEdit.PDF\DefaultIcon" "" '"$INSTDIR\resources\document.ico",0'
   WriteRegStr SHCTX "Software\Classes\ReEdit.PDF\shell\open\command" "" '"$INSTDIR\${APP_EXECUTABLE_FILENAME}" "%1"'
   WriteRegStr SHCTX "Software\Classes\ReEdit.PDF\shell\edit\command" "" '"$INSTDIR\${APP_EXECUTABLE_FILENAME}" "%1"'
   WriteRegStr SHCTX "Software\Classes\.pdf\OpenWithProgids" "ReEdit.PDF" ""

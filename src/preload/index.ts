@@ -19,6 +19,7 @@ export interface PdfApi {
   saveFile: (bytes: Uint8Array, defaultName?: string, filePath?: string) => Promise<string | null>
   saveFileAs: (bytes: Uint8Array, defaultName?: string) => Promise<string | null>
   getRecentFiles: () => Promise<{ path: string; name: string }[]>
+  removeRecentFile: (path: string) => Promise<void>
   readPdf: (filePath: string) => Promise<ArrayBuffer>
   confirmClose: (name: string) => Promise<'save' | 'discard' | 'cancel'>
   onCloseRequested: (cb: () => void) => () => void
@@ -54,6 +55,7 @@ const api: PdfApi = {
     ipcRenderer.invoke('dialog:savePdf', bytes, defaultName, filePath),
   saveFileAs: (bytes, defaultName) => ipcRenderer.invoke('dialog:savePdfAs', bytes, defaultName),
   getRecentFiles: () => ipcRenderer.invoke('store:getRecent'),
+  removeRecentFile: (path: string) => ipcRenderer.invoke('store:removeRecent', path),
   readPdf: (filePath) => ipcRenderer.invoke('fs:readPdf', filePath),
   confirmClose: (name) => ipcRenderer.invoke('dialog:confirmClose', name),
   onCloseRequested: (cb) => {

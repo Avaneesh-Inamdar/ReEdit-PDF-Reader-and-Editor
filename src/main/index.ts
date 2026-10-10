@@ -595,6 +595,10 @@ app.whenReady().then(() => {
   ipcMain.handle('store:getRecent', () => {
     return store.get('recentFiles')
   })
+  ipcMain.handle('store:removeRecent', (_event, path: string) => {
+    store.set('recentFiles', store.get('recentFiles').filter(file => file.path !== path))
+    buildMenu()
+  })
 
   ipcMain.handle('store:getCurrentPath', () => currentFilePath)
 

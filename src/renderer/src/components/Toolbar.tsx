@@ -89,7 +89,7 @@ export function Toolbar({
       <div
         className="document-toolbar flex items-center gap-0.5 px-2 shrink-0 overflow-x-auto select-none"
         style={{
-          height: 42,
+          height: 36,
           background: 'var(--acrobat-toolbar)',
           borderBottom: '1px solid var(--acrobat-toolbar-border)'
         }}

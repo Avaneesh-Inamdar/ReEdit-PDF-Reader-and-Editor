@@ -22,7 +22,7 @@ export function TabBar(): React.JSX.Element {
     <div
       className="flex items-center shrink-0 overflow-x-auto"
       style={{
-        height: 34,
+        height: 30,
         background: 'var(--acrobat-tab-inactive)',
         borderBottom: '1px solid var(--acrobat-border)'
       }}
@@ -59,7 +59,7 @@ export function TabBar(): React.JSX.Element {
           title={tab.filePath || tab.fileName}
         >
           {/* PDF icon */}
-          <Icon name="document" size={12} />
+          <Icon name="document" size={22} />
           <span className="max-w-[120px] truncate">{tab.fileName}</span>
           {tab.isDirty && <span style={{ color: 'var(--acrobat-text-muted)', fontSize: 14, lineHeight: 1 }}>•</span>}
           <span

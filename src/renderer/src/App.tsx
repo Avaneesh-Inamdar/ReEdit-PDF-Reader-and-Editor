@@ -434,7 +434,7 @@ function App(): React.JSX.Element {
           <div className="modal-card p-6 text-center" style={{ width: 360 }} onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-center mb-3"><BrandLogo size={64} /></div>
             <h2 className="text-sm font-bold" style={{ color: 'var(--acrobat-text)' }}>Re-Edit PDF</h2>
-            <p className="text-xs mt-1" style={{ color: 'var(--acrobat-text-muted)' }}>Created by Avaneesh Inamdar · v1.4.0 · AGPL-3.0</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--acrobat-text-muted)' }}>Created by Avaneesh Inamdar · v1.4.1 · AGPL-3.0</p>
             <p className="text-xs mt-2" style={{ color: 'var(--acrobat-text-dim)' }}>
               Modern Windows PDF Reader & Editor
             </p>

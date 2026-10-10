@@ -1,4 +1,5 @@
 import { TextLayer } from 'pdfjs-dist'
+import { installPdfDragSelection } from '../lib/pdfDragSelection'
 import { pageText, outputScale, renderPage } from '../lib/rendering'
 import { Icon, BrandLogo } from './Icon'
 import { ExistingTextLayer } from './ExistingTextLayer'
@@ -8,7 +9,6 @@ import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { usePdfStore } from '../stores/usePdfStore'
 import { useAnnotationStore } from '../stores/useAnnotationStore'
 import { useUIStore } from '../stores/useUIStore'
-import { useOcrStore } from '../stores/useOcrStore'
 import { AnnotationLayer } from './AnnotationLayer'
 import { getCurrentTextSelection, type TextSelectionInfo } from '../lib/textSelection'
 import { TextSelectionFloatingToolbar } from './TextSelectionFloatingToolbar'
@@ -44,6 +44,7 @@ function PageCanvas({
   const renderVersion = useRef(0)
   const renderTaskRef = useRef<{ cancel: () => void; promise: Promise<void> } | null>(null)
   const nativeTextLayer = useRef<TextLayer | null>(null)
+  const selectionCleanup = useRef<(() => void) | null>(null)
   const [viewportSize, setViewportSize] = useState<{ w: number; h: number } | null>(null)
 
   const render = useCallback(async () => {
@@ -89,6 +90,7 @@ function PageCanvas({
       const textContent = await pageText(pdfDoc, pageNumber)
       if (version !== renderVersion.current) return
       const container = textLayerRef.current
+      selectionCleanup.current?.()
       container.replaceChildren()
       container.style.setProperty('--scale-factor', String(scale))
       const layer = new TextLayer({ textContentSource: textContent, container, viewport })
@@ -109,15 +111,11 @@ function PageCanvas({
           )
           if (run) {
             ;(span as HTMLElement & { pdfRun?: PdfTextRun }).pdfRun = run
-            span.addEventListener('click', () => {
-              if (window.getSelection()?.isCollapsed && useUIStore.getState().rightPane === 'edit')
-                window.dispatchEvent(
-                  new CustomEvent('pdf:editRun', { detail: { page: pageNumber, run } })
-                )
-            })
+
           }
         }
       })
+      selectionCleanup.current = installPdfDragSelection(container)
       setTextRuns(
         textContent.items.flatMap((item, index) => {
           if (!('str' in item)) return []
@@ -221,49 +219,6 @@ function PageCanvas({
     }
   }, [searchQuery, currentMatch, textRuns, pageNumber])
 
-  // Optional: render OCR overlay if present
-  const ocrPage = useOcrStore((state) => state.ocrResults[pageNumber])
-  const ocrLayerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!ocrPage || !ocrLayerRef.current || !viewportSize) return
-    const div = ocrLayerRef.current
-    div.innerHTML = ''
-    const { searchMatches, currentMatch, searchQuery: q } = usePdfStore.getState()
-    const needle = q.toLowerCase()
-    ocrPage.words.forEach((word, wIdx) => {
-      const span = document.createElement('span')
-      span.textContent = word.text + ' '
-      span.style.position = 'absolute'
-      span.style.color = 'transparent'
-      span.style.userSelect = 'text'
-      span.style.pointerEvents = 'auto'
-      let { x0, y0, x1, y1 } = word.bbox
-      // Bbox now normalized 0..1 (see DetectionPanel.normaliseWords). Fallback: if values look like pixels (>1.5), convert.
-      const isNormalised = x1 <= 1.5 && y1 <= 1.5
-      const left = isNormalised ? x0 * 100 : (x0 / viewportSize.w) * 100
-      const top = isNormalised ? y0 * 100 : (y0 / viewportSize.h) * 100
-      const width = isNormalised ? (x1 - x0) * 100 : ((x1 - x0) / viewportSize.w) * 100
-      const height = isNormalised ? (y1 - y0) * 100 : ((y1 - y0) / viewportSize.h) * 100
-      span.style.left = `${left}%`
-      span.style.top = `${top}%`
-      span.style.width = `${width}%`
-      span.style.height = `${height}%`
-      const hPx = isNormalised ? (y1 - y0) * viewportSize.h : y1 - y0
-      span.style.fontSize = `${Math.max(8, hPx)}px`
-      if (needle && word.text.toLowerCase().includes(needle)) {
-        const isCurrent =
-          searchMatches[currentMatch]?.page === pageNumber &&
-          searchMatches[currentMatch]?.index === 100000 + wIdx
-        span.style.background = isCurrent ? 'rgba(255,193,7,0.75)' : 'rgba(255,238,88,0.45)'
-        span.style.color = 'rgba(0,0,0,0.9)'
-        span.style.borderRadius = '2px'
-        if (isCurrent) span.style.outline = '1px solid #ff9800'
-      }
-      div.appendChild(span)
-    })
-  }, [ocrPage, viewportSize, searchQuery])
-
   useEffect(() => {
     void render().catch((error) => {
       if (error?.name !== 'RenderingCancelledException') console.warn(error)
@@ -272,6 +227,7 @@ function PageCanvas({
       renderVersion.current++
       renderTaskRef.current?.cancel()
       nativeTextLayer.current?.cancel()
+      selectionCleanup.current?.()
     }
   }, [render])
 
@@ -304,11 +260,6 @@ function PageCanvas({
       />
       <div
         ref={linkLayerRef}
-        className="absolute inset-0 overflow-hidden"
-        style={{ pointerEvents: 'none' }}
-      />
-      <div
-        ref={ocrLayerRef}
         className="absolute inset-0 overflow-hidden"
         style={{ pointerEvents: 'none' }}
       />

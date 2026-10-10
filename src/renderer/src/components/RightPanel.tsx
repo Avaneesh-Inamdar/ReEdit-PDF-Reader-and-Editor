@@ -267,12 +267,14 @@ export function RightPanel({ pdfDoc: _pdfDoc }: { pdfDoc: PDFDocumentProxy | nul
         background: 'var(--acrobat-pane-bg)'
       }}
     >
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto" style={{ color: 'var(--acrobat-pane-text)' }}>
       {/* Icon strip */}
       <div
-        className="flex flex-col items-center py-2 shrink-0"
+        className="flex items-center gap-0.5 px-1 py-1 shrink-0"
         style={{
-          width: 42,
-          borderRight: '1px solid var(--acrobat-pane-border)',
+          width: '100%',
+          borderBottom: '1px solid var(--acrobat-pane-border)' ,
           background: 'var(--acrobat-chrome-alt)'
         }}
       >
@@ -280,7 +282,7 @@ export function RightPanel({ pdfDoc: _pdfDoc }: { pdfDoc: PDFDocumentProxy | nul
           <button
             key={t.id}
             className={`tb-btn ${rightPane === t.id ? 'active' : ''}`}
-            style={{ width: 34, height: 34, marginBottom: 2, fontSize: 16 }}
+            style={{ width: 34, height: 30, marginBottom: 0, fontSize: 16 }}
             onClick={() => { void openTool(t.id) }}
             title={t.label}
           >
@@ -289,8 +291,6 @@ export function RightPanel({ pdfDoc: _pdfDoc }: { pdfDoc: PDFDocumentProxy | nul
         ))}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto" style={{ color: 'var(--acrobat-pane-text)' }}>
         {/* Header */}
         <div
           className="flex items-center justify-between px-3 shrink-0"

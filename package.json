@@ -1,6 +1,6 @@
 {
   "name": "re-edit-pdf",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Re-Edit PDF — desktop PDF reader and editor",
   "main": "./out/main/index.js",
   "author": "Avaneesh Inamdar",

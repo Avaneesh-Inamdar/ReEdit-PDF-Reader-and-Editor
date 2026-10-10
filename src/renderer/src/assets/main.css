@@ -208,8 +208,8 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  height: 32px;
-  padding: 0 14px;
+  height: 28px;
+  padding: 0 12px;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -525,3 +525,7 @@ button:focus-visible, [role="button"]:focus-visible { outline:2px solid var(--ac
 .textLayer span { user-select: text; }
 .textLayer .search-hit { background: #ffeb3b70; }
 .textLayer .current-hit { background: #ffb300a0; outline: 1px solid #ff9800; }
+
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--acrobat-accent); outline-offset: 2px; }
+.tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(235px, 1fr)); gap: 12px; }
+.tools-grid .tool-card { padding: 16px; }

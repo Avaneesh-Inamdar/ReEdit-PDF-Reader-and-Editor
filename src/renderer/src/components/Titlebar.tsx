@@ -152,7 +152,7 @@ export function Titlebar(): React.JSX.Element {
     <div
       className="flex items-center shrink-0 select-none"
       style={{
-        height: 38,
+        height: 28,
         background: 'var(--acrobat-titlebar)',
         borderBottom: '1px solid var(--acrobat-border)',
         WebkitAppRegion: 'no-drag'

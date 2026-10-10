@@ -38,6 +38,11 @@ jobs:
         env:
           READIT_SMOKE_PACKAGED: 1
         run: npm run test:desktop
+      - name: Windows selection, recent files, and offline OCR regressions
+        if: runner.os == 'Windows'
+        env:
+          READIT_141_APP: release/win-unpacked/resources/app.asar
+        run: npx electron scripts/smoke-1.4.1.cjs
       - name: Linux packages
         if: runner.os == 'Linux'
         env:
@@ -62,3 +67,4 @@ jobs:
             release/smoke/result.json
             release/linux-launch.json
             release/linux-tests/**/result.json
+            release/smoke-1.4.1/result.json

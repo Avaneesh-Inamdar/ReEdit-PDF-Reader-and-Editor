@@ -18,7 +18,7 @@ export const useOcrStore = create<OcrState>((set) => ({
   isProcessing: false,
   processingPage: null,
   isCancelled: false,
-  setProcessing: (isProcessing, processingPage) => set({ isProcessing, processingPage, isCancelled: isProcessing ? false : undefined }),
+  setProcessing: (isProcessing, processingPage) => set({ isProcessing, processingPage }),
   setOcrResult: (page, result) => set((state) => ({ ocrResults: { ...state.ocrResults, [page]: result } })),
   clearOcrResults: () => set({ ocrResults: {}, isProcessing: false, processingPage: null, isCancelled: false }),
   cancelOcr: () => set({ isCancelled: true }),

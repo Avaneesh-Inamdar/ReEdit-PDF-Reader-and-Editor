@@ -125,12 +125,14 @@ const icons = {
   plus: Plus
 }
 export type IconName = keyof typeof icons
-export function Icon({ name, size = 16 }: { name: IconName; size?: number }): React.JSX.Element {
+export function Icon({ name, size = 16, filled = false }: { name: IconName; size?: number; filled?: boolean }): React.JSX.Element {
+  if (name === 'document') return <img src="./document.svg" width={size} height={size} draggable={false} alt="PDF" style={{ flexShrink: 0 }} />
   const Vector = icons[name]
   return (
     <Vector
       size={size}
       strokeWidth={1.75}
+      fill={filled ? 'currentColor' : 'none'}
       aria-hidden="true"
       style={{ display: 'inline-block', flexShrink: 0, verticalAlign: 'middle' }}
     />

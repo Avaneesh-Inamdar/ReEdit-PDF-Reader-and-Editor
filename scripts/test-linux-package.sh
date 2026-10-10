@@ -32,6 +32,14 @@ else
   xvfb-run -a -s '-screen 0 1600x1000x24' "$runtime" --disable-gpu --disable-dev-shm-usage scripts/smoke-release-features.cjs
 fi
 grep -q '"passed": true' "$READIT_FEATURE_OUTPUT/result.json"
+export READIT_141_APP="$READIT_SMOKE_APP"
+export READIT_141_OUTPUT="$READIT_SMOKE_OUTPUT/regressions-1.4.1"
+if [ "$(id -u)" = 0 ]; then
+  xvfb-run -a -s '-screen 0 1600x1000x24' "$runtime" --no-sandbox --disable-gpu --disable-dev-shm-usage scripts/smoke-1.4.1.cjs
+else
+  xvfb-run -a -s '-screen 0 1600x1000x24' "$runtime" --disable-gpu --disable-dev-shm-usage scripts/smoke-1.4.1.cjs
+fi
+grep -q '"passed": true' "$READIT_141_OUTPUT/result.json"
 if command -v gio >/dev/null 2>&1; then
   default_pdf=$(gio mime application/pdf | head -1 | sed 's/.*: //')
 else
