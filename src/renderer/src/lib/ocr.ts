@@ -11,11 +11,11 @@ export async function getOcrWorker(
   onProgress?: (p: number) => void,
   quality: 'fast' | 'accurate' = 'accurate'
 ): Promise<Awaited<ReturnType<typeof createWorker>>> {
-  progressListener = onProgress
   if (quality !== workerQuality) {
     await terminateOcr()
     workerQuality = quality
   }
+  progressListener = onProgress
   if (worker) return worker
   if (initializing) return initializing
   // Use absolute URL via window.location for both http (dev) and file:// (prod preview)
