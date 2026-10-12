@@ -5,6 +5,7 @@
 <p align="center">Read, edit, annotate and recognize text in PDFs on Windows and Linux.</p>
 <p align="center">
   <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor?color=1473e6"></a>
+  <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases"><img alt="Total release downloads" src="https://img.shields.io/github/downloads/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/total?label=release%20downloads&amp;color=1473e6"></a>
   <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/actions/workflows/build-desktop.yml"><img alt="Desktop build" src="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/actions/workflows/build-desktop.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0" src="https://img.shields.io/badge/license-AGPL--3.0-343434"></a>
 </p>
@@ -16,6 +17,8 @@
 ## Download
 
 Download installers, portable builds, SHA-256 checksums and validation reports from [GitHub Releases](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest).
+
+The download badge counts release-asset downloads across all versions. Repeat downloads and supporting files count separately; it is not a count of unique users.
 
 | Platform            | Package      | Installation                                            |
 | ------------------- | ------------ | ------------------------------------------------------- |
