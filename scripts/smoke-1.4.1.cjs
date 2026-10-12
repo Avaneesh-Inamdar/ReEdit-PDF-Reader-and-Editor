@@ -56,11 +56,14 @@ app.whenReady().then(async () => {
     const pdf = await PDFDocument.create(),
       page = pdf.addPage([612, 792])
     for (const n of [8, 1, 9, 2, 10, 3, 7, 4, 6, 5])
-      page.drawText(`Line ${String(n).padStart(2, '0')} selectable text${n===3 ? ' with a much longer neighboring line' : ''}`, {
-        x: 72,
-        y: 750 - n * 24,
-        size: 14
-      })
+      page.drawText(
+        `Line ${String(n).padStart(2, '0')} selectable text${n === 3 ? ' with a much longer neighboring line' : ''}`,
+        {
+          x: 72,
+          y: 750 - n * 24,
+          size: 14
+        }
+      )
     const bytes = await pdf.save(),
       path = join(directory, 'ten-lines.pdf')
     writeFileSync(path, bytes)
@@ -140,13 +143,22 @@ app.whenReady().then(async () => {
     await window.webContents.executeJavaScript(
       `document.querySelector('[title="See all tools"]').click()`
     )
+    await wait('document.querySelectorAll(".tools-category").length===4')
     const boxes = await window.webContents.executeJavaScript(
       `Array.from(document.querySelectorAll('.tools-category')).map(b=>b.getBoundingClientRect().toJSON())`
     )
-    assert.ok(
-      boxes.length === 4 && Math.abs(boxes[0].top - boxes[1].top) < 2,
-      'Tool categories should share a row'
-    )
+    const viewportWidth = await window.webContents.executeJavaScript('window.innerWidth')
+    assert.equal(boxes.length, 4)
+    if (viewportWidth > 1120)
+      assert.ok(
+        Math.abs(boxes[0].top - boxes[1].top) < 2,
+        'Wide tool categories should share a row'
+      )
+    else
+      assert.ok(
+        boxes[1].top > boxes[0].top && Math.abs(boxes[0].left - boxes[1].left) < 2,
+        'Narrow tool categories should form one aligned column'
+      )
     checks.push('responsive tool grid')
     // Use actual local Tesseract against an image-only PDF, not simulated text.
     const png = await window.webContents.executeJavaScript(
