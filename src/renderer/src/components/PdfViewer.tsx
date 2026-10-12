@@ -770,7 +770,7 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
       </div>
 
       {/* Floating HUD */}
-      {hudVisible && numPages > 0 && (
+      {isFullScreen && hudVisible && numPages > 0 && (
         <div
           className="fixed z-50"
           style={{ bottom: 40, left: '50%', transform: 'translateX(-50%)' }}

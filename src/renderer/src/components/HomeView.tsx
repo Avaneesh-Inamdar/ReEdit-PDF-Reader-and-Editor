@@ -1,8 +1,9 @@
-import { Icon, BrandLogo } from './Icon'
+import { Icon } from './Icon'
 import { openTool } from '../lib/toolActions'
 import { useState, useEffect } from 'react'
 import { useUIStore } from '../stores/useUIStore'
 import { useTabStore } from '../stores/useTabStore'
+import '../assets/home-workspace.css'
 
 /* ── Adobe Acrobat Home Screen ── */
 // Left sidebar: Recent / Starred / My Computer / Samples
@@ -127,8 +128,7 @@ export function HomeView(): React.JSX.Element {
 
   return (
     <div
-      className="flex flex-1 min-h-0"
-      style={{ background: 'var(--acrobat-pane-bg)' }}
+      className="home-workspace"
       onDragOver={(e) => {
         e.preventDefault()
         if (
@@ -145,32 +145,13 @@ export function HomeView(): React.JSX.Element {
       }}
       onDrop={handleDrop}
     >
-      {/* Left sidebar */}
-      <div
-        className="flex flex-col shrink-0 py-4"
-        style={{
-          width: 220,
-          borderRight: '1px solid var(--acrobat-pane-border)',
-          background: 'var(--acrobat-pane-bg)'
-        }}
-      >
-        <div className="px-4 mb-4">
-          <div className="flex items-center gap-2 mb-1">
-            <BrandLogo size={32} />
-            <div>
-              <div className="text-sm font-semibold" style={{ color: 'var(--acrobat-pane-text)' }}>
-                Re-Edit PDF
-              </div>
-              <div className="text-xs" style={{ color: 'var(--acrobat-text-dim)' }}>
-                Desktop Edition
-              </div>
-            </div>
-          </div>
-        </div>
+      <nav className="home-navigation" aria-label="Your files">
+        <p className="home-navigation-heading">Your files</p>
 
         <button
           className={`home-sidebar-item ${section === 'recent' ? 'active' : ''}`}
           onClick={() => setSection('recent')}
+          aria-current={section === 'recent' ? 'page' : undefined}
         >
           <Icon name="recent" size={16} />
           Recent
@@ -178,162 +159,159 @@ export function HomeView(): React.JSX.Element {
         <button
           className={`home-sidebar-item ${section === 'starred' ? 'active' : ''}`}
           onClick={() => setSection('starred')}
+          aria-current={section === 'starred' ? 'page' : undefined}
         >
           <Icon name="star" size={16} />
           Starred
         </button>
+        <p className="home-navigation-heading home-storage-heading">File storage</p>
         <button
           className={`home-sidebar-item ${section === 'computer' ? 'active' : ''}`}
           onClick={() => setSection('computer')}
+          aria-current={section === 'computer' ? 'page' : undefined}
         >
           <Icon name="computer" size={16} />
           My Computer
         </button>
 
-        <div className="flex-1" />
-      </div>
+        <button className="home-browse-button" onClick={() => void handleOpenFile()}>
+          <Icon name="open" size={16} />
+          Open a file
+        </button>
+      </nav>
 
       {/* Main content */}
-      <div className="flex-1 overflow-y-auto p-6" style={{ color: 'var(--acrobat-pane-text)' }}>
-        {/* Welcome banner */}
-        <div className="mb-6">
-          <h1 className="text-xl font-semibold mb-1">Welcome to Re-Edit PDF</h1>
-          <p className="text-sm" style={{ color: 'var(--acrobat-text-dim)' }}>
-            Open a PDF to get started, or choose a tool below.
-          </p>
-        </div>
+      <main className="home-main">
+        <header className="home-welcome">
+          <h1>Welcome to Re-Edit PDF</h1>
+          <p>Open a PDF to get started, or choose a tool below.</p>
+          <button className="home-see-tools home-outline-button" title="See all tools" onClick={() => setActiveView('tools')}>See all tools</button>
+        </header>
 
-        {/* Quick action cards */}
-        <div className="grid grid-cols-4 gap-3 mb-6">
+        <div className="home-quick-tools" aria-label="Common PDF tools">
           {quickActions.map((qa) => (
-            <button
-              key={qa.label}
-              onClick={qa.action}
-              className="tool-card flex flex-col items-center gap-2 text-center"
-              style={{ padding: '16px 12px' }}
-            >
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 8,
-                  background: qa.color,
-                  display: 'grid',
-                  placeItems: 'center',
-                  color: '#fff'
-                }}
-              >
+            <button key={qa.label} onClick={qa.action} className="home-quick-tool">
+              <span className="home-tool-icon" style={{ color: qa.color }}>
                 {qa.icon}
-              </div>
-              <span className="text-xs font-medium">{qa.label}</span>
+              </span>
+              <span>{qa.label}</span>
+              <Icon name="right" size={14} />
             </button>
           ))}
         </div>
 
-        {/* Search */}
-        <div className="mb-4">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search recent files…"
-            className="text-sm"
-            style={{
-              width: '100%',
-              maxWidth: 400,
-              height: 34,
-              borderRadius: 6,
-              border: '1px solid var(--acrobat-pane-border)',
-              padding: '0 12px',
-              background: 'var(--acrobat-surface)',
-              color: 'var(--acrobat-pane-text)',
-              outline: 'none'
-            }}
-          />
-        </div>
-
-        {/* Section content */}
         {section === 'computer' && (
-          <div className={`drop-zone ${dragOver ? 'active' : ''}`}>
-            <Icon name="open" size={48} />
-            <p className="text-sm font-medium mb-1">Drag & Drop a PDF here</p>
-            <p className="text-xs" style={{ color: 'var(--acrobat-text-dim)' }}>
-              or click Open File to browse
-            </p>
-            <button
-              onClick={() => void handleOpenFile()}
-              className="mt-4 rounded-lg text-white text-sm font-medium px-6"
-              style={{ height: 36, background: 'var(--acrobat-accent)' }}
-            >
+          <section className={`home-computer drop-zone ${dragOver ? 'active' : ''}`}>
+            <Icon name="open" size={40} />
+            <h2>Drag & Drop a PDF here</h2>
+            <p>or click Open File to browse</p>
+            <button onClick={() => void handleOpenFile()} className="home-primary-button">
               Browse Files
             </button>
-          </div>
+          </section>
         )}
 
         {(section === 'recent' || section === 'starred') && (
-          <div className="space-y-1">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold">
-                {section === 'starred' ? 'Starred Files' : 'Recent Files'}
-              </h3>
-              <span className="text-xs" style={{ color: 'var(--acrobat-text-dim)' }}>
-                {filteredFiles.length} files
-              </span>
-            </div>
-            {filteredFiles.length === 0 ? (
-              <div className="text-center py-12" style={{ color: 'var(--acrobat-text-dim)' }}>
-                <Icon name="document" size={48} />
-                <p className="text-sm">
-                  {section === 'starred' ? 'No starred files yet' : 'No recent files'}
-                </p>
-                <p className="text-xs mt-1">Open a PDF to get started</p>
+          <section
+            className="home-files"
+            aria-label={section === 'starred' ? 'Starred Files' : 'Recent Files'}
+          >
+            <div className="home-files-heading">
+              <div>
+                <h2>{section === 'starred' ? 'Starred Files' : 'Recent Files'}</h2>
+                <span className="home-file-count">{filteredFiles.length} files</span>
               </div>
-            ) : (
-              filteredFiles.map((f) => (
-                <div key={f.path} className="file-row">
-                  <Icon name="document" size={28} />
-                  <button
-                    className="flex-1 min-w-0 text-left"
-                    title={`Open ${f.name}`}
-                    onClick={() => void handleOpenRecent(f.path)}
-                  >
-                    <div className="text-sm font-medium truncate">{f.name}</div>
-                    <div
-                      className="text-xs truncate"
-                      style={{ color: 'var(--acrobat-text-dim)', maxWidth: 400 }}
-                    >
-                      {f.path}
-                    </div>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      toggleStar(f.path)
-                    }}
-                    className="tb-btn"
-                    title={f.starred ? 'Unstar' : 'Star'}
-                    aria-label={`${f.starred ? 'Unstar' : 'Star'} ${f.name}`}
-                    aria-pressed={!!f.starred}
-                    style={{
-                      color: f.starred ? 'var(--acrobat-accent)' : 'var(--acrobat-pane-text)'
-                    }}
-                  >
-                    <Icon name="star" size={16} filled={!!f.starred} />
-                  </button>
-                  <button
-                    className="tb-btn"
-                    title="Remove from recent files"
-                    aria-label={`Remove ${f.name} from recent files`}
-                    onClick={() => {
-                      void removeRecent(f.path)
-                    }}
-                    style={{ color: 'var(--acrobat-pane-text)' }}
-                  >
-                    <Icon name="close" size={16} />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
+              <label className="home-search">
+                <Icon name="search" size={16} />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search recent files…"
+                  aria-label="Search recent files"
+                />
+              </label>
+            </div>
+            <table className="home-file-table">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col" className="home-location-column">
+                    Location
+                  </th>
+                  <th scope="col" className="home-actions-column">
+                    <span className="sr-only">File actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredFiles.length === 0 ? (
+                  <tr>
+                    <td colSpan={3}>
+                      <div className="home-empty">
+                        <Icon name="document" size={40} />
+                        <p>{section === 'starred' ? 'No starred files yet' : 'No recent files'}</p>
+                        <span>Open a PDF to get started</span>
+                        <button
+                          className="home-outline-button"
+                          onClick={() => void handleOpenFile()}
+                        >
+                          Open a file
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredFiles.map((f) => (
+                    <tr key={f.path} className="file-row">
+                      <td>
+                        <button
+                          className="home-file-name"
+                          title={`Open ${f.name}`}
+                          onClick={() => void handleOpenRecent(f.path)}
+                        >
+                          <Icon name="document" size={28} />
+                          <span>{f.name}</span>
+                        </button>
+                      </td>
+                      <td className="home-location-column">
+                        <span className="home-file-location" title={f.path}>
+                          {f.path}
+                        </span>
+                      </td>
+                      <td className="home-file-actions">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleStar(f.path)
+                          }}
+                          className="tb-btn"
+                          title={f.starred ? 'Unstar' : 'Star'}
+                          aria-label={`${f.starred ? 'Unstar' : 'Star'} ${f.name}`}
+                          aria-pressed={!!f.starred}
+                          style={{
+                            color: f.starred ? 'var(--acrobat-accent)' : 'var(--acrobat-pane-text)'
+                          }}
+                        >
+                          <Icon name="star" size={16} filled={!!f.starred} />
+                        </button>
+                        <button
+                          className="tb-btn"
+                          title="Remove from recent files"
+                          aria-label={`Remove ${f.name} from recent files`}
+                          onClick={() => {
+                            void removeRecent(f.path)
+                          }}
+                          style={{ color: 'var(--acrobat-pane-text)' }}
+                        >
+                          <Icon name="close" size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </section>
         )}
 
         {/* Drop overlay */}
@@ -347,7 +325,7 @@ export function HomeView(): React.JSX.Element {
             </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
   )
 }

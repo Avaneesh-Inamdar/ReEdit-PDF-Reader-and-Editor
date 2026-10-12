@@ -19,6 +19,8 @@ import { useTabStore } from './stores/useTabStore'
 import { Titlebar } from './components/Titlebar'
 import { TabBar } from './components/TabBar'
 import { Toolbar } from './components/Toolbar'
+import { QuickTools } from './components/QuickTools'
+import { DocumentRail } from './components/DocumentRail'
 import { NavigationPane } from './components/NavigationPane'
 import { PdfViewer } from './components/PdfViewer'
 import { SearchBar } from './components/SearchBar'
@@ -43,6 +45,12 @@ function App(): React.JSX.Element {
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null)
   const [printStatus, setPrintStatus] = useState<string | null>(null)
   const [showSearch, setShowSearch] = useState(false)
+  const [toolsOpen, setToolsOpen] = useState(true)
+  useEffect(() => {
+    const show = (): void => setToolsOpen(true)
+    window.addEventListener('workspace:showTools', show)
+    return () => window.removeEventListener('workspace:showTools', show)
+  }, [])
   const internalDrag = useRef(false)
   const [dragOver, setDragOver] = useState(false)
   const imagePickerRef = useRef<HTMLInputElement>(null)
@@ -381,8 +389,7 @@ function App(): React.JSX.Element {
 
   return (
     <div onDragStart={e => { if (!e.defaultPrevented) internalDrag.current = true }} onDragEnd={() => { internalDrag.current = false; setDragOver(false) }} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop} className="h-full flex flex-col" style={{ background: 'var(--acrobat-chrome)' }}>
-      {!isFullScreen && <Titlebar />}
-      {!isFullScreen && <TabBar />}
+      {!isFullScreen && <header className="workspace-header"><Titlebar /><TabBar /></header>}
 
       {showDocView ? (
         <>
@@ -391,13 +398,23 @@ function App(): React.JSX.Element {
             onSave={() => void handleSave(false)}
             onSaveAs={() => void handleSaveAs(false)}
             onToggleSearch={() => setShowSearch((v) => !v)}
+            toolsOpen={toolsOpen}
+            onToggleTools={() => {
+              const active = useUIStore.getState().rightPane !== 'none'
+              useUIStore.getState().setRightPane('none')
+              setToolsOpen(open => active || !open)
+            }}
           />}
           <SearchBar pdfDoc={pdfDoc} open={showSearch} onClose={() => setShowSearch(false)} />
 
-          <div className="flex-1 min-h-0 flex">
+          <div className="workspace-document flex-1 min-h-0 flex">
+            {!isFullScreen && <RightPanel pdfDoc={pdfDoc} visible={toolsOpen} onClose={() => setToolsOpen(false)} />}
+            <div className={`workspace-viewer ${isFullScreen ? 'workspace-fullscreen' : ''}`}>
+              <PdfViewer pdfDoc={pdfDoc} />
+              {!isFullScreen && <QuickTools />}
+            </div>
             {!isFullScreen && <NavigationPane pdfDoc={pdfDoc} />}
-            <PdfViewer pdfDoc={pdfDoc} />
-            {!isFullScreen && <RightPanel pdfDoc={pdfDoc} />}
+            {!isFullScreen && <DocumentRail />}
           </div>
           {!isFullScreen && <StatusBar pdfDoc={pdfDoc} />}
         </>

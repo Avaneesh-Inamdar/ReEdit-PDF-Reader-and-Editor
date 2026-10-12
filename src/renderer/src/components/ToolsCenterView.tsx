@@ -94,64 +94,54 @@ const TOOL_CATEGORIES: { category: string; tools: ToolDef[] }[] = [
 
 export function ToolsCenterView(): React.JSX.Element {
   return (
-    <div
-      className="flex-1 overflow-y-auto p-8"
-      style={{ background: 'var(--acrobat-pane-bg)', color: 'var(--acrobat-pane-text)' }}
-    >
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-xl font-semibold mb-1">All Tools</h1>
-        <p className="text-sm mb-6" style={{ color: 'var(--acrobat-text-dim)' }}>
-          Select a tool to open it in your document workspace.
-        </p>
+    <main className="tools-workspace">
+      <div className="tools-workspace-content">
+        <header className="tools-heading">
+          <h1>All Tools</h1>
+          <p>Select a tool to open it in your document workspace.</p>
+        </header>
 
         <button
-          className="tool-card mb-5 flex items-center gap-3"
+          className="tool-card tools-combine-row tools-workspace-row"
           onClick={() => useUIStore.getState().setActiveModal('combineFiles')}
         >
-          <Icon name="organize" size={24} />
-          <span>Combine PDF files</span>
+          <span className="tools-row-icon" style={{ color: 'var(--tool-organize)' }}>
+            <Icon name="organize" size={26} />
+          </span>
+          <span className="tools-row-copy">
+            <span className="tools-row-name">Combine PDF files</span>
+            <span className="tools-row-description">
+              Bring multiple PDF files together in one document.
+            </span>
+          </span>
+          <span className="tools-open-button">Open</span>
         </button>
-        <div className="tools-grid">
-          {TOOL_CATEGORIES.flatMap((cat) =>
-            cat.tools.map((tool) => (
-              <button
-                key={tool.label}
-                className="tool-card flex items-start gap-3 text-left"
-                onClick={() => {
-                  void openTool(tool.pane)
-                }}
-              >
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 6,
-                    background: tool.color,
-                    display: 'grid',
-                    placeItems: 'center',
-                    color: '#fff',
-                    flexShrink: 0
+        <div className="tools-category-grid">
+          {TOOL_CATEGORIES.map((cat) => (
+            <section className="tools-category" key={cat.category} aria-label={cat.category}>
+              <h2>{cat.category}</h2>
+              {cat.tools.map((tool) => (
+                <button
+                  key={tool.label}
+                  className="tool-card tools-workspace-row"
+                  onClick={() => {
+                    void openTool(tool.pane)
                   }}
                 >
-                  <Icon name={tool.icon} size={20} />
-                </div>
-                <div>
-                  <div className="text-xs mb-1" style={{ color: 'var(--acrobat-text-dim)' }}>
-                    {cat.category}
-                  </div>
-                  <div className="text-sm font-semibold mb-1">{tool.label}</div>
-                  <div
-                    className="text-xs"
-                    style={{ color: 'var(--acrobat-text-dim)', lineHeight: 1.5 }}
-                  >
-                    {tool.desc}
-                  </div>
-                </div>
-              </button>
-            ))
-          )}
+                  <span className="tools-row-icon" style={{ color: tool.color }}>
+                    <Icon name={tool.icon} size={26} />
+                  </span>
+                  <span className="tools-row-copy">
+                    <span className="tools-row-name">{tool.label}</span>
+                    <span className="tools-row-description">{tool.desc}</span>
+                  </span>
+                  <span className="tools-open-button">Open</span>
+                </button>
+              ))}
+            </section>
+          ))}
         </div>
       </div>
-    </div>
+    </main>
   )
 }

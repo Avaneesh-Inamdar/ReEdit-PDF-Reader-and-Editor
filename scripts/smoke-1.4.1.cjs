@@ -138,14 +138,14 @@ app.whenReady().then(async () => {
     )
     checks.push('remove history persists and keeps the file')
     await window.webContents.executeJavaScript(
-      `Array.from(document.querySelectorAll('.acrobat-tab')).find(b=>b.title==='Tools').click()`
+      `document.querySelector('[title="See all tools"]').click()`
     )
     const boxes = await window.webContents.executeJavaScript(
-      `Array.from(document.querySelectorAll('.tools-grid button')).map(b=>b.getBoundingClientRect().toJSON())`
+      `Array.from(document.querySelectorAll('.tools-category')).map(b=>b.getBoundingClientRect().toJSON())`
     )
     assert.ok(
-      boxes.length === 8 && Math.abs(boxes[0].top - boxes[1].top) < 2,
-      'Tools should share a row'
+      boxes.length === 4 && Math.abs(boxes[0].top - boxes[1].top) < 2,
+      'Tool categories should share a row'
     )
     checks.push('responsive tool grid')
     // Use actual local Tesseract against an image-only PDF, not simulated text.

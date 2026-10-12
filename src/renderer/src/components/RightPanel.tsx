@@ -227,111 +227,32 @@ function ProtectPanel(): React.JSX.Element {
   )
 }
 
-export function RightPanel({ pdfDoc: _pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): React.JSX.Element | null {
+export function RightPanel({ pdfDoc: _pdfDoc, visible, onClose }: { pdfDoc: PDFDocumentProxy | null; visible: boolean; onClose: () => void }): React.JSX.Element | null {
   const { rightPane, setRightPane } = useUIStore()
-
-  if (rightPane === 'none') {
-    // Show only the icon strip
-    return (
-      <div
-        className="flex flex-col items-center py-2 shrink-0"
-        style={{
-          width: 42,
-          borderLeft: '1px solid var(--acrobat-pane-border)',
-          background: 'var(--acrobat-chrome-alt)'
-        }}
-      >
-        {TOOLS.map((t) => (
-          <button
-            key={t.id}
-            className="tb-btn"
-            style={{ width: 34, height: 34, marginBottom: 2, fontSize: 16 }}
-            onClick={() => { void openTool(t.id) }}
-            title={t.label}
-          >
-            {t.icon}
-          </button>
-        ))}
-      </div>
-    )
-  }
-
-  const activeTool = TOOLS.find((t) => t.id === rightPane)
-
-  return (
-    <div
-      className="flex shrink-0 overflow-hidden"
-      style={{
-        width: 300,
-        borderLeft: '1px solid var(--acrobat-pane-border)',
-        background: 'var(--acrobat-pane-bg)'
-      }}
-    >
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto" style={{ color: 'var(--acrobat-pane-text)' }}>
-      {/* Icon strip */}
-      <div
-        className="flex items-center gap-0.5 px-1 py-1 shrink-0"
-        style={{
-          width: '100%',
-          borderBottom: '1px solid var(--acrobat-pane-border)' ,
-          background: 'var(--acrobat-chrome-alt)'
-        }}
-      >
-        {TOOLS.map((t) => (
-          <button
-            key={t.id}
-            className={`tb-btn ${rightPane === t.id ? 'active' : ''}`}
-            style={{ width: 34, height: 30, marginBottom: 0, fontSize: 16 }}
-            onClick={() => { void openTool(t.id) }}
-            title={t.label}
-          >
-            {t.icon}
-          </button>
-        ))}
-      </div>
-
-        {/* Header */}
-        <div
-          className="flex items-center justify-between px-3 shrink-0"
-          style={{
-            height: 36,
-            borderBottom: '1px solid var(--acrobat-pane-border)'
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <div style={{ width: 8, height: 8, borderRadius: 2, background: activeTool?.color, flexShrink: 0 }} />
-            <span className="text-xs font-semibold">{activeTool?.label}</span>
-          </div>
-          <button className="tb-btn" style={{ width: 24, height: 24, fontSize: 11 }} onClick={() => setRightPane('none')} title="Close pane">
-            <Icon name="close" />
-          </button>
-        </div>
-
-        <div className="p-3">
-          {rightPane === 'comment' && <CommentPanel />}
-          {rightPane === 'sign' && <SignPanel />}
-          {rightPane === 'edit' && <EditPanel />}
-          {rightPane === 'organize' && (
-            <div className="flex flex-col gap-3 mt-2">
-              <div className="text-xs" style={{ color: 'var(--acrobat-text-muted)' }}>
-                Reorder, rotate, delete, and extract pages in your document.
-              </div>
-              <button
-                className="rounded text-xs font-medium text-white p-2 w-full mt-2"
-                style={{ background: 'var(--acrobat-accent)' }}
-                onClick={() => useUIStore.getState().setActiveModal('organizePages')}
-              >
-                Open Organize Pages
-              </button>
-            </div>
-          )}
-          {rightPane === 'ocr' && <DetectionPanel />}
-          {rightPane === 'forms' && <FormPanel />}
-          {rightPane === 'redact' && <RedactPanel />}
-          {rightPane === 'protect' && <ProtectPanel />}
-        </div>
-      </div>
+  if (!visible && rightPane === 'none') return null
+  const activeTool = TOOLS.find(t => t.id === rightPane)
+  return <aside className="workspace-tools-pane" aria-label={activeTool?.label || 'All tools'}>
+    <div className="workspace-pane-heading">
+      {activeTool ? <button className="tb-btn" title="Back to all tools" onClick={() => { setRightPane('none'); window.dispatchEvent(new CustomEvent('workspace:showTools')) }}><Icon name="previous" size={18} /></button> : null}
+      <h2>{activeTool?.label || 'All tools'}</h2>
+      <button className="tb-btn" onClick={() => { setRightPane('none'); onClose() }} title="Close pane"><Icon name="close" size={18} /></button>
     </div>
-  )
+    {rightPane === 'none' ? <div className="workspace-tool-list">
+      {TOOLS.map(t => <button key={t.id} className="workspace-tool-entry" onClick={() => void openTool(t.id)} title={t.label}>
+        <span style={{ color: t.color }}>{t.icon}</span><span>{t.label}</span>
+      </button>)}
+      <div className="workspace-tools-separator" />
+      <button className="workspace-tool-entry" onClick={() => useUIStore.getState().setActiveModal('combineFiles')}><span style={{ color: 'var(--tool-organize)' }}><Icon name="organize" size={18} /></span><span>Combine files</span></button>
+      <button className="workspace-tool-entry" onClick={() => useUIStore.getState().setActiveView('tools')}><Icon name="thumbnails" size={18} /><span>View all tools</span><Icon name="external" size={14} /></button>
+    </div> : <div className="workspace-tool-content">
+      {rightPane === 'comment' && <CommentPanel />}
+      {rightPane === 'sign' && <SignPanel />}
+      {rightPane === 'edit' && <EditPanel />}
+      {rightPane === 'organize' && <div className="p-4"><p className="text-xs mb-4">Reorder, rotate, delete, and extract pages.</p><button className="workspace-save-as" onClick={() => useUIStore.getState().setActiveModal('organizePages')}>Organize pages</button></div>}
+      {rightPane === 'ocr' && <DetectionPanel />}
+      {rightPane === 'forms' && <FormPanel />}
+      {rightPane === 'redact' && <RedactPanel />}
+      {rightPane === 'protect' && <div className="p-4"><ProtectPanel /></div>}
+    </div>}
+  </aside>
 }

@@ -1,0 +1,200 @@
+.acrobat-workspace-titlebar {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 10px;
+  height: 42px;
+  padding: 0 14px 0 8px;
+  color: var(--acrobat-text);
+  background: var(--acrobat-titlebar);
+  user-select: none;
+  -webkit-app-region: no-drag;
+}
+
+.workspace-menu-anchor {
+  position: relative;
+}
+.workspace-menu-trigger {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.workspace-menu-trigger:hover,
+.workspace-menu-trigger.is-open {
+  background: var(--acrobat-chrome-alt);
+}
+.workspace-brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.workspace-menu-root {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  min-width: 188px;
+  padding: 6px;
+}
+.workspace-menu-group {
+  position: relative;
+}
+.workspace-menu-root .acrobat-menu-item {
+  width: 100%;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  text-align: left;
+  white-space: nowrap;
+  padding: 8px 10px;
+}
+.workspace-menu-root .acrobat-menu-item:hover,
+.workspace-menu-root .acrobat-menu-item.is-open,
+.workspace-menu-root .acrobat-menu-item:focus-visible {
+  color: var(--acrobat-text);
+  background: var(--acrobat-chrome-alt);
+}
+.workspace-menu-flyout {
+  position: absolute;
+  top: -6px;
+  left: 100%;
+  min-width: 280px;
+  padding: 6px;
+  max-height: calc(100vh - 88px);
+  overflow-y: auto;
+}
+
+.acrobat-workspace-tabs {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  gap: 2px;
+  min-width: 0;
+  height: 42px;
+  overflow-x: auto;
+  padding: 4px 8px 0 0;
+  color: var(--acrobat-text-muted);
+  background: var(--acrobat-titlebar);
+  scrollbar-width: none;
+  -webkit-app-region: no-drag;
+}
+.acrobat-workspace-tabs::-webkit-scrollbar {
+  display: none;
+}
+.acrobat-workspace-tabs .acrobat-tab {
+  height: 38px;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  padding: 0;
+}
+.acrobat-workspace-tabs .acrobat-tab:hover {
+  background: var(--acrobat-chrome-alt);
+}
+.acrobat-workspace-tabs .acrobat-tab.active {
+  border-color: var(--acrobat-border);
+  background: var(--acrobat-toolbar);
+  color: var(--acrobat-text);
+}
+.acrobat-workspace-tabs .workspace-home-tab {
+  width: 42px;
+  justify-content: center;
+  margin-right: 4px;
+}
+.workspace-document-tab {
+  gap: 3px;
+  min-width: 164px;
+  max-width: 244px;
+  padding-right: 9px !important;
+}
+.workspace-document-tab-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  height: 100%;
+  flex: 1;
+  padding: 0 6px 0 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.workspace-document-name {
+  max-width: 168px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workspace-document-dirty {
+  color: var(--acrobat-text-muted);
+  font-size: 14px;
+  line-height: 1;
+}
+.acrobat-workspace-tabs .close-btn {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+}
+.acrobat-workspace-tabs .close-btn:hover {
+  background: var(--acrobat-chrome-alt);
+}
+.workspace-new-tab {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  margin: 0 4px 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--acrobat-text-muted);
+  cursor: pointer;
+}
+.workspace-new-tab:hover {
+  color: var(--acrobat-text);
+  background: var(--acrobat-chrome-alt);
+}
+.workspace-menu-trigger:focus-visible,
+.workspace-new-tab:focus-visible,
+.workspace-document-tab-label:focus-visible,
+.acrobat-workspace-tabs .close-btn:focus-visible,
+.workspace-home-tab:focus-visible {
+  outline: 2px solid var(--acrobat-accent);
+  outline-offset: -3px;
+}
+@media (max-width: 680px) {
+  .workspace-brand span {
+    display: none;
+  }
+  .acrobat-workspace-titlebar {
+    gap: 6px;
+    padding-right: 8px;
+  }
+  .workspace-document-tab {
+    min-width: 130px;
+    max-width: 185px;
+  }
+  .workspace-document-name {
+    max-width: 112px;
+  }
+}

@@ -1,5 +1,5 @@
 import { openTool } from '../lib/toolActions'
-import { BrandLogo } from './Icon'
+import { BrandLogo, Icon } from './Icon'
 import { exportWord } from '../lib/officeExport'
 import { closeDocument } from '../lib/documentActions'
 import { useEffect, useRef, useCallback } from 'react'
@@ -7,10 +7,7 @@ import { usePdfStore } from '../stores/usePdfStore'
 import { useUIStore } from '../stores/useUIStore'
 import { useTabStore } from '../stores/useTabStore'
 import { canPerformUndo, canPerformRedo } from '../lib/undoManager'
-
-/* ── Adobe Acrobat Windows Titlebar ── */
-// Red "A" logo, interactive dropdown menus (File/Edit/View/Sign/Window/Help),
-// title: "[filename.pdf] - Re-Edit PDF", Windows controls.
+import '../assets/header-workspace.css'
 
 interface MenuItem {
   label: string
@@ -18,7 +15,6 @@ interface MenuItem {
   action?: () => void
   disabled?: boolean
   separator?: boolean
-  submenu?: MenuItem[]
 }
 
 function MenuDropdown({
@@ -28,25 +24,17 @@ function MenuDropdown({
   items: MenuItem[]
   onClose: () => void
 }): React.JSX.Element {
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const onClick = (e: MouseEvent): void => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
-    }
-    setTimeout(() => document.addEventListener('mousedown', onClick), 0)
-    return () => document.removeEventListener('mousedown', onClick)
-  }, [onClose])
-
   return (
-    <div ref={ref} className="acrobat-menu absolute top-full left-0 mt-0.5">
+    <div className="acrobat-menu workspace-menu-flyout" role="menu">
       {items.map((item, i) =>
         item.separator ? (
-          <div key={`sep-${i}`} className="acrobat-menu-sep" />
+          <div key={`sep-${i}`} className="acrobat-menu-sep" role="separator" />
         ) : (
-          <div
+          <button
             key={item.label}
             className="acrobat-menu-item"
+            role="menuitem"
+            disabled={item.disabled}
             data-disabled={item.disabled ? 'true' : undefined}
             onClick={() => {
               if (!item.disabled && item.action) {
@@ -59,7 +47,7 @@ function MenuDropdown({
             {item.shortcut && (
               <span style={{ marginLeft: 24, opacity: 0.5, fontSize: 11 }}>{item.shortcut}</span>
             )}
-          </div>
+          </button>
         )
       )}
     </div>
@@ -74,6 +62,26 @@ export function Titlebar(): React.JSX.Element {
   useEffect(() => { void window.api.setDocumentTitle(fileName ? `${fileName}${isDirty ? ' •' : ''} — Re-Edit PDF` : 'Re-Edit PDF') }, [fileName, isDirty])
 
   const closeMenu = useCallback(() => setOpenMenu(null), [setOpenMenu])
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!openMenu) return
+    const onClick = (event: MouseEvent): void => {
+      if (!menuRef.current?.contains(event.target as Node)) closeMenu()
+    }
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        closeMenu()
+        menuRef.current?.querySelector<HTMLButtonElement>('.workspace-menu-trigger')?.focus()
+      }
+    }
+    document.addEventListener('mousedown', onClick)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onClick)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [openMenu, closeMenu])
 
   const hasDoc = !!usePdfStore.getState().data
 
@@ -149,59 +157,49 @@ export function Titlebar(): React.JSX.Element {
   const menus = Object.keys(menuDefs)
 
   return (
-    <div
-      className="flex items-center shrink-0 select-none"
-      style={{
-        height: 28,
-        background: 'var(--acrobat-titlebar)',
-        borderBottom: '1px solid var(--acrobat-border)',
-        WebkitAppRegion: 'no-drag'
-      } as React.CSSProperties}
-    >
-      {/* Adobe logo */}
-      <div
-        className="flex items-center gap-2 px-3 shrink-0"
-        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-      >
-        <BrandLogo size={24} />
-      </div>
-
-      {/* Menu bar */}
-      <div
-        className="flex items-center h-full"
-        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-      >
-        {menus.map((m) => (
-          <div key={m} className="relative h-full flex items-center">
-            <button
-              className="h-full px-3 text-xs font-medium transition-colors"
-              style={{
-                color: openMenu === m ? '#fff' : 'var(--acrobat-text-muted)',
-                background: openMenu === m ? 'var(--acrobat-accent)' : 'transparent'
-              }}
-              onMouseDown={() => setOpenMenu(openMenu === m ? null : m)}
-              onMouseEnter={() => {
-                if (openMenu && openMenu !== m) setOpenMenu(m)
-              }}
-            >
-              {m}
-            </button>
-            {openMenu === m && <MenuDropdown items={menuDefs[m]} onClose={closeMenu} />}
+    <div className="acrobat-workspace-titlebar">
+      <div ref={menuRef} className="workspace-menu-anchor">
+        <button
+          className={`workspace-menu-trigger ${openMenu ? 'is-open' : ''}`}
+          aria-haspopup="menu"
+          aria-expanded={!!openMenu}
+          onClick={() => setOpenMenu(openMenu ? null : 'Menu')}
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <path d="M3 4.5h12M3 9h12M3 13.5h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          <span>Menu</span>
+        </button>
+        {openMenu && (
+          <div className="acrobat-menu workspace-menu-root" role="menu" aria-label="Application menu">
+            {menus.map((name) => (
+              <div key={name} className="workspace-menu-group" onMouseEnter={() => setOpenMenu(name)}>
+                <button
+                  className={`acrobat-menu-item ${openMenu === name ? 'is-open' : ''}`}
+                  role="menuitem"
+                  aria-haspopup="menu"
+                  aria-expanded={openMenu === name}
+                  onClick={() => setOpenMenu(name)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'ArrowRight') {
+                      event.preventDefault()
+                      setOpenMenu(name)
+                    }
+                  }}
+                >
+                  <span>{name}</span>
+                  <Icon name="right" size={14} />
+                </button>
+                {openMenu === name && <MenuDropdown items={menuDefs[name]} onClose={closeMenu} />}
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
-
-      {/* Title */}
-      <div
-        className="flex-1 min-w-0 text-center"
-        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-      >
-        <span className="text-xs truncate" style={{ color: 'var(--acrobat-text-muted)' }}>
-          {fileName ? `${fileName}${isDirty ? ' •' : ''} - Re-Edit PDF` : 'Re-Edit PDF'}
-        </span>
+      <div className="workspace-brand" title="Re-Edit PDF">
+        <BrandLogo size={23} />
+        <span>Re-Edit</span>
       </div>
-
-
     </div>
   )
 }

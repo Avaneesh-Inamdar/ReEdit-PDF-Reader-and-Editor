@@ -24,7 +24,15 @@ process.on('unhandledRejection', (reason) => {
   try {
     writeFileSync(
       join(output, 'result.json'),
-      JSON.stringify({ passed: false, error: String(reason && reason.stack ? reason.stack : reason), rendererErrors: errors }, null, 2)
+      JSON.stringify(
+        {
+          passed: false,
+          error: String(reason && reason.stack ? reason.stack : reason),
+          rendererErrors: errors
+        },
+        null,
+        2
+      )
     )
   } catch {}
   app.exit(1)
@@ -61,10 +69,18 @@ require(
     : '../out/main/index.js'
 )
 
+async function runJs(expression) {
+  try {
+    return await main.webContents.executeJavaScript(expression)
+  } catch (error) {
+    throw new Error('Renderer expression failed: ' + expression, { cause: error })
+  }
+}
+
 async function waitFor(expression, timeout = 45000) {
   const deadline = Date.now() + timeout
   while (Date.now() < deadline) {
-    if (await main.webContents.executeJavaScript(expression)) return
+    if (await runJs(expression)) return
     await new Promise((resolve) => setTimeout(resolve, 100))
   }
   throw new Error(`Timed out: ${expression}`)
@@ -86,15 +102,13 @@ app.whenReady().then(async () => {
     GlobalWorkerOptions.workerSrc =
       'file://' + resolve('node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs').replace(/\\/g, '/')
     await waitFor('!!window.api && document.body.innerText.includes("Home")')
-    await main.webContents.executeJavaScript(
-      'void (window.alert = message => { throw new Error(message) })'
-    )
-    await main.webContents.executeJavaScript(`(() => {
+    await runJs('void (window.alert = message => { throw new Error(message) })')
+    await runJs(`(() => {
       const transfer = new DataTransfer(); transfer.items.add(new File(['%PDF'], 'external.pdf', { type: 'application/pdf' }));
       document.querySelector('#root > div').dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: transfer }));
     })()`)
     await waitFor('document.body.innerText.includes("Drop PDF here")')
-    await main.webContents.executeJavaScript(
+    await runJs(
       `document.querySelector('#root > div').dispatchEvent(new DragEvent('dragleave', { bubbles: true, cancelable: true }))`
     )
     await waitFor('!document.body.innerText.includes("Drop PDF here")')
@@ -103,11 +117,11 @@ app.whenReady().then(async () => {
       '!!document.querySelector("#page-1 canvas") && document.querySelector("#page-1 canvas").width > 0'
     )
     await waitFor('document.body.innerText.includes("simple-text.pdf")')
-    await main.webContents.executeJavaScript(`document.querySelector('[title="Edit PDF"]').click()`)
+    await runJs(`document.querySelector('[title="Edit PDF"]').click()`)
     await waitFor('document.querySelectorAll("[data-pdf-text]").length > 0')
     main.focus()
     await new Promise((resolve) => setTimeout(resolve, 500))
-    const textPoint = await main.webContents.executeJavaScript(
+    const textPoint = await runJs(
       '(() => { const r = document.querySelector("[data-pdf-text]").getBoundingClientRect(); return { x: Math.round(r.left + 20), y: Math.round(r.top + r.height / 2) } })()'
     )
     main.webContents.sendInputEvent({
@@ -123,30 +137,24 @@ app.whenReady().then(async () => {
       clickCount: 1
     })
     await waitFor('!!document.querySelector("dialog[open] textarea")')
-    const original = await main.webContents.executeJavaScript(
-      'document.querySelector("dialog textarea").value'
-    )
+    const original = await runJs('document.querySelector("dialog textarea").value')
     assert.ok(original.includes('Simple Text PDF'), 'Click reaches the original PDF heading')
-    await main.webContents.executeJavaScript(
+    await runJs(
       'document.querySelector("dialog textarea").value = "Edited PDF heading"; document.querySelector("dialog form").requestSubmit()'
     )
     await waitFor(
       'document.querySelector(".existing-text-layer").textContent.includes("Edited PDF heading")'
     )
-    await main.webContents.executeJavaScript(
-      'window.dispatchEvent(new CustomEvent("acrobat:undo"))'
-    )
+    await runJs('window.dispatchEvent(new CustomEvent("acrobat:undo"))')
     await waitFor(
       '!document.querySelector(".existing-text-layer").textContent.includes("Edited PDF heading")'
     )
-    await main.webContents.executeJavaScript(
-      'window.dispatchEvent(new CustomEvent("acrobat:redo"))'
-    )
+    await runJs('window.dispatchEvent(new CustomEvent("acrobat:redo"))')
     await waitFor(
       'document.querySelector(".existing-text-layer").textContent.includes("Edited PDF heading")'
     )
     // Native internal dragging must be cancelled even if Chromium exposes an image as a file.
-    const internalCancelled = await main.webContents.executeJavaScript(`(() => {
+    const internalCancelled = await runJs(`(() => {
       const data = new DataTransfer(); data.items.add(new File(['image'], 'page.png', { type: 'image/png' }));
       const target = document.querySelector('#page-1 canvas');
       const event = new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: data });
@@ -156,15 +164,9 @@ app.whenReady().then(async () => {
     })()`)
     assert.ok(internalCancelled)
     await waitFor('!document.body.innerText.includes("Drop PDF here")')
-    await main.webContents.executeJavaScript(
-      `document.querySelector('[title="Hand tool (H)"]')?.click()`
-    )
-    await main.webContents.executeJavaScript(
-      `window.dispatchEvent(new KeyboardEvent('keydown', { key: 'h', bubbles: true }))`
-    )
-    const beforePan = await main.webContents.executeJavaScript(
-      'document.querySelector("[data-pdf-viewer]").scrollTop'
-    )
+    await runJs(`document.querySelector('[title="Hand tool (H)"]')?.click()`)
+    await runJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'h', bubbles: true }))`)
+    const beforePan = await runJs('document.querySelector("[data-pdf-viewer]").scrollTop')
     main.webContents.sendInputEvent({
       type: 'mouseDown',
       x: 500,
@@ -182,42 +184,38 @@ app.whenReady().then(async () => {
     })
     await waitFor(`document.querySelector('[data-pdf-viewer]').scrollTop > ${beforePan}`)
     await waitFor('!document.body.innerText.includes("Drop PDF here")')
-    await main.webContents.executeJavaScript(
+    await runJs(
       `window.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', bubbles: true })); document.querySelector('[data-pdf-viewer]').scrollTop = 0; document.querySelector('[title="Close pane"]').click()`
     )
-    await main.webContents.executeJavaScript(
-      `document.querySelector('[title="Add Text Comment"]').click()`
-    )
-    const point = await main.webContents.executeJavaScript(
+    await runJs(`document.querySelector('[title="Add Text Comment"]').click()`)
+    const point = await runJs(
       '(() => { const r = document.querySelector("#page-1 canvas").getBoundingClientRect(); return { x: Math.round(r.left + 150), y: Math.round(r.top + 140) } })()'
     )
     main.webContents.sendInputEvent({ type: 'mouseDown', ...point, button: 'left', clickCount: 1 })
     main.webContents.sendInputEvent({ type: 'mouseUp', ...point, button: 'left', clickCount: 1 })
     await waitFor('!!document.querySelector("dialog[open] textarea")')
-    await main.webContents.executeJavaScript(
+    await runJs(
       'document.querySelector("dialog textarea").value = "Smoke test annotation"; document.querySelector("dialog form").requestSubmit()'
     )
     await waitFor('document.querySelectorAll("[data-anno-id]").length > 0')
-    await main.webContents.executeJavaScript(
-      `document.querySelector('[title="Fill & Sign"]').click()`
-    )
+    await runJs(`document.querySelector('[title="Fill & Sign"]').click()`)
     await waitFor(
       `Array.from(document.querySelectorAll('button')).some(button => button.textContent.trim() === 'Add Signature')`
     )
-    await main.webContents.executeJavaScript(
+    await runJs(
       `Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Add Signature').click()`
     )
     await waitFor('!!document.querySelector(".modal-card input[placeholder]")')
-    await main.webContents.executeJavaScript(`(() => {
+    await runJs(`(() => {
       const input = document.querySelector('.modal-card input[placeholder]');
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, 'Alex Test');
       input.dispatchEvent(new Event('input', { bubbles: true }));
     })()`)
-    await main.webContents.executeJavaScript(
+    await runJs(
       `Array.from(document.querySelectorAll('.modal-card button')).find(button => button.textContent.trim() === 'Apply').click()`
     )
     await waitFor('!document.querySelector(".modal-card")')
-    const signaturePoint = await main.webContents.executeJavaScript(
+    const signaturePoint = await runJs(
       `(() => { const r = document.querySelector('#page-1 canvas').getBoundingClientRect(); return { x: Math.round(r.left + r.width * 0.25), y: Math.round(r.top + r.height * 0.65) } })()`
     )
     main.webContents.sendInputEvent({
@@ -234,10 +232,10 @@ app.whenReady().then(async () => {
     })
     await waitFor('!!document.querySelector("[data-anno-id] image[href]")')
     await new Promise((resolve) => setTimeout(resolve, 500))
-    const imagePoint = await main.webContents.executeJavaScript(
+    const imagePoint = await runJs(
       `(() => { const r = document.querySelector('[data-anno-id] image').getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) } })()`
     )
-    const originalImageX = await main.webContents.executeJavaScript(
+    const originalImageX = await runJs(
       'Number(document.querySelector("[data-anno-id] image").getAttribute("x"))'
     )
     main.webContents.sendInputEvent({
@@ -265,55 +263,47 @@ app.whenReady().then(async () => {
     )
     open('form-acroform.pdf')
     await waitFor(
-      'document.body.innerText.includes("form-acroform.pdf") && document.querySelectorAll(".acrobat-tab").length === 4'
+      'document.body.innerText.includes("form-acroform.pdf") && document.querySelectorAll(".workspace-document-tab").length === 2'
     )
-    await main.webContents.executeJavaScript(
-      `document.querySelector('[title="Fill Forms"]').click()`
-    )
+    await runJs(`document.querySelector('[title="All tools"]').click()`)
+    await waitFor(`!!document.querySelector('[title="Fill Forms"]')`)
+    await runJs(`document.querySelector('[title="Fill Forms"]').click()`)
     await waitFor(
       `Array.from(document.querySelectorAll('label')).some(label => label.textContent.includes('name_field') && label.querySelector('input'))`
     )
-    await main.webContents.executeJavaScript(`(() => {
+    await runJs(`(() => {
       const label = Array.from(document.querySelectorAll('label')).find(label => label.textContent.includes('name_field'));
       const input = label.querySelector('input');
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, 'Alex Filled');
       input.dispatchEvent(new Event('input', { bubbles: true }));
       Array.from(document.querySelectorAll('label')).find(label => label.textContent.includes('agree_checkbox')).querySelector('input').click();
     })()`)
-    await main.webContents.executeJavaScript(
-      'window.dispatchEvent(new CustomEvent("acrobat:save"))'
-    )
+    await runJs('window.dispatchEvent(new CustomEvent("acrobat:save"))')
     await waitFor('!document.querySelector(".acrobat-tab.active").textContent.includes("•")')
     const filledForm = (
       await PDFDocument.load(readFileSync(join(output, 'form-acroform.pdf')))
     ).getForm()
     assert.equal(filledForm.getTextField('name_field').getText(), 'Alex Filled')
     assert.equal(filledForm.getCheckBox('agree_checkbox').isChecked(), false)
-    await main.webContents.executeJavaScript(
-      'Array.from(document.querySelectorAll(".acrobat-tab")).find(b => b.textContent.includes("simple-text.pdf")).click()'
+    await runJs(
+      'Array.from(document.querySelectorAll(".workspace-document-tab-label")).find(b => b.textContent.includes("simple-text.pdf")).click()'
     )
     await waitFor(
       'document.querySelector(".acrobat-tab.active").textContent.includes("simple-text.pdf") && !!document.querySelector("#page-1 canvas")'
     )
     await waitFor('document.body.innerText.includes("Smoke test annotation")')
-    await main.webContents.executeJavaScript(
-      'window.dispatchEvent(new CustomEvent("acrobat:save"))'
-    )
+    await runJs('window.dispatchEvent(new CustomEvent("acrobat:save"))')
     await waitFor('!document.querySelector(".acrobat-tab.active").textContent.includes("•")')
     const savedOnce = await PDFDocument.load(readFileSync(join(output, 'simple-text.pdf')))
     const count = savedOnce.getPage(0).node.Annots().size()
     assert.ok(count > 0)
-    await main.webContents.executeJavaScript(
-      'window.dispatchEvent(new CustomEvent("acrobat:save"))'
-    )
+    await runJs('window.dispatchEvent(new CustomEvent("acrobat:save"))')
     await new Promise((resolve) => setTimeout(resolve, 500))
     const savedTwice = await PDFDocument.load(readFileSync(join(output, 'simple-text.pdf')))
     assert.equal(savedTwice.getPage(0).node.Annots().size(), count)
     await new Promise((resolve) => setTimeout(resolve, 300))
     writeFileSync(join(output, 'document.png'), (await capturePage()).toPNG())
-    await main.webContents.executeJavaScript(
-      'window.dispatchEvent(new CustomEvent("acrobat:print"))'
-    )
+    await runJs('window.dispatchEvent(new CustomEvent("acrobat:print"))')
     const deadline = Date.now() + 20000
     while (!printed && Date.now() < deadline)
       await new Promise((resolve) => setTimeout(resolve, 100))
@@ -333,37 +323,32 @@ app.whenReady().then(async () => {
     )
     await new Promise((resolve) => setTimeout(resolve, 500))
     writeFileSync(join(output, 'reopened.png'), (await capturePage()).toPNG())
-    if (process.platform === 'linux')
-      await main.webContents.executeJavaScript('window.api.openDefaultApps()')
+    if (process.platform === 'linux') await runJs('window.api.openDefaultApps()')
     main.webContents.send('menu:action', 'preferences')
     await waitFor('!!document.querySelector("#preferences-heading")')
-    await main.webContents.executeJavaScript(`(() => {
+    await runJs(`(() => {
       const theme = document.querySelector('[aria-label="App theme"]'); theme.value = 'light'; theme.dispatchEvent(new Event('change', { bubbles: true }));
     })()`)
     await waitFor(`document.documentElement.dataset.theme === 'light'`)
-    const storedPreferences = await main.webContents.executeJavaScript(
+    const storedPreferences = await runJs(
       `JSON.parse(localStorage.getItem('re-edit-preferences')).state`
     )
     assert.equal(storedPreferences.theme, 'light')
     assert.equal(storedPreferences.signatures.length > 0, true)
-    await main.webContents.executeJavaScript(
-      `document.querySelector('[aria-label="Close preferences"]').click()`
-    )
+    await runJs(`document.querySelector('[aria-label="Close preferences"]').click()`)
     picked = [resolve('test-fixtures/simple-text.pdf'), resolve('test-fixtures/image-and-text.pdf')]
     destination = join(output, 'combined.pdf')
     main.webContents.send('menu:action', 'combineFiles')
     await waitFor('!!document.querySelector("#combine-heading")')
-    await main.webContents.executeJavaScript(
+    await runJs(
       `Array.from(document.querySelectorAll('.modal-card button')).find(button => button.textContent.includes('Add PDF files')).click()`
     )
     await waitFor('document.querySelectorAll(".combine-list li").length === 2')
-    await main.webContents.executeJavaScript(
-      `document.querySelector('[aria-label="Move file 2 up"]').click()`
-    )
+    await runJs(`document.querySelector('[aria-label="Move file 2 up"]').click()`)
     await waitFor(
       'document.querySelector(".combine-list li").textContent.includes("image-and-text.pdf")'
     )
-    await main.webContents.executeJavaScript(
+    await runJs(
       `Array.from(document.querySelectorAll('.modal-card button')).find(button => button.textContent.includes('Combine and save')).click()`
     )
     await waitFor(
@@ -404,7 +389,7 @@ app.whenReady().then(async () => {
     )
     const largeOpenMs = Date.now() - openedAt
     await new Promise((resolve) => setTimeout(resolve, 500))
-    const bounds = await main.webContents.executeJavaScript(`(() => {
+    const bounds = await runJs(`(() => {
       const canvas = document.querySelector('#page-1 canvas');
       const span = Array.from(document.querySelectorAll('#page-1 [data-pdf-run]')).find(span => span.textContent === 'Selection works on this line.');
       const range = document.createRange();
@@ -432,19 +417,12 @@ app.whenReady().then(async () => {
       clickCount: 1
     })
     await waitFor(`!!document.querySelector('[title="Edit selected text"]')`)
-    const selectedText = await main.webContents.executeJavaScript(
-      'window.getSelection().toString()'
-    )
+    const selectedText = await runJs('window.getSelection().toString()')
     assert.equal(selectedText, 'works on this', 'Dragging selects the intended line and characters')
-    await main.webContents.executeJavaScript(
-      `document.querySelector('[title="Edit selected text"]').click()`
-    )
+    await runJs(`document.querySelector('[title="Edit selected text"]').click()`)
     await waitFor('!!document.querySelector("dialog[open] textarea")')
-    assert.equal(
-      await main.webContents.executeJavaScript('document.querySelector("dialog textarea").value'),
-      selectedText
-    )
-    const dialogGrowth = await main.webContents.executeJavaScript(`(() => {
+    assert.equal(await runJs('document.querySelector("dialog textarea").value'), selectedText)
+    const dialogGrowth = await runJs(`(() => {
       const input = document.querySelector('dialog textarea'); const before = input.offsetHeight;
       input.value = Array.from({ length: 25 }, (_, index) => 'A long replacement paragraph, line ' + index).join('\\n'); input.dispatchEvent(new Event('input', { bubbles: true }));
       const after = input.offsetHeight;
@@ -472,25 +450,24 @@ app.whenReady().then(async () => {
       'Partial selection replacement is saved'
     )
     await savedSelection.destroy()
-    assert.ok(!savedSelectionText.includes('works on this'), 'Original selected text is removed from saved content')
-    assert.ok(savedSelectionText.includes('Selection') && savedSelectionText.includes('line.'), 'Unselected neighboring text is retained')
-    await main.webContents.executeJavaScript(
-      `document.getElementById('page-300').scrollIntoView({ block: 'start' })`
-    )
-    await waitFor('!!document.querySelector("#page-300 [data-pdf-run]")')
-    await waitFor(
-      `Array.from(document.querySelectorAll('.hud-bar span')).some(span => span.textContent.includes('300 / 300'))`
+    assert.ok(
+      !savedSelectionText.includes('works on this'),
+      'Original selected text is removed from saved content'
     )
     assert.ok(
-      await main.webContents.executeJavaScript(
-        `document.querySelectorAll('[data-page-slot] canvas').length < 10`
-      ),
+      savedSelectionText.includes('Selection') && savedSelectionText.includes('line.'),
+      'Unselected neighboring text is retained'
+    )
+    await runJs(`document.getElementById('page-300').scrollIntoView({ block: 'start' })`)
+    await waitFor('!!document.querySelector("#page-300 [data-pdf-run]")')
+    await waitFor(
+      `document.querySelector('.document-rail-page')?.value === '300' && document.querySelector('.document-rail-total')?.textContent === '300'`
+    )
+    assert.ok(
+      await runJs(`document.querySelectorAll('[data-page-slot] canvas').length < 10`),
       'Distant navigation retains bounded page canvases'
     )
-    writeFileSync(
-      join(output, 'large-document.png'),
-      (await capturePage()).toPNG()
-    )
+    writeFileSync(join(output, 'large-document.png'), (await capturePage()).toPNG())
     writeFileSync(
       join(output, 'performance.json'),
       JSON.stringify(
@@ -509,9 +486,7 @@ app.whenReady().then(async () => {
       `!!document.querySelector('button') && document.body.innerText.includes('Home') && document.documentElement.dataset.theme === 'light'`
     )
     assert.equal(
-      await main.webContents.executeJavaScript(
-        `JSON.parse(localStorage.getItem('re-edit-preferences')).state.theme`
-      ),
+      await runJs(`JSON.parse(localStorage.getItem('re-edit-preferences')).state.theme`),
       'light'
     )
     assert.deepEqual(errors, [], 'No renderer errors')

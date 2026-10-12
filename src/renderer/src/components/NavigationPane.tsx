@@ -128,20 +128,26 @@ export function NavigationPane({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }):
   return (
     <div
       ref={containerRef}
-      className="flex shrink-0 overflow-hidden"
+      className="workspace-navigation-pane flex shrink-0 overflow-hidden"
       style={{
         width: leftPaneWidth,
-        borderRight: '1px solid var(--acrobat-pane-border)',
+        borderLeft: '1px solid var(--acrobat-pane-border)',
         background: 'var(--acrobat-pane-bg)'
       }}
     >
-      {/* Icon strip */}
+      <div className="navigation-pane-resize" title="Drag to adjust navigation width" onPointerDown={event => {
+        event.preventDefault()
+        const startX = event.clientX, startWidth = leftPaneWidth
+        const move = (e: PointerEvent): void => useUIStore.getState().setLeftPaneWidth(Math.max(160, Math.min(420, startWidth + startX - e.clientX)))
+        const stop = (): void => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', stop); window.removeEventListener('pointercancel', stop) }
+        window.addEventListener('pointermove', move); window.addEventListener('pointerup', stop); window.addEventListener('pointercancel', stop)
+      }} />
+      {/* Pane tabs */}
       <div
-        className="flex flex-col items-center py-1 shrink-0"
+        className="navigation-pane-tabs flex items-center py-1 shrink-0"
         style={{
-          width: 36,
-          borderRight: '1px solid var(--acrobat-pane-border)',
-          background: 'var(--acrobat-chrome-alt)'
+          borderBottom: '1px solid var(--acrobat-pane-border)',
+          background: 'var(--acrobat-pane-bg)'
         }}
       >
         {tabs.map((t) => (
@@ -155,6 +161,8 @@ export function NavigationPane({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }):
             {t.icon}
           </button>
         ))}
+        <span className="flex-1" />
+        <button className="tb-btn" title="Close navigation pane" onClick={() => setLeftPane('closed')}><Icon name="close" /></button>
       </div>
 
       {/* Content area */}

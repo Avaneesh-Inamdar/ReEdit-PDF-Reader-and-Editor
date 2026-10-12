@@ -1,0 +1,517 @@
+/* Desktop workspace: compact chrome, left workflow tools, right document controls. */
+:root,
+[data-theme='light'] {
+  --acrobat-canvas: #f4f4f4;
+  --acrobat-chrome: #fff;
+  --acrobat-chrome-alt: #f0f0f0;
+  --acrobat-surface: #fff;
+  --acrobat-border: #dedede;
+  --acrobat-border-light: #d2d2d2;
+  --acrobat-text: #292929;
+  --acrobat-text-muted: #626262;
+  --acrobat-text-dim: #737373;
+  --acrobat-titlebar: #f7f7f7;
+  --acrobat-menu-bg: #fff;
+  --acrobat-menu-hover: #e9e9e9;
+  --acrobat-tab-active: #fff;
+  --acrobat-tab-inactive: #f7f7f7;
+  --acrobat-toolbar: #fff;
+  --acrobat-toolbar-border: #e6e6e6;
+  --acrobat-input-bg: #fff;
+  --acrobat-input-border: #c8c8c8;
+  --acrobat-pane-bg: #fff;
+  --acrobat-pane-text: #292929;
+  --acrobat-pane-border: #e4e4e4;
+  --acrobat-pane-hover: #f0f0f0;
+  --acrobat-page-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --tool-comment: #d58016;
+  --tool-edit: #ce3535;
+  --tool-sign: #7856d8;
+  --tool-organize: #7656c8;
+  --tool-ocr: #267d51;
+}
+[data-theme='classic'] {
+  --acrobat-canvas: #d9d9d9;
+  --acrobat-chrome: #f4f4f4;
+  --acrobat-chrome-alt: #e5e5e5;
+  --acrobat-titlebar: #e8e8e8;
+}
+[data-theme='dark'] {
+  --acrobat-canvas: #222;
+  --acrobat-chrome: #303030;
+  --acrobat-chrome-alt: #3a3a3a;
+  --acrobat-surface: #303030;
+  --acrobat-border: #494949;
+  --acrobat-border-light: #525252;
+  --acrobat-text: #ededed;
+  --acrobat-text-muted: #c1c1c1;
+  --acrobat-text-dim: #aaa;
+  --acrobat-titlebar: #292929;
+  --acrobat-menu-bg: #303030;
+  --acrobat-menu-hover: #444;
+  --acrobat-tab-active: #303030;
+  --acrobat-tab-inactive: #292929;
+  --acrobat-toolbar: #303030;
+  --acrobat-toolbar-border: #474747;
+  --acrobat-input-bg: #363636;
+  --acrobat-input-border: #666;
+  --acrobat-pane-bg: #303030;
+  --acrobat-pane-text: #ededed;
+  --acrobat-pane-border: #494949;
+  --acrobat-pane-hover: #414141;
+  --acrobat-page-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+  --tool-comment: #e6a953;
+  --tool-edit: #f27777;
+  --tool-sign: #b49aec;
+  --tool-organize: #b49aec;
+  --tool-ocr: #68bd8e;
+  --tool-redact: #ddd;
+  --tool-protect: #b5c0c3;
+}
+body {
+  font-family:
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 13px;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+}
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--acrobat-accent);
+  outline-offset: 2px;
+}
+.workspace-header {
+  display: flex;
+  flex-shrink: 0;
+  height: 42px;
+  background: var(--acrobat-titlebar);
+}
+.workspace-global-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 48px;
+  flex-shrink: 0;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--acrobat-toolbar-border);
+  background: var(--acrobat-toolbar);
+}
+.workspace-workflows,
+.workspace-file-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.workflow-button {
+  height: 48px;
+  padding: 0 13px;
+  font-size: 14px;
+  color: var(--acrobat-text);
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  padding-top: 3px;
+}
+.workflow-button:hover {
+  background: var(--acrobat-pane-hover);
+}
+.workflow-button.active {
+  border-bottom-color: var(--acrobat-accent);
+  font-weight: 600;
+}
+.workspace-convert {
+  position: relative;
+}
+.workspace-convert-menu {
+  left: 0;
+  right: auto;
+  bottom: auto;
+  top: calc(100% + 4px);
+}
+.workspace-global-bar .tb-btn {
+  width: 34px;
+  height: 34px;
+}
+.tb-btn.active {
+  background: color-mix(in srgb, var(--acrobat-accent) 12%, transparent);
+  outline: none;
+  color: var(--acrobat-accent);
+}
+.tb-btn:hover {
+  background: var(--acrobat-pane-hover);
+}
+.tb-btn:active {
+  background: var(--acrobat-chrome-alt);
+}
+.workspace-find {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  height: 32px;
+  min-width: 170px;
+  padding: 0 10px;
+  border-radius: 5px;
+  border: 1px solid var(--acrobat-border);
+  background: var(--acrobat-input-bg);
+  color: var(--acrobat-text-muted);
+  font-size: 12px;
+}
+.workspace-save-as {
+  height: 32px;
+  padding: 0 17px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--acrobat-accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.workspace-save-as:hover {
+  background: var(--acrobat-accent-hover);
+}
+.workspace-tools-pane {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 264px;
+  border-right: 1px solid var(--acrobat-pane-border);
+  background: var(--acrobat-pane-bg);
+  color: var(--acrobat-pane-text);
+  min-height: 0;
+}
+.workspace-pane-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 58px;
+  padding: 0 16px;
+  flex-shrink: 0;
+}
+.workspace-pane-heading h2 {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+.workspace-pane-heading .tb-btn {
+  width: 28px;
+  height: 28px;
+}
+.workspace-tool-list {
+  overflow-y: auto;
+  padding: 0 10px 20px;
+}
+.workspace-tool-entry {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  font-size: 13px;
+}
+.workspace-tool-entry:hover {
+  background: var(--acrobat-pane-hover);
+}
+.workspace-tool-entry > span:nth-child(2) {
+  flex: 1;
+}
+.workspace-tools-separator {
+  height: 1px;
+  background: var(--acrobat-pane-border);
+  margin: 14px;
+}
+.workspace-tool-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 0 8px 16px;
+}
+.workspace-viewer {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  position: relative;
+  background: var(--acrobat-canvas);
+  padding-left: 72px;
+}
+.workspace-fullscreen {
+  padding-left: 0;
+}
+.workspace-quick-tools {
+  position: absolute;
+  z-index: 45;
+  top: 18px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 5px;
+  border: 1px solid var(--acrobat-pane-border);
+  border-radius: 9px;
+  background: var(--acrobat-pane-bg);
+  color: var(--acrobat-pane-text);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.09);
+}
+.workspace-quick-tools > .tb-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 5px;
+}
+.quick-tools-divider {
+  height: 1px;
+  width: 24px;
+  background: var(--acrobat-pane-border);
+  margin: 3px 0;
+}
+.quick-tools-more {
+  font-size: 23px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 2px;
+}
+.quick-tools-popover,
+.quick-tools-format {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 0;
+  border: 1px solid var(--acrobat-pane-border);
+  background: var(--acrobat-pane-bg);
+  color: var(--acrobat-pane-text);
+  border-radius: 6px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+  padding: 6px;
+  min-width: 180px;
+}
+.quick-tool-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font-size: 13px;
+}
+.quick-tool-option:hover {
+  background: var(--acrobat-pane-hover);
+}
+.quick-tools-format {
+  top: auto;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  min-width: 226px;
+}
+.quick-tools-format span {
+  font-size: 12px;
+}
+.quick-tools-format input {
+  width: 28px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.quick-tools-format select {
+  border: 1px solid var(--acrobat-input-border);
+  border-radius: 3px;
+  background: var(--acrobat-input-bg);
+  color: var(--acrobat-text);
+  padding: 3px;
+  font-size: 12px;
+}
+.workspace-navigation-pane {
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+.navigation-pane-resize {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  cursor: ew-resize;
+}
+.navigation-pane-tabs {
+  padding: 8px;
+  min-height: 48px;
+  gap: 2px;
+}
+.workspace-document-rail {
+  width: 52px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px 5px 10px;
+  border-left: 1px solid var(--acrobat-pane-border);
+  background: var(--acrobat-pane-bg);
+}
+.document-rail-top,
+.document-rail-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.workspace-document-rail .tb-btn {
+  width: 36px;
+  height: 34px;
+}
+.document-rail-bottom [title='Previous Page'] svg {
+  transform: rotate(90deg);
+}
+.document-rail-bottom [title='Next Page'] svg {
+  transform: rotate(90deg);
+}
+.document-rail-divider {
+  width: 24px;
+  height: 1px;
+  background: var(--acrobat-pane-border);
+  margin: 4px 0;
+}
+.document-rail-page {
+  width: 33px;
+  height: 30px;
+  border: 1px solid var(--acrobat-input-border);
+  border-radius: 4px;
+  background: var(--acrobat-input-bg);
+  color: var(--acrobat-text);
+  text-align: center;
+  font-size: 12px;
+}
+.document-rail-total {
+  font-size: 11px;
+  color: var(--acrobat-text-muted);
+  margin-bottom: 4px;
+}
+.document-rail-zoom {
+  border: 0;
+  background: transparent;
+  color: var(--acrobat-text-muted);
+  font-size: 10px;
+  padding: 3px 0;
+}
+.document-view-menu-anchor {
+  position: relative;
+}
+.document-view-menu {
+  position: absolute;
+  right: calc(100% + 8px);
+  bottom: 0;
+  z-index: 60;
+  padding: 6px;
+  min-width: 190px;
+  border: 1px solid var(--acrobat-border);
+  border-radius: 5px;
+  background: var(--acrobat-menu-bg);
+  color: var(--acrobat-text);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.14);
+}
+.document-view-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  border-radius: 3px;
+}
+.document-view-menu button:hover {
+  background: var(--acrobat-pane-hover);
+}
+.workspace-status {
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 16px;
+  background: var(--acrobat-canvas);
+  color: var(--acrobat-text-muted);
+  font-size: 10px;
+  flex-shrink: 0;
+}
+.acrobat-menu,
+.zoom-dropdown {
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.14);
+}
+.acrobat-menu-item:hover,
+.zoom-item:hover {
+  color: var(--acrobat-text);
+}
+@media (max-width: 1000px) {
+  .workspace-global-bar {
+    gap: 6px;
+    padding: 0 8px;
+  }
+  .workflow-button {
+    padding: 0 10px;
+  }
+  .workspace-find {
+    min-width: 32px;
+    gap: 0;
+  }
+  .workspace-find span {
+    display: none;
+  }
+  .workspace-tools-pane {
+    width: 238px;
+  }
+  .workspace-viewer {
+    padding-left: 62px;
+  }
+  .workspace-quick-tools {
+    left: 7px;
+  }
+}
+@media (max-height: 700px) {
+  .workspace-quick-tools {
+    top: 12px;
+    gap: 2px;
+    padding: 5px;
+  }
+  .workspace-quick-tools > .tb-btn {
+    height: 31px;
+  }
+  .workspace-document-rail {
+    padding-top: 6px;
+    padding-bottom: 5px;
+  }
+  .document-rail-top,
+  .document-rail-bottom {
+    gap: 2px;
+  }
+  .workspace-document-rail .tb-btn {
+    height: 29px;
+  }
+}

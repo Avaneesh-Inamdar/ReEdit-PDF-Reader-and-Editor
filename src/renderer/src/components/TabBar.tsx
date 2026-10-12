@@ -3,8 +3,6 @@ import { useUIStore } from '../stores/useUIStore'
 import { useTabStore } from '../stores/useTabStore'
 import { closeDocument } from '../lib/documentActions'
 
-/* ── Acrobat Tab Bar ── */
-// Home (house icon), Tools (grid), document tabs with close buttons, + new tab
 export function TabBar(): React.JSX.Element {
   const { activeView, setActiveView } = useUIStore()
   const { tabs, activeTabId, setActiveTab } = useTabStore()
@@ -19,70 +17,52 @@ export function TabBar(): React.JSX.Element {
   const handleNewTab = async (): Promise<void> => { await window.api.openFile() }
 
   return (
-    <div
-      className="flex items-center shrink-0 overflow-x-auto"
-      style={{
-        height: 30,
-        background: 'var(--acrobat-tab-inactive)',
-        borderBottom: '1px solid var(--acrobat-border)'
-      }}
-    >
-      {/* Home tab */}
+    <div className="acrobat-workspace-tabs" role="tablist" aria-label="Documents">
       <button
-        className={`acrobat-tab ${activeView === 'home' ? 'active' : ''}`}
+        className={`acrobat-tab workspace-home-tab ${activeView === 'home' ? 'active' : ''}`}
+        role="tab"
+        aria-label="Home"
+        aria-selected={activeView === 'home'}
         onClick={() => setActiveView('home')}
         title="Home"
       >
-        <Icon name="home" size={14} />
-        <span>Home</span>
+        <Icon name="home" size={18} />
+        <span className="sr-only">Home</span>
       </button>
-
-      {/* Tools tab */}
-      <button
-        className={`acrobat-tab ${activeView === 'tools' ? 'active' : ''}`}
-        onClick={() => setActiveView('tools')}
-        title="Tools"
-      >
-        <Icon name="thumbnails" size={14} />
-        <span>Tools</span>
-      </button>
-
-      {/* Separator */}
-      <div style={{ width: 1, height: 20, background: 'var(--acrobat-border)', margin: '0 2px', flexShrink: 0 }} />
-
-      {/* Document tabs */}
       {tabs.map((tab) => (
-        <button
+        <div
           key={tab.id}
-          className={`acrobat-tab ${activeView === 'document' && activeTabId === tab.id ? 'active' : ''}`}
-          onClick={() => handleTabClick(tab.id)}
-          title={tab.filePath || tab.fileName}
+          className={`acrobat-tab workspace-document-tab ${activeView === 'document' && activeTabId === tab.id ? 'active' : ''}`}
         >
-          {/* PDF icon */}
-          <Icon name="document" size={22} />
-          <span className="max-w-[120px] truncate">{tab.fileName}</span>
-          {tab.isDirty && <span style={{ color: 'var(--acrobat-text-muted)', fontSize: 14, lineHeight: 1 }}>•</span>}
-          <span
+          <button
+            className="workspace-document-tab-label"
+            role="tab"
+            aria-selected={activeView === 'document' && activeTabId === tab.id}
+            onClick={() => handleTabClick(tab.id)}
+            title={tab.filePath || tab.fileName}
+          >
+            <Icon name="document" size={18} />
+            <span className="workspace-document-name">{tab.fileName}</span>
+            {tab.isDirty && <span className="workspace-document-dirty" aria-label="Unsaved changes">•</span>}
+          </button>
+          <button
             className="close-btn"
             onClick={(e) => handleCloseTab(e, tab.id)}
+            aria-label={`Close ${tab.fileName}`}
             title="Close tab"
           >
-            <Icon name="close" />
-          </span>
-        </button>
+            <Icon name="close" size={13} />
+          </button>
+        </div>
       ))}
-
-      {/* New tab button */}
       <button
-        className="tb-btn ml-1"
+        className="workspace-new-tab"
         onClick={() => void handleNewTab()}
         title="Open new document"
-        style={{ fontSize: 16, fontWeight: 300 }}
+        aria-label="Open new document"
       >
-        <Icon name="plus" />
+        <Icon name="plus" size={18} />
       </button>
-
-      <div className="flex-1" />
     </div>
   )
 }
