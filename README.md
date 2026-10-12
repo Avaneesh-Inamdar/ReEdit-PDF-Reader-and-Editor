@@ -5,18 +5,45 @@
 <p align="center">Read, edit, annotate and recognize text in PDFs on Windows and Linux.</p>
 <p align="center">
   <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor?color=1473e6"></a>
-  <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases"><img alt="Total release downloads" src="https://img.shields.io/github/downloads/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/total?label=release%20downloads&amp;color=1473e6"></a>
+  <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases"><img alt="Total release downloads" src="https://img.shields.io/github/downloads/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/total?label=release%20downloads&color=1473e6"></a>
   <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/actions/workflows/build-desktop.yml"><img alt="Desktop build" src="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/actions/workflows/build-desktop.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0" src="https://img.shields.io/badge/license-AGPL--3.0-343434"></a>
+  <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor?color=1473e6"></a>
+  <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/network/members"><img alt="GitHub forks" src="https://img.shields.io/github/forks/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor?color=1473e6"></a>
+  <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/issues"><img alt="Open issues" src="https://img.shields.io/github/issues/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor?color=1473e6"></a>
+  <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor?color=1473e6"></a>
+  <img alt="Platform: Windows | Linux" src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-343434">
 </p>
 
-<p align="center"><a href="#download">Download</a> · <a href="#features">Features</a> · <a href="#development">Build from source</a> · <a href="#limitations">Limitations</a></p>
+<p align="center">
+  <a href="#download"><img alt="Download" src="https://img.shields.io/badge/Download-1473e6?style=for-the-badge&logo=download&logoColor=white"></a>
+  <a href="#features"><img alt="Features" src="https://img.shields.io/badge/Features-24292f?style=for-the-badge"></a>
+  <a href="#getting-started"><img alt="Getting started" src="https://img.shields.io/badge/Getting_started-24292f?style=for-the-badge"></a>
+  <a href="#development"><img alt="Build from source" src="https://img.shields.io/badge/Build_from_source-24292f?style=for-the-badge&logo=github&logoColor=white"></a>
+  <a href="#limitations"><img alt="Limitations" src="https://img.shields.io/badge/Limitations-24292f?style=for-the-badge"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest">Changelog</a> · <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/issues/new">Report a bug</a> · <a href="#license-and-acknowledgments">License</a>
+</p>
 
 ![Re-Edit PDF document workspace](docs/images/workspace.png)
 
 ## Download
 
 Download installers, portable builds, SHA-256 checksums and validation reports from [GitHub Releases](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest).
+
+<p>
+  <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest"><img alt="Download for Windows (Setup)" src="https://img.shields.io/badge/Windows-Setup_EXE-0078D4?style=for-the-badge&logo=windows&logoColor=white"></a>
+  <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest"><img alt="Download for Windows (Portable)" src="https://img.shields.io/badge/Windows-Portable_EXE-0078D4?style=for-the-badge&logo=windows&logoColor=white"></a>
+  <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest"><img alt="Download for Linux (DEB)" src="https://img.shields.io/badge/Linux-DEB-FCC624?style=for-the-badge&logo=debian&logoColor=black"></a>
+  <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest"><img alt="Download for Linux (RPM)" src="https://img.shields.io/badge/Linux-RPM-FCC624?style=for-the-badge&logo=redhat&logoColor=black"></a>
+  <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest"><img alt="Download for Linux (AppImage)" src="https://img.shields.io/badge/Linux-AppImage-FCC624?style=for-the-badge&logo=linux&logoColor=black"></a>
+</p>
+<p>
+  <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest"><img alt="View all downloads" src="https://img.shields.io/badge/View_all_downloads-1473e6?style=flat-square&logo=github&logoColor=white"></a>
+  <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/issues/new"><img alt="Report a bug" src="https://img.shields.io/badge/Report_a_bug-24292f?style=flat-square&logo=github&logoColor=white"></a>
+</p>
 
 The download badge counts release-asset downloads across all versions. Repeat downloads and supporting files count separately; it is not a count of unique users.
 
