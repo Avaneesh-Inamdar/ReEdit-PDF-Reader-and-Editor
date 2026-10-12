@@ -1,0 +1,129 @@
+/* Shared controls across document tools and dialogs, in both app themes. */
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 5px 14px;
+  border: 1px solid var(--acrobat-input-border);
+  border-radius: 18px;
+  background: transparent;
+  color: var(--acrobat-text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+}
+.action-button.compact {
+  padding: 4px 8px;
+  font-size: 11px;
+  min-height: 28px;
+}
+.action-button:hover:not(:disabled),
+.operation-secondary:hover:not(:disabled) {
+  background: var(--acrobat-pane-hover);
+  border-color: var(--acrobat-text-muted);
+}
+.action-button.primary {
+  background: var(--acrobat-accent);
+  color: #fff;
+  border-color: var(--acrobat-accent);
+}
+.action-button.primary:hover:not(:disabled),
+.operation-primary:hover:not(:disabled) {
+  background: var(--acrobat-accent-hover);
+  border-color: var(--acrobat-accent-hover);
+}
+.action-button:disabled,
+.operation-primary:disabled,
+.operation-secondary:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.workspace-field,
+.workspace-tool-content .pref-select,
+.certificate-dialog input {
+  min-height: 32px;
+  padding: 5px 9px;
+  border: 1px solid var(--acrobat-input-border);
+  border-radius: 4px;
+  background: var(--acrobat-input-bg);
+  color: var(--acrobat-text);
+  font-size: 12px;
+}
+textarea.workspace-field {
+  min-height: 60px;
+}
+.workspace-field:disabled {
+  opacity: 0.55;
+}
+.workspace-note {
+  padding: 12px;
+  border: 1px solid var(--acrobat-pane-border);
+  border-radius: 4px;
+  background: var(--acrobat-chrome-alt);
+  color: var(--acrobat-text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.workspace-muted {
+  color: var(--acrobat-text-muted);
+}
+.workspace-metadata {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--acrobat-pane-border);
+  font-size: 12px;
+}
+.workspace-metadata > span:nth-child(odd) {
+  color: var(--acrobat-text-muted);
+}
+.workspace-tool-content h3 {
+  color: var(--acrobat-text-muted);
+}
+.workspace-tool-content .tb-btn[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--acrobat-accent) 12%, transparent);
+  color: var(--acrobat-accent);
+  border-color: var(--acrobat-accent);
+}
+.workspace-tool-content :is(select, input, textarea)::placeholder {
+  color: var(--acrobat-text-dim);
+}
+.workspace-tool-content input[type='checkbox'],
+.modal-card input[type='checkbox'] {
+  accent-color: var(--acrobat-accent);
+}
+.modal-card {
+  color: var(--acrobat-text);
+}
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.ocr-workflow progress {
+  display: block;
+  width: 100%;
+  height: 5px;
+  border: 0;
+  border-radius: 3px;
+  appearance: none;
+  overflow: hidden;
+  background: var(--acrobat-pane-hover);
+  margin-top: 16px;
+}
+.ocr-workflow progress::-webkit-progress-bar {
+  background: var(--acrobat-pane-hover);
+}
+.ocr-workflow progress::-webkit-progress-value {
+  background: var(--acrobat-accent);
+}
+textarea:focus-visible {
+  outline: 2px solid var(--acrobat-accent);
+  outline-offset: 2px;
+}

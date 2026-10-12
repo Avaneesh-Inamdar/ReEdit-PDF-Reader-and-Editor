@@ -2,6 +2,8 @@ import { Icon } from './Icon'
 import { editSelection } from '../lib/editSelection'
 import { placeImage } from '../lib/imagePlacement'
 import { requestText } from '../lib/requestText'
+import type { SystemFont } from '../../../shared/fonts'
+import { registerPreviewFont } from '../lib/fontFaces'
 import { bundledFonts, standardFonts, previewFont } from '../lib/fonts'
 import { useEffect, useState, useRef } from 'react'
 import { usePdfStore } from '../stores/usePdfStore'
@@ -18,18 +20,35 @@ import {
   type TextSelectionInfo
 } from '../lib/textSelection'
 
-const FONT_OPTIONS = [...standardFonts, ...bundledFonts.map(([name]) => name)].map(value => ({ label: value, value }))
+const FONT_OPTIONS = [...standardFonts, ...bundledFonts.map(([name]) => name)].map((value) => ({
+  label: value,
+  value
+}))
 
-const SIZE_OPTIONS = [8,10,12,14,16,18,24,32,48]
+const SIZE_OPTIONS = [8, 10, 12, 14, 16, 18, 24, 32, 48]
 
 export function EditPanel(): React.JSX.Element {
   const { data, currentPage } = usePdfStore()
-  const { annotations, selectedId, updateAnnotation, deleteAnnotation, addAnnotation } = useAnnotationStore()
+  const { annotations, selectedId, updateAnnotation, deleteAnnotation, addAnnotation } =
+    useAnnotationStore()
   const imageInputRef = useRef<HTMLInputElement>(null)
   const fontInputRef = useRef<HTMLInputElement>(null)
+  const [systemFonts, setSystemFonts] = useState<SystemFont[]>([])
+  useEffect(() => {
+    let cancelled = false
+    void window.api
+      .getSystemFonts()
+      .then((fonts) => {
+        if (!cancelled) setSystemFonts(fonts)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
   const det = useDetectionStore()
 
-  const selected = annotations.find(a => a.id === selectedId) || null
+  const selected = annotations.find((a) => a.id === selectedId) || null
   const isTextSelected = selected?.type === 'text'
   const [liveSelection, setLiveSelection] = useState<TextSelectionInfo | null>(null)
   const [liveColor, setLiveColor] = useState('#ef4444')
@@ -60,17 +79,24 @@ export function EditPanel(): React.JSX.Element {
     if (!data) return alert('Open a PDF first')
     const text = await requestText('Text to add:', 'Hello PDF')
     if (!text) return
-    const sizeStr = await requestText('Font size:', '14') || '14'
-    const size = Math.max(6, Math.min(72, parseInt(sizeStr,10) || 14))
-    const color = await requestText('Color hex:', '#111827') || '#111827'
+    const sizeStr = (await requestText('Font size:', '14')) || '14'
+    const size = Math.max(6, Math.min(72, parseInt(sizeStr, 10) || 14))
+    const color = (await requestText('Color hex:', '#111827')) || '#111827'
     // Place at center of current page
     const anno = {
       id: `txt-${Date.now()}`,
       page: currentPage,
       type: 'text' as const,
-      x: 0.35, y: 0.48, w: 0.3, h: 0.05,
-      color, strokeWidth: 1, opacity: 1,
-      text, fontSize: size, fontFamily: 'Helvetica'
+      x: 0.35,
+      y: 0.48,
+      w: 0.3,
+      h: 0.05,
+      color,
+      strokeWidth: 1,
+      opacity: 1,
+      text,
+      fontSize: size,
+      fontFamily: 'Helvetica'
     }
     addAnnotation(anno as never)
     useAnnotationStore.getState().setSelected(anno.id)
@@ -79,12 +105,11 @@ export function EditPanel(): React.JSX.Element {
   const onAddTextClickMode = async (): Promise<void> => {
     const text = await requestText('Text to place (then click on page):', 'Sample text')
     if (!text) return
-    const sizeStr = await requestText('Font size:', '12') || '12'
-    const size = Math.max(6, Math.min(72, parseInt(sizeStr,10) || 12))
-    const color = await requestText('Color:', '#111827') || '#111827'
+    const sizeStr = (await requestText('Font size:', '12')) || '12'
+    const size = Math.max(6, Math.min(72, parseInt(sizeStr, 10) || 12))
+    const color = (await requestText('Color:', '#111827')) || '#111827'
     useEditStore.getState().setPendingText({ text, color, size })
     useAnnotationStore.getState().setTool('text')
-
   }
 
   const onAddImage = (): void => imageInputRef.current?.click()
@@ -92,32 +117,97 @@ export function EditPanel(): React.JSX.Element {
     const f = e.target.files?.[0]
     if (!f) return
     const url = URL.createObjectURL(f)
-    try { await placeImage(url, 0.3) } finally { URL.revokeObjectURL(url) }
+    try {
+      await placeImage(url, 0.3)
+    } finally {
+      URL.revokeObjectURL(url)
+    }
     e.target.value = ''
   }
   const placeImageAtCenter = async (): Promise<void> => {
     const pending = useEditStore.getState().pendingImage
     if (!pending) return alert('No image selected. Use Add Image first.')
     const id = `img-${Date.now()}`
-    const anno = { id, page: currentPage, type: 'image' as const, x: 0.35, y: 0.32, w: 0.3, h: 0.27, color: '#6b7280', strokeWidth: 1, opacity: 1, image: pending }
+    const anno = {
+      id,
+      page: currentPage,
+      type: 'image' as const,
+      x: 0.35,
+      y: 0.32,
+      w: 0.3,
+      h: 0.27,
+      color: '#6b7280',
+      strokeWidth: 1,
+      opacity: 1,
+      image: pending
+    }
     addAnnotation(anno as never)
     useAnnotationStore.getState().setSelected(id)
     useEditStore.getState().setPendingImage(null)
     useAnnotationStore.getState().setTool('select')
   }
 
-  const onFontChange = (field: 'fontFamily'|'fontSize'|'color'|'text'|'bold'|'italic', value: string|number|boolean): void => {
+  const onFontChange = (
+    field: 'fontFamily' | 'fontSize' | 'color' | 'text' | 'bold' | 'italic',
+    value: string | number | boolean
+  ): void => {
     if (!selected) return
     if (field === 'fontSize') updateAnnotation(selected.id, { fontSize: Number(value) })
-    else if (field === 'fontFamily') updateAnnotation(selected.id, { fontFamily: String(value), fontData: undefined, previewFont: undefined })
-    else if (field === 'color') updateAnnotation(selected.id, { color: String(value) })
+    else if (field === 'fontFamily') {
+      const installed = systemFonts.find((font) => font.name === value)
+      if (installed) {
+        const current = selected
+        void window.api
+          .readSystemFont(installed.id)
+          .then(async (bytes) => {
+            const preview = await registerPreviewFont(bytes, installed.bold, installed.italic)
+            if (useAnnotationStore.getState().annotations.includes(current))
+              updateAnnotation(current.id, {
+                fontFamily: installed.name,
+                fontData: preview.data,
+                previewFont: preview.name,
+                bold: installed.bold,
+                italic: installed.italic
+              })
+          })
+          .catch((error) => alert(String(error)))
+      } else
+        updateAnnotation(selected.id, {
+          fontFamily: String(value),
+          fontData: undefined,
+          previewFont: undefined
+        })
+    } else if (field === 'color') updateAnnotation(selected.id, { color: String(value) })
     else if (field === 'text') updateAnnotation(selected.id, { text: String(value) })
     else if (field === 'bold' || field === 'italic') {
       const family = selected.fontFamily || 'Helvetica'
-      const bundled = bundledFonts.find(([name]) => family.toLowerCase().replace(/[^a-z]/g, '').startsWith(name.toLowerCase().replace(/[^a-z]/g, '')))
-      const base = bundled?.[0] || (/courier/i.test(family) ? 'Courier' : /times/i.test(family) ? 'Times-Roman' : /helvetica|arial/i.test(family) ? 'Helvetica' : null)
-      if (!base) { alert('Choose a bundled font or import the desired font face before changing its weight or style.'); return }
-      updateAnnotation(selected.id, { fontFamily: base, [field]: Boolean(value), fontData: undefined, previewFont: undefined })
+      const bundled = bundledFonts.find(([name]) =>
+        family
+          .toLowerCase()
+          .replace(/[^a-z]/g, '')
+          .startsWith(name.toLowerCase().replace(/[^a-z]/g, ''))
+      )
+      const base =
+        bundled?.[0] ||
+        (/courier/i.test(family)
+          ? 'Courier'
+          : /times/i.test(family)
+            ? 'Times-Roman'
+            : /helvetica|arial/i.test(family)
+              ? 'Helvetica'
+              : null)
+      if (!base) {
+        alert(
+          'Choose a bundled font or import the desired font face before changing its weight or style.'
+        )
+        return
+      }
+      updateAnnotation(selected.id, {
+        fontFamily: base,
+        [field]: Boolean(value),
+        fontData: undefined,
+        previewFont: undefined
+      })
     }
   }
 
@@ -126,92 +216,190 @@ export function EditPanel(): React.JSX.Element {
     event.target.value = ''
     if (!file || !selected) return
     try {
-      const data = new Uint8Array(await window.api.normalizeImportedFont(new Uint8Array(await file.arrayBuffer())))
+      const data = new Uint8Array(
+        await window.api.normalizeImportedFont(new Uint8Array(await file.arrayBuffer()))
+      )
       const family = file.name.replace(/\.[^.]+$/, '')
-      const preview = `imported-${crypto.randomUUID()}`
-      const face = await new FontFace(preview, data.slice().buffer).load()
-      document.fonts.add(face)
-      updateAnnotation(selected.id, { fontFamily: family, fontData: data, previewFont: preview, bold: false, italic: false })
-    } catch (error) { alert('Unable to import this font: ' + String(error)) }
+      const preview = await registerPreviewFont(data)
+      if (useAnnotationStore.getState().annotations.includes(selected))
+        updateAnnotation(selected.id, {
+          fontFamily: family,
+          fontData: preview.data,
+          previewFont: preview.name,
+          bold: false,
+          italic: false
+        })
+    } catch (error) {
+      alert('Unable to import this font: ' + String(error))
+    }
   }
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3 text-sm" style={{ background: 'var(--acrobat-chrome-alt)', color: 'var(--acrobat-text)' }}>Click text on the page to edit it.</div>
+      <div
+        className="p-3 text-sm"
+        style={{ background: 'var(--acrobat-chrome-alt)', color: 'var(--acrobat-text)' }}
+      >
+        Click text on the page to edit it.
+      </div>
       {/* FORMAT – wired to selected text annotation, like Word / Master PDF Editor */}
       <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
-        <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-3">FORMAT</h3>
+        <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-3">
+          FORMAT
+        </h3>
         {isTextSelected ? (
           <div className="space-y-2">
             <div className="flex gap-2">
               <select
                 value={selected?.fontFamily || 'Helvetica'}
-                onChange={(e)=> onFontChange('fontFamily', e.target.value)}
-                className="flex-1 h-7 text-xs px-2 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200"
+                onChange={(e) => onFontChange('fontFamily', e.target.value)}
+                className="workspace-field flex-1 min-w-0"
                 title="Font family"
               >
-                {selected?.fontFamily && !FONT_OPTIONS.some(option => option.value === selected.fontFamily) && <option value={selected.fontFamily}>{selected.fontFamily} ({selected.fontData ? 'imported font' : 'document font'})</option>}
-                {FONT_OPTIONS.map(o=> <option key={o.value} value={o.value}>{o.label}</option>)}
+                {selected?.fontFamily &&
+                  !FONT_OPTIONS.some((option) => option.value === selected.fontFamily) && (
+                    <option value={selected.fontFamily}>
+                      {selected.fontFamily} ({selected.fontData ? 'imported font' : 'document font'}
+                      )
+                    </option>
+                  )}
+                {FONT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+                {systemFonts.length > 0 && (
+                  <optgroup label="Installed fonts">
+                    {systemFonts.map((font) => (
+                      <option key={font.id} value={font.name}>
+                        {font.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
               <select
                 value={String(selected?.fontSize || 12)}
-                onChange={(e)=> onFontChange('fontSize', e.target.value)}
-                className="w-20 h-7 text-xs px-2 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200"
+                onChange={(e) => onFontChange('fontSize', e.target.value)}
+                className="workspace-field w-20"
                 title="Font size"
               >
-                {[...new Set([...SIZE_OPTIONS, selected?.fontSize || 12])].sort((a, b) => a - b).map(n=> <option key={n} value={String(n)}>{n}</option>)}
+                {[...new Set([...SIZE_OPTIONS, selected?.fontSize || 12])]
+                  .sort((a, b) => a - b)
+                  .map((n) => (
+                    <option key={n} value={String(n)}>
+                      {n}
+                    </option>
+                  ))}
               </select>
             </div>
-            <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff,.woff2" hidden onChange={event => void importFont(event)} />
-            <button className="tb-btn text-xs px-2" onClick={() => fontInputRef.current?.click()} title="Import a licensed TTF, OTF, WOFF, or WOFF2 font">Import font…</button>
+            <input
+              ref={fontInputRef}
+              type="file"
+              accept=".ttf,.otf,.woff,.woff2"
+              hidden
+              onChange={(event) => void importFont(event)}
+            />
+            <button
+              className="tb-btn text-xs px-2"
+              onClick={() => fontInputRef.current?.click()}
+              title="Import a licensed TTF, OTF, WOFF, or WOFF2 font"
+            >
+              Import font…
+            </button>
             <div className="flex items-center gap-1">
-              <button onClick={()=> onFontChange('bold', !selected?.bold)} className={`tb-btn h-7 w-7 border rounded ${selected?.bold ? 'bg-zinc-800 text-white dark:bg-zinc-700' : 'border-transparent'}`} title="Bold"><Icon name="bold" /></button>
-              <button onClick={()=> onFontChange('italic', !selected?.italic)} className={`tb-btn h-7 w-7 border rounded ${selected?.italic ? 'bg-zinc-800 text-white dark:bg-zinc-700' : 'border-transparent'}`} title="Italic"><Icon name="italic" /></button>
+              <button
+                onClick={() => onFontChange('bold', !selected?.bold)}
+                className="tb-btn h-7 w-7 border border-transparent rounded"
+                aria-pressed={!!selected?.bold}
+                title="Bold"
+              >
+                <Icon name="bold" />
+              </button>
+              <button
+                onClick={() => onFontChange('italic', !selected?.italic)}
+                className="tb-btn h-7 w-7 border border-transparent rounded"
+                aria-pressed={!!selected?.italic}
+                title="Italic"
+              >
+                <Icon name="italic" />
+              </button>
               <div className="tb-sep mx-1" />
               <input
                 type="color"
                 value={selected?.color || '#111827'}
-                onChange={(e)=> onFontChange('color', e.target.value)}
+                onChange={(e) => onFontChange('color', e.target.value)}
                 className="w-7 h-7 p-0 border rounded cursor-pointer"
                 title="Text color"
               />
-              <span className="text-xs ml-1" style={{ color: 'var(--acrobat-text-dim)' }}>{selected?.color}</span>
+              <span className="text-xs ml-1" style={{ color: 'var(--acrobat-text-dim)' }}>
+                {selected?.color}
+              </span>
               <div className="flex-1" />
-              <button onClick={()=> selected && deleteAnnotation(selected.id)} className="tb-btn h-7 px-2 text-xs border border-red-200 text-red-600 rounded hover:bg-red-50">Delete</button>
+              <button
+                onClick={() => selected && deleteAnnotation(selected.id)}
+                className="action-button compact"
+              >
+                Delete
+              </button>
             </div>
             <textarea
               value={selected?.text || ''}
-              onChange={(e)=> onFontChange('text', e.target.value)}
+              onChange={(e) => onFontChange('text', e.target.value)}
               rows={2}
-              className="w-full text-xs p-2 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 resize-y"
+              className="workspace-field w-full resize-y"
               placeholder="Text content"
-              style={{ fontFamily: selected ? previewFont(selected) : 'sans-serif', fontSize: Math.min(14, (selected?.fontSize||12)), color: selected?.color }}
+              style={{
+                fontFamily: selected ? previewFont(selected) : 'sans-serif',
+                fontSize: Math.min(14, selected?.fontSize || 12),
+                color: 'var(--acrobat-text)'
+              }}
             />
           </div>
         ) : liveSelection ? (
           <div className="space-y-2.5">
             <div className="text-xs font-medium truncate" style={{ color: 'var(--acrobat-text)' }}>
-              Selected text (page {liveSelection.pageNum}): &ldquo;{liveSelection.text.slice(0, 35)}{liveSelection.text.length > 35 ? '…' : ''}&rdquo;
+              Selected text (page {liveSelection.pageNum}): &ldquo;{liveSelection.text.slice(0, 35)}
+              {liveSelection.text.length > 35 ? '…' : ''}&rdquo;
             </div>
-            <button className="tb-btn w-full justify-center border rounded" title="Edit selected PDF text" onMouseDown={e => e.preventDefault()} onClick={() => { void editSelection(liveSelection); setLiveSelection(null) }}>Edit selected text</button>
+            <button
+              className="action-button primary w-full justify-center"
+              title="Edit selected PDF text"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                void editSelection(liveSelection)
+                setLiveSelection(null)
+              }}
+            >
+              Edit selected text
+            </button>
             <div className="grid grid-cols-3 gap-1.5">
               <button
-                onClick={() => { applyHighlightToSelection(); setLiveSelection(null) }}
-                className="tb-btn h-7 text-xs rounded border border-yellow-300 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-200 justify-center"
+                onClick={() => {
+                  applyHighlightToSelection()
+                  setLiveSelection(null)
+                }}
+                className="action-button compact justify-center"
                 title="Highlight selected text"
               >
                 Highlight
               </button>
               <button
-                onClick={() => { applyUnderlineSelection(); setLiveSelection(null) }}
-                className="tb-btn h-7 text-xs rounded border border-green-300 dark:border-green-600 bg-green-50 dark:bg-green-950/40 text-green-800 dark:text-green-200 justify-center"
+                onClick={() => {
+                  applyUnderlineSelection()
+                  setLiveSelection(null)
+                }}
+                className="action-button compact justify-center"
                 title="Underline selected text"
               >
                 Underline
               </button>
               <button
-                onClick={() => { applyStrikeSelection(); setLiveSelection(null) }}
-                className="tb-btn h-7 text-xs rounded border border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-200 justify-center"
+                onClick={() => {
+                  applyStrikeSelection()
+                  setLiveSelection(null)
+                }}
+                className="action-button compact justify-center"
                 title="Strike selected text"
               >
                 Strike
@@ -226,8 +414,11 @@ export function EditPanel(): React.JSX.Element {
                 title="Choose text color"
               />
               <button
-                onClick={async () => { await applyTextColorToSelection(liveColor); setLiveSelection(null) }}
-                className="tb-btn h-7 px-3 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 flex-1 justify-center font-medium"
+                onClick={async () => {
+                  await applyTextColorToSelection(liveColor)
+                  setLiveSelection(null)
+                }}
+                className="action-button flex-1 justify-center"
                 title="Change color of selected text"
               >
                 Apply Text Color
@@ -235,13 +426,35 @@ export function EditPanel(): React.JSX.Element {
             </div>
           </div>
         ) : (
-          <div className="text-xs p-2 rounded bg-zinc-50 dark:bg-zinc-900 border border-dashed border-zinc-300 dark:border-zinc-700" style={{ color: 'var(--acrobat-text-dim)' }}>
-            No text selected. Select text on a page or click a text box to edit font/size/color. Selected: {selected ? `${selected.type} #${selected.page}` : 'none'}
+          <div className="workspace-note" style={{ color: 'var(--acrobat-text-dim)' }}>
+            No text selected. Select text on a page or click a text box to edit font/size/color.
           </div>
         )}
         {/* Quick font preview */}
         {isTextSelected && (
-          <div className="mt-2 text-xs p-2 rounded bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700" style={{ color: selected?.color, fontFamily: selected ? previewFont(selected) : 'sans-serif', fontSize: selected?.fontSize, fontWeight: selected?.sourceText?.fontData && selected.fontFamily === selected.sourceText.fontFamily ? 400 : selected?.bold ? 700 : 400, fontStyle: selected?.sourceText?.fontData && selected.fontFamily === selected.sourceText.fontFamily ? 'normal' : selected?.italic ? 'italic' : 'normal' }}>
+          <div
+            className="mt-2 text-xs p-2 rounded bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700"
+            style={{
+              background: '#fff',
+              color: selected?.color,
+              fontFamily: selected ? previewFont(selected) : 'sans-serif',
+              fontSize: selected?.fontSize,
+              fontWeight:
+                selected?.sourceText?.fontData &&
+                selected.fontFamily === selected.sourceText.fontFamily
+                  ? 400
+                  : selected?.bold
+                    ? 700
+                    : 400,
+              fontStyle:
+                selected?.sourceText?.fontData &&
+                selected.fontFamily === selected.sourceText.fontFamily
+                  ? 'normal'
+                  : selected?.italic
+                    ? 'italic'
+                    : 'normal'
+            }}
+          >
             Preview: {selected?.text || 'Sample'}
           </div>
         )}
@@ -251,25 +464,47 @@ export function EditPanel(): React.JSX.Element {
       <div className="p-4 flex-1 overflow-y-auto">
         <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-3">EDIT</h3>
         <div className="flex flex-col gap-1.5">
-          <button onClick={onAddTextAtCenter} className="flex items-center gap-3 px-3 py-2 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full">
+          <button
+            onClick={onAddTextAtCenter}
+            className="flex items-center gap-3 px-3 py-2 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full"
+          >
             <Icon name="text" size={16} />
             Add Text (at center)
           </button>
-          <button onClick={onAddTextClickMode} className="flex items-center gap-3 px-3 py-2 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full" style={{ color: 'var(--acrobat-text-dim)' }}>
+          <button
+            onClick={onAddTextClickMode}
+            className="flex items-center gap-3 px-3 py-2 text-xs rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full"
+            style={{ color: 'var(--acrobat-text-dim)' }}
+          >
             <span className="ml-7">or Place on Click…</span>
           </button>
-          <button onClick={onAddImage} className="flex items-center gap-3 px-3 py-2 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full">
+          <button
+            onClick={onAddImage}
+            className="flex items-center gap-3 px-3 py-2 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full"
+          >
             <Icon name="image" size={16} />
             Add Image…
           </button>
           {useEditStore.getState().pendingImage && (
-            <button onClick={() => void placeImageAtCenter()} className="ml-7 text-xs underline" style={{ color: 'var(--acrobat-accent)' }}>Place pending image at center</button>
+            <button
+              onClick={() => void placeImageAtCenter()}
+              className="ml-7 text-xs underline"
+              style={{ color: 'var(--acrobat-accent)' }}
+            >
+              Place pending image at center
+            </button>
           )}
-          <button onClick={()=> useAnnotationStore.getState().setTool('rect')} className="flex items-center gap-3 px-3 py-2 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full">
+          <button
+            onClick={() => useAnnotationStore.getState().setTool('rect')}
+            className="flex items-center gap-3 px-3 py-2 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full"
+          >
             <Icon name="rectangle" size={16} />
             Add Rectangle
           </button>
-          <button onClick={()=> useAnnotationStore.getState().setTool('ellipse')} className="flex items-center gap-3 px-3 py-2 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full">
+          <button
+            onClick={() => useAnnotationStore.getState().setTool('ellipse')}
+            className="flex items-center gap-3 px-3 py-2 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full"
+          >
             <Icon name="ellipse" size={16} />
             Add Ellipse
           </button>
@@ -277,20 +512,36 @@ export function EditPanel(): React.JSX.Element {
 
         <p className="mt-4 text-xs" style={{ color: 'var(--acrobat-pane-text)' }}>
           Click existing text on the page to edit it. Apply your change, then save with Ctrl+S.
-          Scanned pages need OCR first. Edits retain the document font when it is embedded. If a subset lacks a new character, choose a bundled font or import the full font. Paragraph reflow is not supported.
+          Scanned pages need OCR first. Edits retain the document font when it is embedded. If a
+          subset lacks a new character, choose a bundled font or import the full font. Paragraph
+          reflow is not supported.
         </p>
 
-        <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mt-6 mb-3">PAGES</h3>
+        <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mt-6 mb-3">
+          PAGES
+        </h3>
         <div className="flex flex-col gap-1.5">
-          <button onClick={() => useUIStore.getState().setActiveModal('organizePages')} className="flex items-center gap-3 px-3 py-2 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full">
+          <button
+            onClick={() => useUIStore.getState().setActiveModal('organizePages')}
+            className="flex items-center gap-3 px-3 py-2 text-sm rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left w-full"
+          >
             <Icon name="thumbnails" size={16} />
             Organize Pages
           </button>
-          <div className="text-xs mt-2" style={{ color:'var(--acrobat-text-dim)' }}>{det.textChars} chars · {det.avgCharsPerPage}/page · {det.numFonts} fonts {det.isScanned ? '· SCANNED' : ''}</div>
+          <div className="text-xs mt-2" style={{ color: 'var(--acrobat-text-dim)' }}>
+            {det.textChars} chars · {det.avgCharsPerPage}/page · {det.numFonts} fonts{' '}
+            {det.isScanned ? '· SCANNED' : ''}
+          </div>
         </div>
       </div>
 
-      <input ref={imageInputRef} type="file" accept="image/png,image/jpeg" className="hidden" onChange={onImagePicked} />
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/png,image/jpeg"
+        className="hidden"
+        onChange={onImagePicked}
+      />
     </div>
   )
 }

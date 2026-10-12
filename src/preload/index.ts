@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type { RemovalRegion } from '../shared/pdfOperations'
+import type { PrintOptions, PrinterOption } from '../shared/printing'
+import type { SystemFont } from '../shared/fonts'
 
 export interface PdfOpenResult {
   filePath: string
@@ -9,12 +11,28 @@ export interface PdfOpenResult {
 
 export interface PdfApi {
   platform: string
-  signCertificate: (bytes: Uint8Array, password: string, name: string, reason: string) => Promise<string | null>
-  exportWord: (pages: {text:string;size:number}[][], name: string) => Promise<string | null>
+  signCertificate: (
+    bytes: Uint8Array,
+    password: string,
+    name: string,
+    reason: string
+  ) => Promise<string | null>
+  exportWord: (pages: { text: string; size: number }[][], name: string) => Promise<string | null>
   importOffice: () => Promise<string | null>
-  removePdfContent: (bytes: Uint8Array, regions: RemovalRegion[], secure: boolean) => Promise<Uint8Array>
+  removePdfContent: (
+    bytes: Uint8Array,
+    regions: RemovalRegion[],
+    secure: boolean
+  ) => Promise<Uint8Array>
   normalizeImportedFont: (bytes: Uint8Array) => Promise<Uint8Array>
-  checkForUpdates: () => Promise<{current: string; latest?: string; available: boolean; message: string}>
+  getSystemFonts: () => Promise<SystemFont[]>
+  readSystemFont: (id: string) => Promise<Uint8Array>
+  checkForUpdates: () => Promise<{
+    current: string
+    latest?: string
+    available: boolean
+    message: string
+  }>
   openReleases: () => Promise<void>
   openFile: () => Promise<PdfOpenResult | null>
   saveFile: (bytes: Uint8Array, defaultName?: string, filePath?: string) => Promise<string | null>
@@ -38,18 +56,26 @@ export interface PdfApi {
   minimize: () => Promise<void>
   maximize: () => Promise<boolean>
   close: () => Promise<void>
-  print: (pages: { image: string; width: number; height: number }[]) => Promise<void>
+  getPrinters: () => Promise<PrinterOption[]>
+  print: (
+    pages: { image: string; width: number; height: number }[],
+    options: PrintOptions
+  ) => Promise<void>
   isMaximized: () => Promise<boolean>
   onMaximizeChanged: (cb: (isMax: boolean) => void) => () => void
 }
 
 const api: PdfApi = {
   platform: process.platform,
-  signCertificate: (bytes,password,name,reason) => ipcRenderer.invoke('pdf:signCertificate',bytes,password,name,reason),
-  exportWord: (pages,name) => ipcRenderer.invoke('office:exportWord',pages,name),
+  signCertificate: (bytes, password, name, reason) =>
+    ipcRenderer.invoke('pdf:signCertificate', bytes, password, name, reason),
+  exportWord: (pages, name) => ipcRenderer.invoke('office:exportWord', pages, name),
   importOffice: () => ipcRenderer.invoke('office:import'),
-  removePdfContent: (bytes, regions, secure) => ipcRenderer.invoke('pdf:removeContent', bytes, regions, secure),
-  normalizeImportedFont: bytes => ipcRenderer.invoke('font:normalize', bytes),
+  removePdfContent: (bytes, regions, secure) =>
+    ipcRenderer.invoke('pdf:removeContent', bytes, regions, secure),
+  normalizeImportedFont: (bytes) => ipcRenderer.invoke('font:normalize', bytes),
+  getSystemFonts: () => ipcRenderer.invoke('font:listSystem'),
+  readSystemFont: (id) => ipcRenderer.invoke('font:readSystem', id),
   checkForUpdates: () => ipcRenderer.invoke('app:checkUpdates'),
   openReleases: () => ipcRenderer.invoke('app:openReleases'),
   openFile: () => ipcRenderer.invoke('dialog:openPdf'),
@@ -97,7 +123,8 @@ const api: PdfApi = {
   minimize: () => ipcRenderer.invoke('window:minimize'),
   maximize: () => ipcRenderer.invoke('window:maximize'),
   close: () => ipcRenderer.invoke('window:close'),
-  print: (pages) => ipcRenderer.invoke('window:print', pages),
+  getPrinters: () => ipcRenderer.invoke('window:printers'),
+  print: (pages, options) => ipcRenderer.invoke('window:print', pages, options),
   isMaximized: () => ipcRenderer.invoke('window:isMaximized'),
   onMaximizeChanged: (cb) => {
     const handler = (_: unknown, v: boolean): void => cb(v)

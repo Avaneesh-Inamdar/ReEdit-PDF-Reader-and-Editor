@@ -39,7 +39,7 @@ function PageCanvas({
   onSize: (width: number, height: number) => void
 }): React.JSX.Element {
   const [textRuns, setTextRuns] = useState<PdfTextRun[]>([])
-  const annotations = useAnnotationStore(state => state.annotations)
+  const annotations = useAnnotationStore((state) => state.annotations)
   const removalPreview = useTextRemovalPreview(pageNumber)
   const [pageTransform, setPageTransform] = useState<number[]>([1, 0, 0, 1, 0, 0])
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -51,9 +51,21 @@ function PageCanvas({
   const selectionCleanup = useRef<(() => void) | null>(null)
   const [viewportSize, setViewportSize] = useState<{ w: number; h: number } | null>(null)
   useLayoutEffect(() => {
-    for (const span of textLayerRef.current?.querySelectorAll<HTMLElement & { pdfRun?: PdfTextRun }>('[data-pdf-run]') || []) {
+    for (const span of textLayerRef.current?.querySelectorAll<
+      HTMLElement & { pdfRun?: PdfTextRun }
+    >('[data-pdf-run]') || []) {
       const run = span.pdfRun
-      const removed = !!run && annotations.some(a => a.page === pageNumber && (a.maskTexts || (a.sourceText ? [a.sourceText] : [])).some(mask => mask.key === run.key || (mask.key.startsWith(run.key + ':') && mask.text === run.text)))
+      const removed =
+        !!run &&
+        annotations.some(
+          (a) =>
+            a.page === pageNumber &&
+            (a.maskTexts || (a.sourceText ? [a.sourceText] : [])).some(
+              (mask) =>
+                mask.key === run.key ||
+                (mask.key.startsWith(run.key + ':') && mask.text === run.text)
+            )
+        )
       span.dataset.removed = String(removed)
       span.style.visibility = removed ? 'hidden' : ''
     }
@@ -80,6 +92,7 @@ function PageCanvas({
     setPageTransform(viewport.transform)
     setViewportSize({ w: viewport.width, h: viewport.height })
     const dpr = outputScale(viewport.width, viewport.height, window.devicePixelRatio)
+    canvas.dataset.renderReady = 'false'
     canvas.width = Math.floor(viewport.width * dpr)
     canvas.height = Math.floor(viewport.height * dpr)
     canvas.style.width = `${viewport.width}px`
@@ -88,7 +101,11 @@ function PageCanvas({
     const ctx = canvas.getContext('2d')!
     await renderPage(async () => {
       if (version !== renderVersion.current) return
-      const task = (removalPreview || page).render({ canvasContext: ctx, viewport, transform: [dpr, 0, 0, dpr, 0, 0] })
+      const task = (removalPreview || page).render({
+        canvasContext: ctx,
+        viewport,
+        transform: [dpr, 0, 0, dpr, 0, 0]
+      })
       renderTaskRef.current = task
       try {
         await task.promise
@@ -98,9 +115,11 @@ function PageCanvas({
     })
 
     if (version !== renderVersion.current) return
+    canvas.dataset.renderReady = 'true'
     if (textLayerRef.current) {
       const textContent = await pageText(pdfDoc, pageNumber)
-      const styledRuns = await styledTextRuns(page, textContent, pageNumber)
+      if (version !== renderVersion.current) return
+      const styledRuns = await styledTextRuns(page, textContent, pageNumber, pdfDoc)
       if (version !== renderVersion.current) return
       const container = textLayerRef.current
       selectionCleanup.current?.()
@@ -120,7 +139,6 @@ function PageCanvas({
           const run = styledRuns.get(index)
           if (run) {
             ;(span as HTMLElement & { pdfRun?: PdfTextRun }).pdfRun = run
-
           }
         }
       })
@@ -204,8 +222,8 @@ function PageCanvas({
     }
   }, [pdfDoc, pageNumber, zoom, rotation, onSize, removalPreview])
 
-  const currentMatch = usePdfStore(state => state.currentMatch)
-  const searchMatches = usePdfStore(state => state.searchMatches)
+  const currentMatch = usePdfStore((state) => state.currentMatch)
+  const searchMatches = usePdfStore((state) => state.searchMatches)
   useEffect(() => {
     const container = textLayerRef.current
     if (!container) return
@@ -217,6 +235,22 @@ function PageCanvas({
     const root = container.getBoundingClientRect()
     searchMatches.forEach((match, matchIndex) => {
       if (match.page !== pageNumber) return
+      if (match.annotationId) {
+        const target = container
+          .closest('[data-page-slot]')
+          ?.querySelector(
+            `[data-edited-text="${match.annotationId}"], [data-annotation-object="${match.annotationId}"]`
+          )
+        if (target) {
+          const rect = target.getBoundingClientRect(),
+            mark = document.createElement('div')
+          mark.className = 'search-highlight'
+          mark.dataset.match = String(matchIndex)
+          mark.style.cssText = `position:absolute;left:${rect.left - root.left}px;top:${rect.top - root.top}px;width:${rect.width}px;height:${rect.height}px;background:${matchIndex === currentMatch ? 'rgba(255,145,0,.5)' : 'rgba(255,220,0,.35)'};border-radius:2px;`
+          overlay.append(mark)
+        }
+        return
+      }
       for (const segment of match.segments || []) {
         const span = container.querySelector(`[data-text-index="${segment.index}"]`)
         const node = span?.firstChild
@@ -229,13 +263,15 @@ function PageCanvas({
           mark.className = 'search-highlight'
           mark.dataset.match = String(matchIndex)
           const active = matchIndex === currentMatch
-          mark.style.cssText = `position:absolute;left:${rect.left-root.left}px;top:${rect.top-root.top}px;width:${rect.width}px;height:${rect.height}px;background:${active ? 'rgba(255,145,0,.5)' : 'rgba(255,220,0,.35)'};border-radius:2px;`
+          mark.style.cssText = `position:absolute;left:${rect.left - root.left}px;top:${rect.top - root.top}px;width:${rect.width}px;height:${rect.height}px;background:${active ? 'rgba(255,145,0,.5)' : 'rgba(255,220,0,.35)'};border-radius:2px;`
           overlay.append(mark)
         }
       }
     })
     container.append(overlay)
-    overlay.querySelector(`[data-match="${currentMatch}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    overlay
+      .querySelector(`[data-match="${currentMatch}"]`)
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
     return () => overlay.remove()
   }, [searchQuery, searchMatches, currentMatch, textRuns, pageNumber])
 
@@ -432,11 +468,19 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
   const { tool, deleteAnnotation, selectedId } = useAnnotationStore()
   const { pointerMode, spaceHeld, displayMode, isFullScreen, fullScreenBg } = useUIStore()
   const containerRef = useRef<HTMLDivElement>(null)
-  const zoomAnchor = useRef<{ page: HTMLElement; x: number; y: number; clientX: number; clientY: number } | null>(null)
+  const zoomAnchor = useRef<{
+    page: HTMLElement
+    x: number
+    y: number
+    clientX: number
+    clientY: number
+  } | null>(null)
   useLayoutEffect(() => {
-    const anchor = zoomAnchor.current, element = containerRef.current
+    const anchor = zoomAnchor.current,
+      element = containerRef.current
     if (!anchor || !element || !anchor.page.isConnected) return
-    const bounds = anchor.page.getBoundingClientRect(), root = element.getBoundingClientRect()
+    const bounds = anchor.page.getBoundingClientRect(),
+      root = element.getBoundingClientRect()
     element.scrollLeft += bounds.left - root.left + bounds.width * anchor.x - anchor.clientX
     element.scrollTop += bounds.top - root.top + bounds.height * anchor.y - anchor.clientY
     zoomAnchor.current = null
@@ -478,6 +522,12 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
   }, [pdfDoc, numPages, displayMode, displayMode === 'single' ? currentPage : 0])
   const [hudVisible, setHudVisible] = useState(false)
   const hudTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (hudTimer.current) clearTimeout(hudTimer.current)
+    },
+    []
+  )
   const [textSelection, setTextSelection] = useState<TextSelectionInfo | null>(null)
 
   // Track text selection for floating toolbar
@@ -541,23 +591,35 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
       if (!event.ctrlKey) return
       event.preventDefault()
       const rect = element.getBoundingClientRect()
-      const page = (event.target as Element).closest<HTMLElement>('[data-page-slot]') ||
+      const page =
+        (event.target as Element).closest<HTMLElement>('[data-page-slot]') ||
         element.querySelector<HTMLElement>(`#page-${usePdfStore.getState().currentPage}`)
       if (page && !frame) {
         const bounds = page.getBoundingClientRect()
-        zoomAnchor.current = { page, x: (event.clientX - bounds.left) / bounds.width, y: (event.clientY - bounds.top) / bounds.height,
-          clientX: event.clientX - rect.left, clientY: event.clientY - rect.top }
+        zoomAnchor.current = {
+          page,
+          x: (event.clientX - bounds.left) / bounds.width,
+          y: (event.clientY - bounds.top) / bounds.height,
+          clientX: event.clientX - rect.left,
+          clientY: event.clientY - rect.top
+        }
         pendingZoom = usePdfStore.getState().zoom
       }
-      const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? element.clientHeight : 1)
+      const delta =
+        event.deltaY *
+        (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? element.clientHeight : 1)
       pendingZoom = Math.max(0.1, Math.min(10, pendingZoom * Math.exp(-delta * 0.005)))
-      if (!frame) frame = requestAnimationFrame(() => {
-        usePdfStore.getState().setZoom(pendingZoom)
-        frame = 0
-      })
+      if (!frame)
+        frame = requestAnimationFrame(() => {
+          usePdfStore.getState().setZoom(pendingZoom)
+          frame = 0
+        })
     }
     element.addEventListener('wheel', onWheel, { passive: false })
-    return () => { element.removeEventListener('wheel', onWheel); cancelAnimationFrame(frame) }
+    return () => {
+      element.removeEventListener('wheel', onWheel)
+      cancelAnimationFrame(frame)
+    }
   }, [pdfDoc])
 
   useEffect(() => {
@@ -754,7 +816,10 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseUp}
     >
-      <div className="flex flex-col items-center gap-4 p-4 pb-20" style={{ minWidth: Math.max(baseSize.w * zoom + 32, containerSize.width) }}>
+      <div
+        className="flex flex-col items-center gap-4 p-4 pb-20"
+        style={{ minWidth: Math.max(baseSize.w * zoom + 32, containerSize.width) }}
+      >
         {pages.map((n) => (
           <PageSlot
             key={n}

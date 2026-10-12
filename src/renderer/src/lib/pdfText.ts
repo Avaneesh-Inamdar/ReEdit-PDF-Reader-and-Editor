@@ -22,6 +22,7 @@ export interface PdfTextRun {
   matrix?: number[]
   vertical?: boolean
   pdfAnnotationId?: string
+  invisible?: boolean
 }
 
 export function textRun(
@@ -45,7 +46,9 @@ export function textRun(
     ascent: (style.ascent ?? 0.8) * size,
     descent: Math.abs(style.descent ?? -0.2) * size,
     angle: Math.atan2(b, a) - (style.vertical ? Math.PI / 2 : 0),
-    matrix: style.vertical ? [-c / size, -d / size, a / size, b / size] : [a / size, b / size, c / size, d / size],
+    matrix: style.vertical
+      ? [-c / size, -d / size, a / size, b / size]
+      : [a / size, b / size, c / size, d / size],
     vertical: !!style.vertical,
     fontFamily: /mono/i.test(family)
       ? 'Courier'
@@ -57,7 +60,12 @@ export function textRun(
 
 // SVG local coordinates point down, PDF coordinates point up. Compose both with the viewport.
 export function textMatrix(run: PdfTextRun, viewport: number[]): number[] {
-  const [ra, rb, rc, rd] = run.matrix || [Math.cos(run.angle), Math.sin(run.angle), -Math.sin(run.angle), Math.cos(run.angle)]
+  const [ra, rb, rc, rd] = run.matrix || [
+    Math.cos(run.angle),
+    Math.sin(run.angle),
+    -Math.sin(run.angle),
+    Math.cos(run.angle)
+  ]
   const [a, b, c, d, e, f] = viewport
   return [
     a * ra + c * rb,
@@ -66,5 +74,5 @@ export function textMatrix(run: PdfTextRun, viewport: number[]): number[] {
     -(b * rc + d * rd),
     a * run.x + c * run.y + e,
     b * run.x + d * run.y + f
-  ].map(value => value || 0)
+  ].map((value) => value || 0)
 }

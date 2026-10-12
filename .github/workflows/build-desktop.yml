@@ -64,6 +64,11 @@ jobs:
         env:
           ELECTRON_BUILDER_COMPRESSION_LEVEL: 5
         run: npm run build:linux
+      - name: Windows print, OCR, font and memory regressions
+        if: runner.os == 'Windows'
+        env:
+          READIT_144_APP: release/win-unpacked/resources/app.asar
+        run: npx electron scripts/smoke-1.4.4.cjs
       - name: Linux installation and packaged workflows
         if: runner.os == 'Linux'
         run: |
@@ -86,5 +91,6 @@ jobs:
             release/smoke-1.4.1/result.json
             release/smoke-1.4.2/result.json
             release/smoke-1.4.3/result.json
+            release/smoke-1.4.4/result.json
             release/windows-finish-result.json
             release/windows-installer-result.json

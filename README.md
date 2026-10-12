@@ -1,223 +1,130 @@
-# Re-Edit PDF
+<p align="center">
+  <img src="docs/images/brand.svg" width="76" alt="Re-Edit PDF">
+</p>
+<h1 align="center">Re-Edit PDF</h1>
+<p align="center">Read, edit, annotate and recognize text in PDFs on Windows and Linux.</p>
+<p align="center">
+  <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor?color=1473e6"></a>
+  <a href="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/actions/workflows/build-desktop.yml"><img alt="Desktop build" src="https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/actions/workflows/build-desktop.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="License: AGPL-3.0" src="https://img.shields.io/badge/license-AGPL--3.0-343434"></a>
+</p>
 
-A desktop PDF reader and editor for Windows and Linux. Built with Electron, React, TypeScript, pdf.js, pdf-lib, and offline Tesseract.js OCR.
+<p align="center"><a href="#download">Download</a> · <a href="#features">Features</a> · <a href="#development">Build from source</a> · <a href="#limitations">Limitations</a></p>
 
-Developed by **Avaneesh Inamdar**.
+![Re-Edit PDF document workspace](docs/images/workspace.png)
 
 ## Download
 
-Download [Re-Edit PDF 1.4.3](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/tag/v1.4.3), including checksums and validation details. Local build outputs are written to `release/`; local builds do not publish automatically:
+Download installers, portable builds, SHA-256 checksums and validation reports from [GitHub Releases](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest).
 
-- **Setup Installer (`.exe`)**: `Re-Edit-PDF-Setup-1.4.3.exe` — Windows setup wizard with desktop shortcut, Start Menu shortcut, uninstaller, and PDF Open With registration (Windows controls the default PDF app).
-- **Windows portable**: `Re-Edit-PDF-1.4.3-portable.exe`.
-- **Debian/Ubuntu**: `re-edit-pdf-1.4.3-amd64.deb`.
-- **Fedora/RPM**: `re-edit-pdf-1.4.3-x86_64.rpm`.
-- **Linux portable**: `re-edit-pdf-1.4.3-x86_64.AppImage` and `re-edit-pdf-1.4.3-x64.tar.gz`.
+| Platform            | Package      | Installation                                            |
+| ------------------- | ------------ | ------------------------------------------------------- |
+| Windows x64         | Setup EXE    | Run the installer; Finish can launch the app.           |
+| Windows x64         | Portable EXE | Run directly without installing.                        |
+| Debian / Ubuntu x64 | DEB          | `sudo apt install ./re-edit-pdf-*.deb`                  |
+| Fedora / RPM x64    | RPM          | `sudo dnf install ./re-edit-pdf-*.rpm`                  |
+| Linux x64           | AppImage     | Make executable, then run. Requires FUSE or extraction. |
+| Linux x64           | tar.gz       | Extract and run `re-edit-pdf` inside the directory.     |
 
-These packages are x64. The release builds are unsigned. Linux packages need a glibc desktop environment; native Alpine/musl and ARM64 are not verified.
+Packages are currently unsigned. Linux builds require a glibc desktop environment; Alpine/musl, ARM64 and macOS are not validated. The release validation report identifies the exact tested distributions and build commits.
 
-## Version 1.4.3
-
-- Fixes long text selection and double-click word selection, repeated editing of appended text, and selection of placed text/annotations. Saved FreeText annotations can be detected and edited again.
-- Text replacements remove actual content in previews and saved copies, preserving the background without white masking rectangles. WOFF2 import decodes valid font tables before embedding.
-- Adds eight font families and 32 offline faces, plus TTF/OTF/WOFF/WOFF2 font import. Document edits keep embedded font outlines, size, color, weight, slant, spacing and affine text transforms where supported. Missing subset glyphs report a useful save error rather than silently switching fonts.
-- Precision-trackpad pinch zoom follows the pointer; ordinary two-finger scrolling remains native. Large zoom levels keep the full page reachable horizontally.
-- The navigation button toggles its sidebar. Thumbnails have a fixed readable size and render at double display resolution.
-- Find highlights only matching characters and counts repeated/fragmented matches. Match case, whole words, F3/Shift+F3, and Ctrl+G/Shift+Ctrl+G work. Escape, Ctrl+F and the close button clear highlights and cancel pending searches.
-- Installer Finish launches the app through the standard checked launch option. PDFs opened through the operating system open the document window maximized.
-
-## Version 1.3.0 selection and performance update
-
-- Uses pdf.js's native text layer with font metrics and width transforms, replacing guessed selectable spans.
-- Select PDF text, then use **Edit Text** on the floating toolbar, **Ctrl+E**, the context menu, or **Edit selected text** in the Format panel. Partial selections and multiple lines retain source positions and line spacing.
-- The text dialog grows in height and width with its content; Ctrl+Enter applies changes. Text-input undo stays in the input.
-- Page canvases and thumbnails render near the viewport. Canvas work is limited to three concurrent jobs, and parsed text uses a bounded cache. Search updates do not repaint PDF canvases, and superseded searches stop early.
-- Corrects high-DPI rendering using the PDF renderer's output transform, with a 24-megapixel cap per canvas. Bundles standard PDF fonts and CMaps locally.
-- Document analysis samples at most three pages, shares the existing PDF worker, and skips pdf-lib form parsing for documents without fields.
-- Uses consistent Lucide icons throughout the toolbar, panels, tabs, and navigation. The logo is a manually drawn vector.
-- Linux DEB/RPM packages register `application/pdf`, a desktop launcher, and an icon. Preferences can explicitly set the PDF default through `xdg-mime`. File paths and local file URIs open through the installed executable.
-
-## Desktop integration
-
-- Renamed to **Re-Edit PDF**, with a manually drawn vector mark and matching Windows/installer icons. Emoji and symbol-only tool icons were replaced with vector icons.
-- Native Windows title bar provides system minimize, maximize, close, snap and theme behavior.
-- Preferences now contain effective controls, persist across restarts, and open from both native and in-app menus. Theme, display, zoom, units, toolbar, startup and full-screen preferences are connected to application behavior.
-- Home, Tools and sidebar shortcuts open the selected tool directly. Repeated tool selection leaves it open; cancelling the file picker leaves the current view intact. Misleading samples and duplicate Fit Visible controls were removed.
-- Typed, drawn and uploaded signatures preview on the page, can be moved/resized, and save as PDF image content. Saved signatures can be reused; check/cross/dot/line marks use drawn pixels rather than unsupported font glyphs. These are visual signatures, not certificate signatures.
-- Form fields use text inputs, checkboxes and choice controls; existing dropdown/radio/list selections round-trip correctly. Read-only fields stay read-only and invalid choices report a save error.
-- Combine Files supports selecting, arranging and saving multiple PDFs. It copies pages in the requested order; document-level bookmarks and form structures are not merged.
-- Embedded PDF attachments are listed and can be saved. Security information no longer claims unverified permissions or advertises an encryption tool.
-- Text annotations save a font-aware appearance stream, including bold/italic. Existing indirect annotation arrays and form widgets are preserved.
-- Assisted setup supports destination selection, shortcuts and uninstall. The checked launch option on Finish opens the installed app. Association-change notifications are asynchronous.
-- Setup registers PDF Open With entries and Windows Default apps capabilities; it leaves the user's current default intact. In Preferences, use **Open Windows Default apps**, then select Re-Edit PDF for `.pdf`.
-
-### How to edit existing text
-
-Select text and choose **Edit Text**, or choose **Edit PDF** and click a text run. Enter the replacement and apply it. Use the Format panel to adjust font, size or color, then **Ctrl+S**. Scanned pages need OCR before they have selectable text. Text edits are visual replacements with a white background; original selected text is removed when saving and the editor does not reflow paragraphs.
-
-### Verification
-
-- Production build and TypeScript checks passed.
-- 49 automated tests passed, including original-text placement, form values, signature image export, preservation of existing form widgets, ordered combining, document sessions and undo/redo.
-- Source and packaged Electron smoke checks verify text editing/save/reopen, external PDF drop handling, internal drag suppression, hand panning, tab isolation, repeated saves, print preparation, signature placement/movement, form input/checkbox save, Preferences routing, persisted theme and PDF combining order.
-- Physical printing requires manual verification. CI exercises silent installation/uninstallation and the assisted wizard Finish launch. The installer is unsigned.
-
-## Version 1.1.1 interaction fixes
-
-- Choose **Edit PDF**, then click existing text directly on the page. Replacements use the PDF text's baseline, size, rotation and bounding box; the previous guessed-position list is removed.
-- Existing-text replacements support undo/redo, tab switching, Save, and reopening. They are visual white-background replacements with embedded document fonts when available: original selected text is removed when saving. Fonts missing new glyphs require choosing a bundled face or importing the full font. Paragraph reflow, vertical text, and colored-background reconstruction are not supported.
-- Internal document and thumbnail dragging cannot trigger the external file-drop overlay. Hand mode (`H`, or hold Space) suppresses native dragging and text selection while panning.
-- Regression smoke checks now cover existing text edits, save/reopen, internal drag cancellation and actual hand panning.
-
-## Version 1.1.0 reliability fixes
-
-- Independent document sessions preserve annotations, form values, zoom, and undo history across tabs.
-- Save uses the selected document's path. Save As updates its tab name and destination. Repeated saves do not duplicate annotations.
-- Native Save / Don't Save / Cancel dialogs protect unsaved changes on tab and window close.
-- Text, note, and custom zoom entry use in-app dialogs supported by Electron.
-- Print prepares PDF pages with current edits before opening the system print dialog; it does not print the application chrome.
-- Fit modes respond to window resizing; page rotation includes the rotation stored in the PDF.
-- PDF files opened through Windows are passed to the running application.
-- Assisted Windows setup includes installation directory selection, shortcuts, and an uninstaller.
-
-### Current limits
-
-This is not a complete Acrobat replacement. Text edits use overlays rather than font-aware paragraph reflow. MuPDF removes edited text and marked redaction content during saving. Certificate signing supports one P12/PFX signature without timestamping or incremental co-signing. Word export creates editable text paragraphs without images or exact page layout. Office-to-PDF conversion requires a separately installed LibreOffice. PDF-to-Excel/PowerPoint conversion, form creation, XFA editing, and collaboration are not implemented. Printing rasterizes pages at up to 144 DPI. The installer is unsigned; a publisher certificate is needed for a signed distribution. Physical printer output and installation/uninstallation on a clean Windows machine still need manual verification.
+The installer registers PDF **Open With** support and a separate document icon. Choose Re-Edit PDF in Windows **Settings → Apps → Default apps**. Linux Preferences can set the PDF default through `xdg-mime`.
 
 ## Features
 
-### Viewing & Navigation
-- High-resolution rendering via `pdf.js` with continuous and single-page display modes.
-- Zoom from 50% to 500%, Fit Width, and Fit Page options.
-- Thumbnail sidebar with page previews and click-to-jump navigation.
-- Hand pan tool (click-drag or hold `Space` to pan).
-- In-document search (`Ctrl+F`) with match navigation and keyword highlighting.
-- Metadata and document properties viewer.
+- **Document workspace:** tabs, thumbnails, bookmarks, attachments, page navigation, fit/zoom controls, light/dark themes and a compact tool layout.
+- **Text editing:** select text and use Edit, Ctrl+E or the context menu. Supported embedded fonts retain size, color and transforms. Fragmented text is grouped into compatible lines; replacements can be edited again.
+- **Fonts:** 40 offline faces in ten families, including Adobe's Source Sans 3, Source Serif 4 and Source Code Pro. Full Source Sans/Serif fonts supplement the bundled subsets. Installed TTF/OTF fonts and TTF, OTF, WOFF and WOFF2 imports are available. Missing glyphs are checked before applying or saving edits.
+- **Annotations:** highlight, underline, strikeout, text, shapes, drawing, images and signatures, with selection, removal and undo/redo.
+- **OCR:** offline English recognition with accurate and fast models, automatic/column/block layouts, page ranges, searchable output and explicit save-copy/overwrite actions.
+- **Find:** result list, matching text excerpts, case/whole-word filters, F3 navigation and searchable edited/placed text.
+- **Printing:** application print dialog with printer selection, copies, grayscale, duplex, ranges, odd/even pages, reverse order, paper size, scaling and preview.
+- **Page tools:** combine, reorder, rotate, extract and delete pages.
+- **Forms and security:** supported AcroForm fields, P12 certificate signing, genuine content redaction, password clearing and document security information.
+- **Conversion:** editable Word text export and Office-to-PDF import through an optional LibreOffice installation.
+- **Desktop integration:** native window controls, recent-file favorites/removal, file associations and Help → Check for Updates.
 
-### Text Selection Actions
-- Selecting text in the document opens a quick action bar with:
-  - **Highlight**, **Underline**, and **Strikethrough**
-  - **Text Color**: change selected text color non-destructively
-  - **Copy**, **Edit Text** and redaction
+This project is independent of Adobe. It does not claim complete Acrobat Premium compatibility.
 
-### Annotations & Markup
-- Freehand pen and highlighter with adjustable color palette, stroke width, and opacity.
-- Geometric shapes: Rectangle, Circle, Line, and Arrow.
-- Text boxes and sticky notes.
-- Annotations can be saved as standard PDF annotation objects (editable across PDF viewers) or burned in as flattened exports.
+## Getting started
 
-### Page Management & Undo
-- Organize Pages modal: reorder pages by dragging, rotate 90° clockwise/counter-clockwise, delete pages, or insert blank pages.
-- Full multi-step Undo/Redo (`Ctrl+Z` / `Ctrl+Y`) that coordinates between page restructuring and annotation changes.
+1. Open a PDF from Home, the file menu or the operating system.
+2. Choose **Edit** to edit existing text, or select words and press **Ctrl+E**.
+3. Use **All tools** for annotations, forms, OCR and document operations.
+4. Save with **Ctrl+S**. OCR offers separate copy and overwrite buttons.
+5. For additional fonts, choose an installed face or import a font in Format.
 
-### Local OCR (Scan Recognition)
-- Bundled offline Tesseract.js engine (no network requests or cloud services).
-- Automatic detection for scanned documents based on character density.
-- Preprocessing filter (grayscale + contrast stretching + thresholding) at 300 DPI for cleaner character recognition.
-- Flexible scope: run OCR on the current page, all pages, or a custom page range (`1-3, 5`).
-- Option to stop OCR processing at any time without losing completed pages.
-- Prompts to save the resulting searchable PDF as `<filename>_ocr.pdf`.
-- Convert OCR results into editable text boxes.
+| Shortcut                       | Action                                 |
+| ------------------------------ | -------------------------------------- |
+| Ctrl+O / Ctrl+S / Ctrl+Shift+S | Open / Save / Save as                  |
+| Ctrl+F / F3 / Shift+F3         | Find / Next match / Previous match     |
+| Ctrl+E                         | Edit selected text                     |
+| Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z | Undo / Redo                            |
+| Ctrl+P                         | Print dialog                           |
+| Ctrl+Tab / Ctrl+Shift+Tab      | Next / Previous document tab           |
+| Ctrl+W / Ctrl+F4               | Close document                         |
+| Alt+F4 / Ctrl+Q                | Close application                      |
+| Ctrl+0 / Ctrl+1 / Ctrl+2       | Fit page / Actual size / Fit width     |
+| Ctrl++ / Ctrl+-                | Zoom in / out                          |
+| F4 / Shift+F4                  | Navigation / Tool pane                 |
+| H / V / hold Space             | Hand / Text selection / Temporary hand |
+| F11 / Ctrl+L                   | Full screen                            |
 
-### Forms & Editing
-- AcroForm detection and filling for text fields, checkboxes, dropdowns, radio groups and option lists.
-- Visible text replacement using a precise white-background overlay. It preserves unrelated image objects, and removes the original selected text when saved, but cannot reconstruct colored backgrounds.
+Precision-trackpad pinch uses PDF zoom; ordinary two-finger scrolling stays native. Hardware behavior depends on the OS and device driver.
 
-## Keyboard Shortcuts
+## Development
 
-| Shortcut | Action |
-| --- | --- |
-| `Ctrl + O` | Open PDF |
-| `Ctrl + S` | Save |
-| `Ctrl + Shift + S` | Save As |
-| `Ctrl + Z` | Undo |
-| `Ctrl + Y` | Redo |
-| `Ctrl + F` | Open/close Find |
-| `F3` / `Shift + F3` | Next/previous search result |
-| `Ctrl + 0` | Fit Page |
-| `Ctrl + 1` | Actual Size (100%) |
-| `Ctrl + 2` | Fit Width |
-| `Ctrl + +` / `Ctrl + -` | Zoom In / Zoom Out |
-| `Space` (hold) | Temporary Hand Pan |
-| `Delete` | Remove selected annotation |
-| `Ctrl + D` | Document Properties |
-| `Ctrl + W` | Close Document |
+Requires Node.js 22 and npm. LibreOffice is optional for Office import.
 
-## Building from Source
-
-### Requirements
-- Node.js >= 22
-- npm
-
-### Setup
-```bash
+```sh
 git clone https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor.git
 cd ReEdit-PDF-Reader-and-Editor
-npm install
-```
-
-### Development
-```bash
+npm ci
+node node_modules/electron/install.js
 npm run dev
 ```
 
-### Running Tests
-```bash
-npm test
+The repository includes offline OCR models, PDF assets, fonts and license notices. `npm run setup:ocr` can restore OCR assets when needed.
 
-# Built Electron smoke test: opens fixtures, edits, saves, switches tabs, prepares print
+### Checks
+
+```sh
+npm run typecheck
+npm test
 npm run build
-npx electron scripts/smoke-electron.cjs
+npm run test:desktop
 ```
 
-### Packaging Windows Binaries
-```bash
-# Build NSIS Setup Installer (.exe)
-npm run build:win:nsis
+The desktop regression scripts in `scripts/` exercise actual Electron workflows using isolated profiles and generated PDFs. Distribution and installer workflows run on disposable environments; they do not install or uninstall the app on the development machine.
 
-# Build Portable Executable (.exe)
-npm run build:win:portable
+### Packaging
 
-# Build both
+```sh
+# Windows installer and portable EXE
 npm run package:win
-```
-Outputs are generated in the `release/` directory.
 
-## Linux builds and verification
-
-Build on Linux with Node.js 22, npm, `binutils`, `rpm`, and `fakeroot` installed:
-
-```sh
-npm ci
-npm test
-ELECTRON_BUILDER_COMPRESSION_LEVEL=5 npm run build:linux
-sudo apt-get install ./release/re-edit-pdf-1.4.3-amd64.deb
-# Fedora: sudo dnf install ./release/re-edit-pdf-1.4.3-x86_64.rpm
+# Linux AppImage, DEB, RPM and tar.gz
+npm run build:linux
 ```
 
-For AppImage, mark it executable. Hosts without FUSE can extract it with `--appimage-extract` and run `squashfs-root/AppRun`. Portable packages do not install a desktop entry; use DEB/RPM for automatic desktop and PDF association integration.
+Build Linux packages on Linux; its packaging dependencies include rpm, fakeroot and binutils. Outputs go to `release/`. Local builds do not publish automatically. See [.github/workflows](.github/workflows) for the reproducible build and compatibility checks.
 
-The manual GitHub workflow builds Windows and Linux packages. It is not published or triggered automatically. The Linux test script is intended for isolated environments after installing the package:
+## Limitations
 
-```sh
-sh scripts/test-linux-package.sh '/opt/Re-Edit PDF/re-edit-pdf' linux
-xvfb-run -a node scripts/test-linux-launch.cjs
-```
+- Scanned text has estimated typography. Replacing recognized text removes image pixels in the edited region; background reconstruction and automatic paragraph reflow are limited.
+- OCR currently recognizes English. Accuracy depends on scan quality and layout; review the output.
+- A subset font cannot supply omitted glyphs. Use a full installed/imported font when needed. Proprietary Adobe Fonts are not redistributed.
+- Installed-font discovery covers supported TTF/OTF files. Font collections, advanced shaping and mixed-direction/vertical editing remain limited.
+- Unsupported XFA forms and complex Office layout conversion do not have full parity.
+- Printer hardware and driver behavior, physical trackpads, native Wayland/GPU sessions, FUSE mounting and physical certificate tokens need testing in their real environments.
+- Memory checks describe measured scenarios and resource cleanup; they cannot establish that every document or driver is leak-free.
 
-The workflow harness uses the matching development Electron runtime to load the **installed app.asar**, and checks the resulting report. The separate launch check starts the installed executable and verifies a PDF supplied as a file URI through its actual renderer. Root container tests pass `--no-sandbox` only in the test command. Container/Xvfb testing does not verify Wayland, physical GPU/display combinations, or every Linux distribution.
+Report reproducible issues with the app version, OS, steps and a sample PDF you are permitted to share. Remove private information before attaching documents.
 
-## Tech Stack
-- Electron 44 & electron-vite
-- React 19 & TypeScript 5.9
-- Tailwind CSS 4
-- pdf.js (`pdfjs-dist`)
-- pdf-lib
-- Tesseract.js (offline bundle)
-- Zustand
-## License and source
+## License and acknowledgments
 
-Re-Edit PDF is licensed under AGPL-3.0-only. See LICENSE and THIRD-PARTY-NOTICES.md. Corresponding source for published binaries is available in each tagged GitHub release.
+Created by **Avaneesh Inamdar**. Released under [AGPL-3.0-only](LICENSE).
 
-## Version 1.4.3
+Built with Electron, React, TypeScript, PDF.js, pdf-lib, MuPDF and Tesseract.js. Icons use Lucide; the application and PDF document marks are custom vectors.
 
-See [release notes](docs/release-1.4.3.md) for repeated editing, long selection, font imports and rendering changes. The earlier 1.4.0 release added real content removal/redaction, certificate signing, Word export, Office import and update checking.
+See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for software, font and model notices. Each release provides the application source tag, corresponding MuPDF source archive, build provenance, validation report and checksums.

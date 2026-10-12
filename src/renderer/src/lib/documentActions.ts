@@ -14,13 +14,19 @@ export async function prepareDocument(flatten = false): Promise<Uint8Array> {
   const data = usePdfStore.getState().data
   if (!data) throw new Error('Open a PDF first.')
   const annotations = useAnnotationStore.getState().annotations
-  const redactions = [...useEditStore.getState().redactions, ...annotations.filter(a => a.type === 'redact')]
+  const redactions = [
+    ...useEditStore.getState().redactions,
+    ...annotations.filter((a) => a.type === 'redact')
+  ]
   const fields = useFormStore.getState().fields
   let bytes: Uint8Array = new Uint8Array(data.slice(0))
   const masks = textRemovalRegions(annotations)
   if (masks.length) bytes = new Uint8Array(await window.api.removePdfContent(bytes, masks, false))
-  const normal=annotations.filter(a => a.type !== 'redact')
-  if (normal.length) bytes = new Uint8Array(await bakeAnnotationsToPdf(bytes.slice().buffer as ArrayBuffer, normal, [], {flatten}))
+  const normal = annotations.filter((a) => a.type !== 'redact')
+  if (normal.length)
+    bytes = new Uint8Array(
+      await bakeAnnotationsToPdf(bytes.slice().buffer as ArrayBuffer, normal, [], { flatten })
+    )
   if (fields.length) {
     bytes = await fillFormAndSave(
       bytes.slice().buffer as ArrayBuffer,
@@ -29,14 +35,25 @@ export async function prepareDocument(flatten = false): Promise<Uint8Array> {
     )
   }
   if (redactions.length) {
-    if (usePdfStore.getState().rotation !== 0) throw new Error('Reset view rotation before applying redactions.')
-    bytes = new Uint8Array(await window.api.removePdfContent(bytes, redactions.map(a => ({page:a.page,x:a.x,y:a.y,w:a.w,h:a.h})), true))
+    if (usePdfStore.getState().rotation !== 0)
+      throw new Error('Reset view rotation before applying redactions.')
+    bytes = new Uint8Array(
+      await window.api.removePdfContent(
+        bytes,
+        redactions.map((a) => ({ page: a.page, x: a.x, y: a.y, w: a.w, h: a.h })),
+        true
+      )
+    )
   }
   return bytes
 }
 
 let saving = false
-export async function saveDocument(saveAs = false, flatten = false): Promise<boolean> {
+export async function saveDocument(
+  saveAs = false,
+  flatten = false,
+  suggestedName?: string
+): Promise<boolean> {
   if (saving || !usePdfStore.getState().data) return false
   saving = true
   const id = useTabStore.getState().activeTabId
@@ -44,8 +61,9 @@ export async function saveDocument(saveAs = false, flatten = false): Promise<boo
   try {
     const bytes = await prepareDocument(flatten)
     const name =
+      suggestedName ||
       (before.pdf.fileName || 'document.pdf').replace(/\.pdf$/i, '') +
-      (flatten ? '-flat.pdf' : '.pdf')
+        (flatten ? '-flat.pdf' : '.pdf')
     const path = before.pdf.filePath
     const hasDiskPath = !!path && /^(?:[a-z]:[\\/]|\\\\|\/)/i.test(path)
     const saved =
@@ -74,20 +92,18 @@ export async function saveDocument(saveAs = false, flatten = false): Promise<boo
       const tab = useTabStore.getState().tabs.find((t) => t.id === id)
       if (tab?.session) {
         const clean = unchanged(tab.session)
-        useTabStore
-          .getState()
-          .updateTab(id, {
-            isDirty: !clean,
-            session: {
-              ...tab.session,
-              pdf: {
-                ...tab.session.pdf,
-                filePath: saved,
-                fileName: saved.split(/[\\/]/).pop()!,
-                isDirty: !clean
-              }
+        useTabStore.getState().updateTab(id, {
+          isDirty: !clean,
+          session: {
+            ...tab.session,
+            pdf: {
+              ...tab.session.pdf,
+              filePath: saved,
+              fileName: saved.split(/[\\/]/).pop()!,
+              isDirty: !clean
             }
-          })
+          }
+        })
       }
     }
     // Keep the source bytes and editable overlays separate: rebaking saved bytes duplicates annotations.

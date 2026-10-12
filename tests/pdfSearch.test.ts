@@ -34,4 +34,25 @@ describe('document search', () => {
     expect(findTextMatches(items, 'art', 1, true, true)).toHaveLength(1)
     expect(findTextMatches(items, 'art', 1, false, true)).toHaveLength(2)
   })
+  it('finds ligatures and soft hyphens with original character offsets', () => {
+    const matches = findTextMatches([{ str: 'oﬃce soft\u00adhyphen' }], 'office', 1)
+    expect(matches[0].segments).toEqual([{ index: 0, start: 0, end: 4 }])
+    expect(findTextMatches([{ str: 'soft\u00adhyphen' }], 'softhyphen', 1)[0].segments).toEqual([
+      { index: 0, start: 0, end: 4 },
+      { index: 0, start: 5, end: 11 }
+    ])
+  })
+  it('finds whitespace variations and preserves exact source offsets', () => {
+    const match = findTextMatches([{ str: 'one  \ttwo' }], 'one two', 1)[0]
+    expect(match.segments).toEqual([{ index: 0, start: 0, end: 9 }])
+  })
+  it('searches geometric reading order rather than PDF paint order', () => {
+    const items = [
+      { str: 'second line', transform: [12, 0, 0, 12, 50, 650], width: 70 },
+      { str: 'first line', transform: [12, 0, 0, 12, 50, 680], width: 60 }
+    ]
+    const matches = findTextMatches(items, 'first line second line', 1)
+    expect(matches).toHaveLength(1)
+    expect(matches[0].segments?.map((segment) => segment.index)).toEqual([1, 0])
+  })
 })

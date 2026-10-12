@@ -2,47 +2,141 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useAnnotationStore } from '../stores/useAnnotationStore'
 import { useUIStore } from '../stores/useUIStore'
 import { usePdfStore } from '../stores/usePdfStore'
-import { requestText } from '../lib/requestText'
+import { requestPdfText } from '../lib/textEditRequest'
 import { previewFont, originalFontSelected, previewSpaceAdjustment } from '../lib/fonts'
 import { encodedPreview } from '../lib/pdfTextStyle'
 import { textMatrix, type PdfTextRun } from '../lib/pdfText'
 import type { Annotation } from '../stores/useAnnotationStore'
+import { registerPreviewFont } from '../lib/fontFaces'
 
-function ReplacementText({ annotation, transform, editing }: { annotation: Annotation; transform: number[]; editing: boolean }): React.JSX.Element {
+function ReplacementText({
+  annotation,
+  transform,
+  editing
+}: {
+  annotation: Annotation
+  transform: number[]
+  editing: boolean
+}): React.JSX.Element {
   const text = useRef<SVGTextElement>(null)
   const [bounds, setBounds] = useState({ x: 0, y: 0, width: 0, height: 0 })
-  const selected = useAnnotationStore(state => state.selectedId === annotation.id)
+  const selected = useAnnotationStore((state) => state.selectedId === annotation.id)
   const source = annotation.sourceText!
+  const [restoredFont, setRestoredFont] = useState<string>()
+  useEffect(() => {
+    let cancelled = false
+    if (originalFontSelected(annotation) && source.fontData)
+      void registerPreviewFont(source.fontData)
+        .then((font) => {
+          if (!cancelled) setRestoredFont(font.name)
+        })
+        .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [source.fontData, annotation.fontFamily, annotation.fontData])
   const size = annotation.fontSize || source.size
   useLayoutEffect(() => {
     let cancelled = false
-    const measure = (): void => { if (!cancelled && text.current) { const box = text.current.getBBox(); setBounds({ x: box.x, y: box.y, width: box.width, height: box.height }) } }
+    const measure = (): void => {
+      if (!cancelled && text.current) {
+        const box = text.current.getBBox()
+        setBounds({ x: box.x, y: box.y, width: box.width, height: box.height })
+      }
+    }
     measure()
     void document.fonts.ready.then(measure)
     document.fonts.addEventListener('loadingdone', measure)
-    return () => { cancelled = true; document.fonts.removeEventListener('loadingdone', measure) }
-  }, [annotation.text, size, annotation.fontFamily, annotation.bold, annotation.italic])
+    return () => {
+      cancelled = true
+      document.fonts.removeEventListener('loadingdone', measure)
+    }
+  }, [
+    annotation.text,
+    size,
+    annotation.fontFamily,
+    annotation.bold,
+    annotation.italic,
+    restoredFont
+  ])
   const select = (): void => useAnnotationStore.getState().setSelected(annotation.id)
   const edit = async (): Promise<void> => {
     select()
     const data = usePdfStore.getState().data
-    const replacement = await requestText('Edit PDF text', annotation.text || '')
+    const replacement = await requestPdfText(source, annotation.text || '', annotation)
     if (replacement !== null && data === usePdfStore.getState().data)
-      useAnnotationStore.getState().updateAnnotation(annotation.id, { text: replacement })
+      useAnnotationStore
+        .getState()
+        .updateAnnotation(annotation.id, { text: replacement.text, ...replacement.style })
   }
-  return <g data-edited-text={annotation.id} transform={`matrix(${textMatrix(source, transform).join(' ')})`}>
-    <rect x={bounds.x - 1} y={bounds.y - 1} width={Math.max(4, bounds.width + 2)} height={Math.max(size, bounds.height + 2)} fill="transparent" stroke={selected ? '#1473e6' : 'none'} strokeWidth={0.6}
-      style={{ pointerEvents: 'all', cursor: 'text' }} onClick={() => { select(); if (editing) void edit() }} onDoubleClick={() => { if (!editing) void edit() }} />
-    <text ref={text} data-replacement-text="true" fontSize={size}
-      letterSpacing={(source.characterSpacing || 0) * size / source.size}
-      wordSpacing={(source.wordSpacing || 0) * size / source.size + previewSpaceAdjustment(annotation)}
-      fill={annotation.color} fontFamily={previewFont(annotation)}
-      fontWeight={originalFontSelected(annotation) && source.fontData ? 'normal' : annotation.bold ? 'bold' : 'normal'}
-      fontStyle={originalFontSelected(annotation) && source.fontData ? 'normal' : annotation.italic ? 'italic' : 'normal'} xmlSpace="preserve"
-      style={{ pointerEvents: 'all', userSelect: 'text', cursor: 'text' }} onClick={() => { select(); if (editing) void edit() }} onDoubleClick={() => { if (!editing) void edit() }}>
-      {(annotation.text || '').split('\n').map((line, index) => <tspan key={index} x={0} y={index * (annotation.lineHeight || size * 1.2)}>{originalFontSelected(annotation) ? encodedPreview(line || ' ', source.fontGlyphs) : line || ' '}</tspan>)}
-    </text>
-  </g>
+  return (
+    <g
+      data-edited-text={annotation.id}
+      transform={`matrix(${textMatrix(source, transform).join(' ')})`}
+    >
+      <rect
+        x={bounds.x - 1}
+        y={bounds.y - 1}
+        width={Math.max(4, bounds.width + 2)}
+        height={Math.max(size, bounds.height + 2)}
+        fill="transparent"
+        stroke={selected ? '#1473e6' : 'none'}
+        strokeWidth={0.6}
+        style={{ pointerEvents: 'all', cursor: 'text' }}
+        onClick={() => {
+          select()
+          if (editing) void edit()
+        }}
+        onDoubleClick={() => {
+          if (!editing) void edit()
+        }}
+      />
+      <text
+        ref={text}
+        data-replacement-text="true"
+        fontSize={size}
+        letterSpacing={((source.characterSpacing || 0) * size) / source.size}
+        wordSpacing={
+          ((source.wordSpacing || 0) * size) / source.size + previewSpaceAdjustment(annotation)
+        }
+        fill={annotation.color}
+        fontFamily={
+          originalFontSelected(annotation) && restoredFont ? restoredFont : previewFont(annotation)
+        }
+        fontWeight={
+          originalFontSelected(annotation) && source.fontData
+            ? 'normal'
+            : annotation.bold
+              ? 'bold'
+              : 'normal'
+        }
+        fontStyle={
+          originalFontSelected(annotation) && source.fontData
+            ? 'normal'
+            : annotation.italic
+              ? 'italic'
+              : 'normal'
+        }
+        xmlSpace="preserve"
+        style={{ pointerEvents: 'all', userSelect: 'text', cursor: 'text' }}
+        onClick={() => {
+          select()
+          if (editing) void edit()
+        }}
+        onDoubleClick={() => {
+          if (!editing) void edit()
+        }}
+      >
+        {(annotation.text || '').split('\n').map((line, index) => (
+          <tspan key={index} x={0} y={index * (annotation.lineHeight || size * 1.2)}>
+            {originalFontSelected(annotation)
+              ? encodedPreview(line || ' ', source.fontGlyphs)
+              : line || ' '}
+          </tspan>
+        ))}
+      </text>
+    </g>
+  )
 }
 
 export function ExistingTextLayer({
@@ -70,16 +164,64 @@ export function ExistingTextLayer({
     const existing = edits.find(
       (a) =>
         a.sourceText?.key === run.key ||
-        a.maskTexts?.some((mask) => mask.key.startsWith(run.key + ':'))
+        a.maskTexts?.some((mask) => mask.key === run.key || mask.key.startsWith(run.key + ':'))
     )
-    const replacement = await requestText('Edit PDF text', existing?.text ?? run.text)
+    let group = [run]
+    if (!run.pdfAnnotationId && Math.abs(run.angle) < 0.01) {
+      const line = runs
+        .filter(
+          (item) =>
+            !!item.invisible === !!run.invisible &&
+            !item.pdfAnnotationId &&
+            Math.abs(item.angle) < 0.01 &&
+            Math.abs(item.y - run.y) < Math.max(item.size, run.size) * 0.4 &&
+            Math.abs(item.size - run.size) < run.size * 0.15 &&
+            item.fontFamily === run.fontFamily &&
+            item.previewFont === run.previewFont &&
+            item.color === run.color &&
+            !!item.bold === !!run.bold &&
+            !!item.italic === !!run.italic
+        )
+        .sort((a, b) => a.x - b.x)
+      const index = line.indexOf(run)
+      let start = index,
+        end = index
+      while (
+        start > 0 &&
+        line[start].x -
+          line[start - 1].x -
+          line[start - 1].width * (line[start - 1].matrix?.[0] || 1) <
+          run.size * 1.5
+      )
+        start--
+      while (
+        end + 1 < line.length &&
+        line[end + 1].x - line[end].x - line[end].width * (line[end].matrix?.[0] || 1) <
+          run.size * 1.5
+      )
+        end++
+      if (index >= 0) group = line.slice(start, end + 1)
+    }
+    const original = group
+      .map(
+        (item, index) =>
+          (index &&
+          item.x -
+            group[index - 1].x -
+            group[index - 1].width * (group[index - 1].matrix?.[0] || 1) >
+            run.size * 0.15
+            ? ' '
+            : '') + item.text
+      )
+      .join('')
+    const replacement = await requestPdfText(group[0], existing?.text ?? original, existing)
     if (replacement === null || usePdfStore.getState().data !== data) return
     if (existing) {
-      updateAnnotation(existing.id, { text: replacement })
+      updateAnnotation(existing.id, { text: replacement.text, ...replacement.style })
       setSelected(existing.id)
       return
     }
-    if (replacement === run.text) return
+    if (replacement.text === original && !Object.keys(replacement.style).length) return
     const id = `pdf-text-${crypto.randomUUID()}`
     addAnnotation({
       id,
@@ -89,15 +231,17 @@ export function ExistingTextLayer({
       y: 0,
       w: 0,
       h: 0,
-      text: replacement,
-      fontSize: run.size,
-      fontFamily: run.fontFamily,
+      text: replacement.text,
+      fontSize: group[0].size,
+      fontFamily: group[0].fontFamily,
       color: run.color || '#000000',
       bold: run.bold,
       italic: run.italic,
       opacity: 1,
       strokeWidth: 0,
-      sourceText: run
+      sourceText: group[0],
+      maskTexts: group.length > 1 ? group : undefined,
+      ...replacement.style
     })
     setSelected(id)
   }
@@ -118,12 +262,19 @@ export function ExistingTextLayer({
       height={height}
       style={{ pointerEvents: 'none' }}
     >
-      {edits.map(annotation => <ReplacementText key={annotation.id} annotation={annotation} transform={transform} editing={editing} />)}
+      {edits.map((annotation) => (
+        <ReplacementText
+          key={annotation.id}
+          annotation={annotation}
+          transform={transform}
+          editing={editing}
+        />
+      ))}
       {runs.map((run) => {
         const annotation = edits.find(
           (a) =>
             a.sourceText?.key === run.key ||
-            a.maskTexts?.some((mask) => mask.key.startsWith(run.key + ':'))
+            a.maskTexts?.some((mask) => mask.key === run.key || mask.key.startsWith(run.key + ':'))
         )
         const selected = annotation?.id === selectedId
         return (

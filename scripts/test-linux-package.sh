@@ -4,7 +4,7 @@ set -eu
 binary=${1:-/opt/Re-Edit PDF/re-edit-pdf}
 label=${2:-${READIT_TEST_LABEL:-linux}}
 test -x "$binary"
-for font in fontkit lato libre-baskerville noto-sans noto-serif open-sans roboto source-code-pro ubuntu; do
+for font in fontkit lato libre-baskerville noto-sans noto-serif open-sans roboto source-code-pro source-sans-3 source-serif-4 ubuntu; do
   test -f "$(dirname "$binary")/resources/font-licenses/$font-LICENSE.txt"
 done
 runtime=${READIT_TEST_ELECTRON:-node_modules/electron/dist/electron}
@@ -59,6 +59,14 @@ else
   xvfb-run -a -s '-screen 0 1600x1000x24' "$runtime" --disable-gpu --disable-dev-shm-usage scripts/smoke-1.4.3.cjs
 fi
 grep -q '"passed": true' "$READIT_143_OUTPUT/result.json"
+export READIT_144_APP="$READIT_SMOKE_APP"
+export READIT_144_OUTPUT="$READIT_SMOKE_OUTPUT/regressions-1.4.4"
+if [ "$(id -u)" = 0 ]; then
+  xvfb-run -a -s '-screen 0 1600x1000x24' "$runtime" --no-sandbox --disable-gpu --disable-dev-shm-usage scripts/smoke-1.4.4.cjs
+else
+  xvfb-run -a -s '-screen 0 1600x1000x24' "$runtime" --disable-gpu --disable-dev-shm-usage scripts/smoke-1.4.4.cjs
+fi
+grep -q '"passed": true' "$READIT_144_OUTPUT/result.json"
 if command -v gio >/dev/null 2>&1; then
   default_pdf=$(gio mime application/pdf | head -1 | sed 's/.*: //')
 else

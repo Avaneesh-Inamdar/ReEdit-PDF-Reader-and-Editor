@@ -51,6 +51,13 @@ async function capturePage(retries = 3) {
 }
 app.on('browser-window-created', (_, window) => {
   if (!main) main = window
+  window.webContents.getPrintersAsync = async () => [
+    {
+      name: 'ReEdit-Test-Printer',
+      displayName: 'Test printer',
+      options: { 'printer-is-default': 'true' }
+    }
+  ]
   window.webContents.on('console-message', (_, level, message) => {
     if (level >= 3) errors.push(message)
   })
@@ -304,6 +311,10 @@ app.whenReady().then(async () => {
     await new Promise((resolve) => setTimeout(resolve, 300))
     writeFileSync(join(output, 'document.png'), (await capturePage()).toPNG())
     await runJs('window.dispatchEvent(new CustomEvent("acrobat:print"))')
+    await waitFor(
+      `!!document.querySelector('.print-dialog') && !document.querySelector('.print-dialog .operation-primary').disabled`
+    )
+    await runJs(`document.querySelector('.print-dialog .operation-primary').click()`)
     const deadline = Date.now() + 20000
     while (!printed && Date.now() < deadline)
       await new Promise((resolve) => setTimeout(resolve, 100))

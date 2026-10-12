@@ -1,13 +1,21 @@
 import { createWorker } from 'tesseract.js'
+import type { OcrPage } from './ocrTypes'
+import { embedFontWithOutlines } from './embeddedFont'
 
 let worker: Awaited<ReturnType<typeof createWorker>> | null = null
 let initializing: Promise<Awaited<ReturnType<typeof createWorker>>> | null = null
 let progressListener: ((p: number) => void) | undefined
+let workerQuality: 'fast' | 'accurate' = 'accurate'
 
 export async function getOcrWorker(
-  onProgress?: (p: number) => void
+  onProgress?: (p: number) => void,
+  quality: 'fast' | 'accurate' = 'accurate'
 ): Promise<Awaited<ReturnType<typeof createWorker>>> {
   progressListener = onProgress
+  if (quality !== workerQuality) {
+    await terminateOcr()
+    workerQuality = quality
+  }
   if (worker) return worker
   if (initializing) return initializing
   // Use absolute URL via window.location for both http (dev) and file:// (prod preview)
@@ -30,7 +38,7 @@ export async function getOcrWorker(
   initializing = createWorker('eng', 1, {
     workerPath: `${base}/worker.min.js`,
     corePath: `${base}/tesseract-core.wasm.js`,
-    langPath: `${base}`,
+    langPath: quality === 'accurate' ? `${base}/best` : base,
     workerBlobURL: false,
     logger: (m) => {
       if (m.status === 'recognizing text') progressListener?.(Math.round(m.progress * 100))
@@ -41,6 +49,7 @@ export async function getOcrWorker(
   } as never)
   try {
     worker = await initializing
+    await worker.setParameters({ user_defined_dpi: '300', preserve_interword_spaces: '1' })
     return worker
   } finally {
     initializing = null
@@ -70,6 +79,7 @@ export async function runOcrOnCanvasFull(
 }
 
 export async function terminateOcr(): Promise<void> {
+  progressListener = undefined
   if (initializing) {
     try {
       worker = await initializing
@@ -92,6 +102,8 @@ export function preprocessCanvasForOcr(canvas: HTMLCanvasElement): HTMLCanvasEle
     const ctx = processed.getContext('2d')
     if (!ctx) return canvas
 
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, processed.width, processed.height)
     ctx.drawImage(canvas, 0, 0)
     const imgData = ctx.getImageData(0, 0, processed.width, processed.height)
     const d = imgData.data
@@ -132,7 +144,8 @@ export function preprocessCanvasForOcr(canvas: HTMLCanvasElement): HTMLCanvasEle
 // Bakes OCR recognized text as an invisible selectable text layer into the PDF (preserves images underneath untouched)
 export async function bakeOcrToPdf(
   data: ArrayBuffer,
-  ocrResults: Record<number, import('tesseract.js').Page>
+  ocrResults: Record<number, OcrPage>,
+  fontBytes?: Uint8Array
 ): Promise<Uint8Array> {
   const {
     PDFDocument,
@@ -148,7 +161,10 @@ export async function bakeOcrToPdf(
     showText
   } = await import('pdf-lib')
   const pdf = await PDFDocument.load(data)
-  const font = await pdf.embedFont(StandardFonts.Helvetica)
+  if (fontBytes) pdf.registerFontkit((await import('@pdf-lib/fontkit')).default)
+  const font = fontBytes
+    ? await embedFontWithOutlines(pdf, fontBytes)
+    : await pdf.embedFont(StandardFonts.Helvetica)
   const pages = pdf.getPages()
 
   for (const [pageStr, pageData] of Object.entries(ocrResults)) {

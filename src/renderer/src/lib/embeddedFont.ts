@@ -1,5 +1,51 @@
 import fontkit from '@pdf-lib/fontkit'
 import { mapPdfGlyphs } from './fontEncoding'
+import type { PDFDocument, PDFContext, PDFRef, PDFFont } from 'pdf-lib'
+
+// pdf-lib 1.17.1 expects an older Fontkit CFF marker. Preserve an OpenType CFF
+// container with the correct PDF stream subtype instead of its invalid subset.
+export async function embedFontWithOutlines(
+  pdf: PDFDocument,
+  data: Uint8Array,
+  adapter: typeof fontkit = fontkit,
+  encoding?: Record<string, string>
+): Promise<PDFFont> {
+  const cff = String.fromCharCode(...data.subarray(0, 4)) === 'OTTO'
+  pdf.registerFontkit(adapter)
+  const embedded = await pdf.embedFont(data, { subset: !cff })
+  if (cff) {
+    const embedder = (
+      embedded as unknown as {
+        embedder: {
+          isCFF: () => boolean
+          embedFontStream: (context: PDFContext) => Promise<PDFRef>
+          glyphCache: { access: () => { codePoints: number[] }[] }
+        }
+      }
+    ).embedder
+    if (typeof embedder.isCFF !== 'function' || typeof embedder.embedFontStream !== 'function')
+      throw new Error('Unsupported PDF font embedder')
+    embedder.isCFF = () => true
+    embedder.embedFontStream = async (context) =>
+      context.register(context.flateStream(data, { Subtype: 'OpenType' }))
+    if (encoding) {
+      const reverse = new Map(Object.entries(encoding).map(([unicode, glyph]) => [glyph, unicode]))
+      const glyphs = embedder.glyphCache.access().map((glyph) => {
+        const copy = Object.create(glyph)
+        Object.defineProperty(copy, 'codePoints', {
+          value: glyph.codePoints.flatMap((point) =>
+            Array.from(reverse.get(String.fromCodePoint(point)) || String.fromCodePoint(point)).map(
+              (character) => character.codePointAt(0)!
+            )
+          )
+        })
+        return copy
+      })
+      embedder.glyphCache.access = () => glyphs
+    }
+  }
+  return embedded
+}
 
 // PDF.js may remap embedded glyphs into Unicode's private-use area. Reuse its
 // outlines while writing a real ToUnicode map, so edited text stays searchable.

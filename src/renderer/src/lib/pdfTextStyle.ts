@@ -1,4 +1,4 @@
-import { OPS, type PDFPageProxy } from 'pdfjs-dist'
+import { OPS, type PDFPageProxy, type PDFDocumentProxy } from 'pdfjs-dist'
 import type { TextContent } from 'pdfjs-dist/types/src/display/api'
 import { textRun, type PdfTextRun } from './pdfText'
 import { mapPdfGlyphs } from './fontEncoding'
@@ -24,8 +24,18 @@ interface Style {
   characterSpacing: number
   wordSpacing: number
   annotationId?: string
+  renderingMode?: number
 }
 const cachedPages: PDFPageProxy[] = []
+const owners = new WeakMap<PDFDocumentProxy, Set<PDFPageProxy>>()
+export function clearTextStyleCache(document: PDFDocumentProxy): void {
+  for (const page of owners.get(document) || []) {
+    pages.delete(page)
+    const index = cachedPages.indexOf(page)
+    if (index >= 0) cachedPages.splice(index, 1)
+  }
+  owners.delete(document)
+}
 const pages = new WeakMap<
   PDFPageProxy,
   Promise<{
@@ -65,6 +75,8 @@ async function styles(page: PDFPageProxy) {
         else if (operation === OPS.setCharSpacing)
           current = { ...current, characterSpacing: args[0] }
         else if (operation === OPS.setWordSpacing) current = { ...current, wordSpacing: args[0] }
+        else if (operation === OPS.setTextRenderingMode)
+          current = { ...current, renderingMode: args[0] }
         else if (operation === OPS.setFillRGBColor)
           current = {
             ...current,
@@ -110,9 +122,20 @@ async function styles(page: PDFPageProxy) {
 export async function styledTextRuns(
   page: PDFPageProxy,
   content: TextContent,
-  pageNumber: number
+  pageNumber: number,
+  owner?: PDFDocumentProxy
 ): Promise<Map<number, PdfTextRun>> {
-  const drawing = await styles(page).catch(() => ({ characters: [], glyphs: new Map<string, Record<string, string>>(), widths: new Map<string, Record<string, number>>(), extended: new Set<string>() }))
+  if (owner) {
+    const set = owners.get(owner) || new Set<PDFPageProxy>()
+    set.add(page)
+    owners.set(owner, set)
+  }
+  const drawing = await styles(page).catch(() => ({
+    characters: [],
+    glyphs: new Map<string, Record<string, string>>(),
+    widths: new Map<string, Record<string, number>>(),
+    extended: new Set<string>()
+  }))
   let position = 0
   const runs = new Map<number, PdfTextRun>()
   for (let index = 0; index < content.items.length; index++) {
@@ -120,23 +143,39 @@ export async function styledTextRuns(
     if (!('str' in item)) continue
     const run = textRun(item, content.styles[item.fontName] || {}, `${pageNumber}:${index}`)
     if (!run) continue
-    const annotationItem = item as typeof item & { pdfAnnotationId?: string; pdfAnnotationColor?: number[] }
+    const annotationItem = item as typeof item & {
+      pdfAnnotationId?: string
+      pdfAnnotationColor?: number[]
+    }
     run.pdfAnnotationId = annotationItem.pdfAnnotationId
     const text = item.str.normalize('NFKC').replace(/\s/g, '')
     const length = Array.from(text).length
     let candidate = drawing.characters.slice(position, position + length)
-    if (candidate.map(character => character.value).join('') !== text || candidate[0]?.style.font !== item.fontName) {
+    if (
+      candidate.map((character) => character.value).join('') !== text ||
+      candidate[0]?.style.font !== item.fontName
+    ) {
       // Extraction can omit invisible/clipped glyphs or reorder RTL text.
       // Resynchronize rather than losing every subsequent run's formatting.
-      for (let next = position; next < Math.min(drawing.characters.length, position + 512); next++) {
+      for (
+        let next = position;
+        next < Math.min(drawing.characters.length, position + 512);
+        next++
+      ) {
         const match = drawing.characters.slice(next, next + length)
-        if (match[0]?.style.font === item.fontName && match.map(character => character.value).join('') === text) {
-          position = next; candidate = match; break
+        if (
+          match[0]?.style.font === item.fontName &&
+          match.map((character) => character.value).join('') === text
+        ) {
+          position = next
+          candidate = match
+          break
         }
       }
     }
     if (candidate.map((character) => character.value).join('') === text) {
       run.color = candidate[0]?.style.color || '#000000'
+      run.invisible = candidate[0]?.style.renderingMode === 3
       run.characterSpacing =
         ((candidate[0]?.style.characterSpacing || 0) * run.size) /
         (candidate[0]?.style.size || run.size)
@@ -145,7 +184,11 @@ export async function styledTextRuns(
       position += length
     }
     try {
-      const paintedFont = run.pdfAnnotationId ? drawing.characters.find(character => character.style.annotationId === run.pdfAnnotationId)?.style.font : undefined
+      const paintedFont = run.pdfAnnotationId
+        ? drawing.characters.find(
+            (character) => character.style.annotationId === run.pdfAnnotationId
+          )?.style.font
+        : undefined
       const fontId = paintedFont || item.fontName
       const font = page.commonObjs.get(fontId) as FontInfo
       const name = (font.name || run.fontFamily).replace(/^[A-Z]{6}\+/, '')
@@ -172,7 +215,11 @@ export async function styledTextRuns(
       run.fontFamily = item.fontName
     }
     if (run.pdfAnnotationId && annotationItem.pdfAnnotationColor)
-      run.color = '#' + Array.from(annotationItem.pdfAnnotationColor).map(value => Math.round(value).toString(16).padStart(2, '0')).join('')
+      run.color =
+        '#' +
+        Array.from(annotationItem.pdfAnnotationColor)
+          .map((value) => Math.round(value).toString(16).padStart(2, '0'))
+          .join('')
     runs.set(index, run)
   }
   return runs

@@ -185,7 +185,9 @@ app.whenReady().then(async () => {
     await js(`document.querySelector('[aria-label="Toggle navigation sidebar"]').click()`)
     await wait('!!document.querySelector("[data-thumbnail] img")')
     assert.equal(await js(`!!document.querySelector('[aria-label="Thumbnail size"]')`), false)
-    const thumb = await js('document.querySelector("[data-thumbnail]").getBoundingClientRect().width')
+    const thumb = await js(
+      'document.querySelector("[data-thumbnail]").getBoundingClientRect().width'
+    )
     assert.ok(thumb > 100 && thumb <= 184)
     checks.push('sidebar button closes/reopens and thumbnails have a fixed readable size')
 
@@ -246,10 +248,7 @@ app.whenReady().then(async () => {
         )
         await wait('document.querySelectorAll(".search-highlight").length===3')
       }
-      if (close === 'button')
-        await js(
-          `document.querySelector('[aria-label="Find in document"]').parentElement.querySelector(':scope > button:last-child').click()`
-        )
+      if (close === 'button') await js(`document.querySelector('[title="Close Find"]').click()`)
       else
         await js(
           `document.querySelector('[aria-label="Find in document"]').dispatchEvent(new KeyboardEvent('keydown',{key:${JSON.stringify(close === 'Escape' ? 'Escape' : 'f')},ctrlKey:${close !== 'Escape'},bubbles:true,cancelable:true}))`

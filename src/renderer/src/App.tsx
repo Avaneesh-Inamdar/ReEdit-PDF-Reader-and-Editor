@@ -1,4 +1,5 @@
 import { editSelection } from './lib/editSelection'
+import { version as appVersion } from '../../../package.json'
 import { getCurrentTextSelection } from './lib/textSelection'
 import { placeImage } from './lib/imagePlacement'
 import { openTool } from './lib/toolActions'
@@ -32,18 +33,21 @@ import { DocumentPropertiesModal } from './components/DocumentPropertiesModal'
 import { SignatureModal } from './components/SignatureModal'
 import { PreferencesModal } from './components/PreferencesModal'
 import { OrganizePagesModal } from './components/OrganizePagesModal'
-import { printDocument } from './lib/printDocument'
+import { PrintModal } from './components/PrintModal'
+import { useManagedFontFaces } from './lib/fontFaces'
+import { clearTextStyleCache } from './lib/pdfTextStyle'
 import { closeDocument, saveDocument } from './lib/documentActions'
 import { analyzeDocument } from './lib/detection'
 import { inspectForms } from './lib/forms'
 import { performUndo, performRedo } from './lib/undoManager'
 
 function App(): React.JSX.Element {
+  useManagedFontFaces()
   const { data, setNumPages, setMetadata, setError, setLoading } = usePdfStore()
   const { activeView, setActiveView, theme, isFullScreen, activeModal, setActiveModal, setSpaceHeld, setPointerMode } = useUIStore()
   const { openTab } = useTabStore()
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null)
-  const [printStatus, setPrintStatus] = useState<string | null>(null)
+  const [printOpen, setPrintOpen] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
   const [toolsOpen, setToolsOpen] = useState(true)
   useEffect(() => {
@@ -89,15 +93,20 @@ function App(): React.JSX.Element {
     }
     let cancelled = false
     let loadedDoc: PDFDocumentProxy | null = null
+    let loadingTask: import('pdfjs-dist').PDFDocumentLoadingTask | undefined
     const load = async (): Promise<void> => {
       try {
         setLoading(true)
         let doc: PDFDocumentProxy
         try {
-          doc = await pdfjsLib.getDocument({ ...pdfAssetOptions(), data: data.slice(0) }).promise
+          loadingTask=pdfjsLib.getDocument({ ...pdfAssetOptions(), data: data.slice(0) })
+          doc = await loadingTask.promise
         } catch (err) {
           console.warn('pdf load failed, retry without worker', err)
-          doc = await pdfjsLib.getDocument({ ...pdfAssetOptions(), data: data.slice(0), disableWorker: true } as never).promise
+          await loadingTask?.destroy()
+          if(cancelled)return
+          loadingTask=pdfjsLib.getDocument({ ...pdfAssetOptions(), data: data.slice(0), disableWorker: true } as never)
+          doc = await loadingTask.promise
         }
         if (cancelled) { await doc.destroy(); return }
         loadedDoc = doc
@@ -123,33 +132,34 @@ function App(): React.JSX.Element {
       }
     }
     load()
-    return () => { cancelled = true; void loadedDoc?.destroy() }
+    return () => { cancelled = true; if(loadedDoc)clearTextStyleCache(loadedDoc);void loadingTask?.destroy() }
   }, [data, setLoading, setNumPages, setMetadata, setError])
 
   // Full-screen handling (Adobe Guide p10)
   useEffect(() => {
+    let advanceTimer: number | undefined
     const onFsChange = (): void => {
+      clearInterval(advanceTimer)
+      advanceTimer = undefined
       const fs = !!document.fullscreenElement
       useUIStore.getState().setFullScreen(fs)
       if (fs && useUIStore.getState().fullScreenAutoAdvance > 0) {
         const interval = useUIStore.getState().fullScreenAutoAdvance * 1000
-        const id = window.setInterval(() => {
+        advanceTimer = window.setInterval(() => {
           const { currentPage, numPages } = usePdfStore.getState()
           const loop = useUIStore.getState().fullScreenLoop
           let next = currentPage + 1
           if (next > numPages) {
             if (loop) next = 1
-            else { window.clearInterval(id); return }
+            else { window.clearInterval(advanceTimer); return }
           }
           usePdfStore.getState().setCurrentPage(next)
           document.getElementById(`page-${next}`)?.scrollIntoView({ behavior: 'smooth' })
         }, interval)
-        const off = (): void => { window.clearInterval(id); document.removeEventListener('fullscreenchange', off) }
-        document.addEventListener('fullscreenchange', off)
       }
     }
     document.addEventListener('fullscreenchange', onFsChange)
-    return () => document.removeEventListener('fullscreenchange', onFsChange)
+    return () => { clearInterval(advanceTimer); document.removeEventListener('fullscreenchange', onFsChange) }
   }, [])
 
   const handleOpen = async (): Promise<void> => { await window.api.openFile() }
@@ -230,9 +240,9 @@ function App(): React.JSX.Element {
   // Keyboard shortcuts — full Adobe Acrobat keybindings
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
-      if (e.repeat && (e.ctrlKey || e.metaKey || e.key.startsWith('F'))) { e.preventDefault(); return }
+      if (e.altKey && e.key === 'F4') { e.preventDefault(); void window.api.close(); return }
       const active = document.activeElement as HTMLElement | null
-      const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)
+      const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable)
 
       // Spacebar hold for hand tool
       if (e.key === ' ' && !isInput && !e.repeat) {
@@ -248,12 +258,14 @@ function App(): React.JSX.Element {
 
       // File shortcuts
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') { e.preventDefault(); void handleOpen() }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f' && !isInput) { e.preventDefault(); setShowSearch((v) => !v) }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') { e.preventDefault(); setShowSearch((v) => !v) }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault()
         if (e.shiftKey) void handleSaveAs(false); else void handleSave(false)
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'w') { e.preventDefault(); void closeDocument() }
+      if(e.ctrlKey && e.key==='F4'){e.preventDefault();void closeDocument();return}
+      if((e.ctrlKey||e.metaKey)&&e.key==='Tab'){e.preventDefault();const tabs=useTabStore.getState();const index=tabs.tabs.findIndex(tab=>tab.id===tabs.activeTabId);if(tabs.tabs.length){tabs.setActiveTab(tabs.tabs[(index+(e.shiftKey?-1:1)+tabs.tabs.length)%tabs.tabs.length].id);useUIStore.getState().setActiveView('document')};return}
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'q') { e.preventDefault(); void window.api.close() }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') { e.preventDefault(); window.dispatchEvent(new CustomEvent('acrobat:print')) }
 
@@ -275,8 +287,8 @@ function App(): React.JSX.Element {
       if ((e.ctrlKey || e.metaKey) && e.key === '2') { e.preventDefault(); usePdfStore.getState().setFitMode('width') }
 
       // F4 = toggle left pane, Shift+F4 = toggle right pane
-      if (e.key === 'F4' && !e.shiftKey) { e.preventDefault(); useUIStore.getState().toggleLeftPane() }
-      if (e.key === 'F4' && e.shiftKey) { e.preventDefault(); useUIStore.getState().toggleRightPane() }
+      if (e.key === 'F4' && !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) { e.preventDefault(); useUIStore.getState().toggleLeftPane() }
+      if (e.key === 'F4' && !e.altKey && !e.ctrlKey && !e.metaKey && e.shiftKey) { e.preventDefault(); useUIStore.getState().toggleRightPane() }
 
       // Go Back / Forward (Adobe: browse buttons + history)
       if (e.altKey && e.key === 'ArrowLeft') { e.preventDefault(); const h=useUIStore.getState().goBack(); if(h){ usePdfStore.getState().setCurrentPage(h.page); document.getElementById(`page-${h.page}`)?.scrollIntoView({behavior:'smooth'}) } }
@@ -287,8 +299,8 @@ function App(): React.JSX.Element {
       if (e.key === 'F11') { e.preventDefault(); if(document.fullscreenElement) document.exitFullscreen().catch(()=>{}); else document.documentElement.requestFullscreen().catch(()=>{}) }
 
       // Tool shortcuts
-      if (e.key.toLowerCase() === 'v' && !isInput && !e.ctrlKey) { setPointerMode('select'); useAnnotationStore.getState().setTool('select') }
-      if (e.key.toLowerCase() === 'h' && !isInput && !e.ctrlKey) { setPointerMode('hand') }
+      if (e.key.toLowerCase() === 'v' && !isInput && !e.ctrlKey && !e.metaKey && !e.altKey) { setPointerMode('select'); useAnnotationStore.getState().setTool('select') }
+      if (e.key.toLowerCase() === 'h' && !isInput && !e.ctrlKey && !e.metaKey && !e.altKey) { setPointerMode('hand') }
 
       // Undo / Redo keyboard shortcuts
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey && !isInput) {
@@ -313,10 +325,13 @@ function App(): React.JSX.Element {
 
     window.addEventListener('keydown', onKey)
     window.addEventListener('keyup', onKeyUp)
+    const onBlur = (): void => setSpaceHeld(false)
+    window.addEventListener('blur', onBlur)
 
     return () => {
       window.removeEventListener('keydown', onKey)
       window.removeEventListener('keyup', onKeyUp)
+      window.removeEventListener('blur', onBlur)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showSearch, activeModal])
@@ -331,7 +346,7 @@ function App(): React.JSX.Element {
     const onFind = (): void => { setShowSearch((v) => !v) }
     const onZoomIn = (): void => { const s = usePdfStore.getState(); s.setZoom(Math.min(5, +(s.zoom + 0.15).toFixed(2))) }
     const onZoomOut = (): void => { const s = usePdfStore.getState(); s.setZoom(Math.max(0.25, +(s.zoom - 0.15).toFixed(2))) }
-    const onPrint = (): void => { void printDocument(setPrintStatus) }
+    const onPrint = (): void => { if (usePdfStore.getState().data) setPrintOpen(true) }
     const onImageReq = (): void => { imagePickerRef.current?.click() }
 
     window.addEventListener('acrobat:save', onSave)
@@ -437,7 +452,7 @@ function App(): React.JSX.Element {
         </div>
       )}
 
-      {printStatus && <div className="modal-overlay"><div className="modal-card p-6" role="status" aria-live="polite">{printStatus}</div></div>}
+      {printOpen && <PrintModal onClose={() => setPrintOpen(false)} />}
       {/* Modals */}
       {activeModal === 'combineFiles' && <CombineFilesModal />}
       {activeModal === 'docProperties' && <DocumentPropertiesModal />}
@@ -451,11 +466,11 @@ function App(): React.JSX.Element {
           <div className="modal-card p-6 text-center" style={{ width: 360 }} onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-center mb-3"><BrandLogo size={64} /></div>
             <h2 className="text-sm font-bold" style={{ color: 'var(--acrobat-text)' }}>Re-Edit PDF</h2>
-            <p className="text-xs mt-1" style={{ color: 'var(--acrobat-text-muted)' }}>Created by Avaneesh Inamdar · v1.4.1 · AGPL-3.0</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--acrobat-text-muted)' }}>Created by Avaneesh Inamdar · v{appVersion} · AGPL-3.0</p>
             <p className="text-xs mt-2" style={{ color: 'var(--acrobat-text-dim)' }}>
-              Modern Windows PDF Reader & Editor
+              PDF reader and editor for Windows and Linux
             </p>
-            <button onClick={() => setActiveModal('none')} className="mt-4 rounded text-xs font-medium text-white px-6" style={{ height: 30, background: 'var(--acrobat-accent)' }}>Close</button>
+            <button onClick={() => setActiveModal('none')} className="action-button primary mt-4">Close</button>
           </div>
         </div>
       )}

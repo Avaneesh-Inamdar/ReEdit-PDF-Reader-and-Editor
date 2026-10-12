@@ -190,7 +190,7 @@ function RedactPanel(): React.JSX.Element {
 
         </div>
         
-        <div className="rounded p-3 text-xs bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 text-red-800 dark:text-red-300">
+        <div className="workspace-note">
           Saving removes text, image pixels, graphics and comments in marked areas and rewrites the PDF. Form fields become permanent page content; document metadata and catalog attachments are removed. Review the saved copy before sharing; undo remains available in this editing session.
         </div>
       </div>

@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import fontkit from '@pdf-lib/fontkit'
 import { PDFDocument } from 'pdf-lib'
-import { fontkitForPdfGlyphs } from '../src/renderer/src/lib/embeddedFont'
+import { fontkitForPdfGlyphs, embedFontWithOutlines } from '../src/renderer/src/lib/embeddedFont'
 import { bakeAnnotationsToPdf } from '../src/renderer/src/lib/pdfEditing'
-import { PDFDocument as MuPdfDocument } from 'mupdf'
+import { PDFDocument as MuPdfDocument, ColorSpace } from 'mupdf'
 import { textRun } from '../src/renderer/src/lib/pdfText'
 import { normalizeImportedFont } from '../src/main/fontImport'
 
@@ -12,30 +12,57 @@ const font = new Uint8Array(
   readFileSync('src/renderer/src/assets/fonts/lato-latin-700-italic.woff')
 )
 describe('embedded font preservation', () => {
-  it('embeds imported WOFF2 outlines as real searchable text', async () => {
-    const pdf = await PDFDocument.create(); pdf.registerFontkit(fontkit)
-    const face = await pdf.embedFont(await normalizeImportedFont(readFileSync('node_modules/@fontsource/lato/files/lato-latin-400-normal.woff2')), { subset: true })
-    pdf.addPage().drawText('WOFF2 sample', { font: face, x: 72, y: 700, size: 16 })
-    const document = new MuPdfDocument(await pdf.save()), page = document.loadPage(0), text = page.toStructuredText('')
-    expect(text.asText().trim()).toBe('WOFF2 sample')
-    text.destroy(); page.destroy(); document.destroy()
+  it('rebuilds the whole-font checksum when decoding WOFF', async () => {
+    const data = await normalizeImportedFont(font)
+    const view = new DataView(data.buffer, data.byteOffset, data.byteLength)
+    let checksum = 0
+    for (let offset = 0; offset < data.length; offset += 4)
+      checksum = (checksum + view.getUint32(offset)) >>> 0
+    expect(checksum).toBe(0xb1b0afba)
   })
-  it('embeds all 32 bundled faces as searchable font outlines', async () => {
-    const files = readdirSync('src/renderer/src/assets/fonts').filter((file) =>
-      file.endsWith('.woff')
+  it('embeds imported WOFF2 outlines as real searchable text', async () => {
+    const pdf = await PDFDocument.create()
+    pdf.registerFontkit(fontkit)
+    const face = await pdf.embedFont(
+      await normalizeImportedFont(
+        readFileSync('node_modules/@fontsource/lato/files/lato-latin-400-normal.woff2')
+      ),
+      { subset: true }
     )
-    expect(files).toHaveLength(32)
+    pdf.addPage().drawText('WOFF2 sample', { font: face, x: 72, y: 700, size: 16 })
+    const document = new MuPdfDocument(await pdf.save()),
+      page = document.loadPage(0),
+      text = page.toStructuredText('')
+    expect(text.asText().trim()).toBe('WOFF2 sample')
+    text.destroy()
+    page.destroy()
+    document.destroy()
+  })
+  it('embeds all bundled WOFF and full Adobe OTF faces as searchable font outlines', async () => {
+    const files = readdirSync('src/renderer/src/assets/fonts').filter((file) =>
+      /\.(woff|otf)$/.test(file)
+    )
+    expect(files).toHaveLength(48)
     for (const file of files) {
       const pdf = await PDFDocument.create()
       pdf.registerFontkit(fontkit)
-      const embedded = await pdf.embedFont(readFileSync('src/renderer/src/assets/fonts/' + file), {
-        subset: true
-      })
+      const data = await normalizeImportedFont(
+        new Uint8Array(readFileSync('src/renderer/src/assets/fonts/' + file))
+      )
+      const embedded = await embedFontWithOutlines(pdf, data)
       pdf.addPage().drawText('Font sample 123', { font: embedded, size: 12 })
       const doc = new MuPdfDocument(await pdf.save()),
         page = doc.loadPage(0),
         text = page.toStructuredText('')
       expect(text.asText().trim(), file).toBe('Font sample 123')
+      const pix = page.toPixmap([1, 0, 0, 1, 0, 0], ColorSpace.DeviceRGB, false, true)
+      const pixels = pix.getPixels()
+      let ink = 0
+      for (let index = 0; index < pixels.length; index += 3)
+        if (pixels[index] < 100 && pixels[index + 1] < 100 && pixels[index + 2] < 100) ink++
+      expect(ink, file + ' has no rendered glyph outlines').toBeGreaterThan(20)
+      expect(ink, file + ' rendered oversized artifacts').toBeLessThan(5000)
+      pix.destroy()
       text.destroy()
       page.destroy()
       doc.destroy()

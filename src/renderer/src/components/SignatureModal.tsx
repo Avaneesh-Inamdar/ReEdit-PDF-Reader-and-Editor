@@ -43,7 +43,10 @@ export function SignatureModal(): React.JSX.Element {
     const rect = canvasRef.current.getBoundingClientRect()
     const ctx = canvasRef.current.getContext('2d')!
     ctx.beginPath()
-    ctx.moveTo((e.clientX - rect.left) * canvasRef.current.width / rect.width, (e.clientY - rect.top) * canvasRef.current.height / rect.height)
+    ctx.moveTo(
+      ((e.clientX - rect.left) * canvasRef.current.width) / rect.width,
+      ((e.clientY - rect.top) * canvasRef.current.height) / rect.height
+    )
     ;(e.target as Element).setPointerCapture(e.pointerId)
   }, [])
 
@@ -51,7 +54,10 @@ export function SignatureModal(): React.JSX.Element {
     if (!isDrawing.current || !canvasRef.current) return
     const rect = canvasRef.current.getBoundingClientRect()
     const ctx = canvasRef.current.getContext('2d')!
-    ctx.lineTo((e.clientX - rect.left) * canvasRef.current.width / rect.width, (e.clientY - rect.top) * canvasRef.current.height / rect.height)
+    ctx.lineTo(
+      ((e.clientX - rect.left) * canvasRef.current.width) / rect.width,
+      ((e.clientY - rect.top) * canvasRef.current.height) / rect.height
+    )
     ctx.stroke()
   }, [])
 
@@ -119,9 +125,20 @@ export function SignatureModal(): React.JSX.Element {
     <div className="modal-overlay" onClick={() => setActiveModal('none')}>
       <div className="modal-card" style={{ width: 460 }} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between px-4" style={{ height: 44, borderBottom: '1px solid var(--acrobat-border)' }}>
-          <span className="text-sm font-semibold" style={{ color: 'var(--acrobat-text)' }}>Add Signature</span>
-          <button className="tb-btn" onClick={() => setActiveModal('none')} style={{ fontSize: 14 }}><Icon name="close" /></button>
+        <div
+          className="flex items-center justify-between px-4"
+          style={{ height: 44, borderBottom: '1px solid var(--acrobat-border)' }}
+        >
+          <span className="text-sm font-semibold" style={{ color: 'var(--acrobat-text)' }}>
+            Add Signature
+          </span>
+          <button
+            className="tb-btn"
+            onClick={() => setActiveModal('none')}
+            style={{ fontSize: 14 }}
+          >
+            <Icon name="close" />
+          </button>
         </div>
 
         {/* Mode tabs */}
@@ -169,7 +186,10 @@ export function SignatureModal(): React.JSX.Element {
                     key={f.name}
                     className="rounded p-3 text-left"
                     style={{
-                      border: selectedFont === i ? '2px solid var(--tool-sign)' : '1px solid var(--acrobat-border)',
+                      border:
+                        selectedFont === i
+                          ? '2px solid var(--tool-sign)'
+                          : '1px solid var(--acrobat-border)',
                       background: '#fff',
                       fontFamily: f.css,
                       fontSize: 22,
@@ -197,7 +217,11 @@ export function SignatureModal(): React.JSX.Element {
                 onPointerUp={endDraw}
                 onPointerLeave={endDraw}
               />
-              <button className="tb-btn text-xs" onClick={clearCanvas} style={{ border: '1px solid var(--acrobat-border)' }}>
+              <button
+                className="tb-btn text-xs"
+                onClick={clearCanvas}
+                style={{ border: '1px solid var(--acrobat-border)' }}
+              >
                 Clear
               </button>
             </div>
@@ -207,14 +231,29 @@ export function SignatureModal(): React.JSX.Element {
             <div className="space-y-3">
               {imageData ? (
                 <div className="text-center">
-                  <img src={imageData} alt="signature" style={{ maxHeight: 100, margin: '0 auto' }} />
-                  <button className="tb-btn text-xs mt-2" onClick={() => setImageData(null)}>Remove</button>
+                  <img
+                    src={imageData}
+                    alt="signature"
+                    style={{ maxHeight: 100, margin: '0 auto' }}
+                  />
+                  <button className="tb-btn text-xs mt-2" onClick={() => setImageData(null)}>
+                    Remove
+                  </button>
                 </div>
               ) : (
                 <label className="drop-zone cursor-pointer block" style={{ padding: 24 }}>
-                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                  <p className="text-xs font-medium" style={{ color: 'var(--acrobat-text-muted)' }}>Click to upload signature image</p>
-                  <p className="text-xs" style={{ color: 'var(--acrobat-text-dim)' }}>PNG or JPG with transparent background recommended</p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                  <p className="text-xs font-medium" style={{ color: 'var(--acrobat-text-muted)' }}>
+                    Click to upload signature image
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--acrobat-text-dim)' }}>
+                    PNG or JPG with transparent background recommended
+                  </p>
                 </label>
               )}
             </div>
@@ -222,16 +261,26 @@ export function SignatureModal(): React.JSX.Element {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: '1px solid var(--acrobat-border)' }}>
-          <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--acrobat-text-muted)' }}>
-            <input type="checkbox" checked={saveChecked} onChange={(e) => setSaveChecked(e.target.checked)} />
+        <div
+          className="flex items-center justify-between px-4 py-3"
+          style={{ borderTop: '1px solid var(--acrobat-border)' }}
+        >
+          <label
+            className="flex items-center gap-2 text-xs"
+            style={{ color: 'var(--acrobat-text-muted)' }}
+          >
+            <input
+              type="checkbox"
+              checked={saveChecked}
+              onChange={(e) => setSaveChecked(e.target.checked)}
+            />
             Save signature
           </label>
           <div className="flex gap-2">
-            <button onClick={() => setActiveModal('none')} className="rounded text-xs px-3" style={{ height: 30, border: '1px solid var(--acrobat-border)', background: 'transparent', color: 'var(--acrobat-text)' }}>
+            <button onClick={() => setActiveModal('none')} className="action-button">
               Cancel
             </button>
-            <button onClick={handleSave} className="rounded text-xs font-medium text-white px-4" style={{ height: 30, background: 'var(--tool-sign)' }}>
+            <button onClick={handleSave} className="action-button primary">
               Apply
             </button>
           </div>

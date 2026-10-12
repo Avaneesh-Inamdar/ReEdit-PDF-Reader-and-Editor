@@ -1,7 +1,7 @@
 import '../assets/fonts/fonts.css'
 import type { Annotation } from '../stores/useAnnotationStore'
 
-const assets = import.meta.glob('../assets/fonts/*.woff', {
+const assets = import.meta.glob('../assets/fonts/*.{woff,otf}', {
   query: '?url',
   import: 'default',
   eager: true
@@ -14,6 +14,8 @@ export const bundledFonts = [
   ['Open Sans', 'open-sans'],
   ['Roboto', 'roboto'],
   ['Source Code Pro', 'source-code-pro'],
+  ['Source Sans 3', 'source-sans-3'],
+  ['Source Serif 4', 'source-serif-4'],
   ['Ubuntu', 'ubuntu']
 ] as const
 export const standardFonts = [
@@ -40,7 +42,10 @@ export async function bundledFontData(
 ): Promise<Uint8Array | null> {
   const entry = bundledFonts.find(([name]) => name === family)
   if (!entry) return null
-  const path = `../assets/fonts/${entry[1]}-latin-${bold ? 700 : 400}-${italic ? 'italic' : 'normal'}.woff`
+  const full = `../assets/fonts/${entry[1]}-${bold ? 700 : 400}-${italic ? 'italic' : 'normal'}.otf`
+  const path = assets[full]
+    ? full
+    : `../assets/fonts/${entry[1]}-latin-${bold ? 700 : 400}-${italic ? 'italic' : 'normal'}.woff`
   const url = assets[path]
   if (!url)
     throw new Error(`The ${family} font does not include this weight/style. Choose another style.`)
@@ -58,6 +63,7 @@ export function originalFontSelected(annotation: Annotation): boolean {
   const source = annotation.sourceText
   return (
     !!source &&
+    !annotation.fontData &&
     annotation.fontFamily === source.fontFamily &&
     !!annotation.bold === !!source.bold &&
     !!annotation.italic === !!source.italic
