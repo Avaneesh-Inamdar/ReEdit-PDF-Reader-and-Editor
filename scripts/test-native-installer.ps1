@@ -16,10 +16,11 @@ public static class InstallerWizardTest {
   [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
   [DllImport("user32.dll")] public static extern bool IsWindowEnabled(IntPtr hwnd);
   [DllImport("user32.dll", SetLastError=true)] static extern IntPtr SendMessageTimeout(IntPtr hwnd, uint msg, IntPtr w, IntPtr l, uint flags, uint timeout, out IntPtr result);
+  [DllImport("user32.dll", SetLastError=true)] static extern bool PostMessage(IntPtr hwnd, uint msg, IntPtr w, IntPtr l);
   public static string Text(IntPtr hwnd) { var text=new StringBuilder(1024);GetWindowText(hwnd,text,1024);return text.ToString(); }
   public static IntPtr Window(int process) { IntPtr found=IntPtr.Zero;EnumWindows((h,d)=>{uint pid;GetWindowThreadProcessId(h,out pid);if(pid==process && Text(h).Contains("Re-Edit PDF"))found=h;return true;},IntPtr.Zero);return found; }
   public static IntPtr Button(IntPtr parent,string label) { IntPtr found=IntPtr.Zero;EnumChildWindows(parent,(h,d)=>{if(Text(h).Replace("&","").Trim()==label && IsWindowEnabled(h))found=h;return true;},IntPtr.Zero);return found; }
-  public static void Click(IntPtr hwnd) { IntPtr result;if(SendMessageTimeout(hwnd,0xF5,IntPtr.Zero,IntPtr.Zero,2,5000,out result)==IntPtr.Zero)throw new Exception("Installer button did not respond"); }
+  public static void Click(IntPtr hwnd) { if(!PostMessage(hwnd,0xF5,IntPtr.Zero,IntPtr.Zero))throw new Exception("Installer click could not be queued"); }
 }
 '@
 $setup = Start-Process -FilePath $installer.FullName -ArgumentList "/D=$installPath" -WindowStyle Hidden -PassThru
