@@ -42,7 +42,7 @@ The installer registers PDF **Open With** support and a separate document icon. 
 
 - **Document workspace:** tabs, thumbnails, bookmarks, attachments, page navigation, fit/zoom controls, light/dark themes and a compact tool layout.
 - **Text editing:** select text and use Edit, Ctrl+E or the context menu. Supported embedded fonts retain size, color and transforms. Fragmented text is grouped into compatible lines; replacements can be edited again.
-- **Fonts:** 40 offline faces in ten families, including Adobe's Source Sans 3, Source Serif 4 and Source Code Pro. Full Source Sans/Serif fonts supplement the bundled subsets. Installed TTF/OTF fonts and TTF, OTF, WOFF and WOFF2 imports are available. Missing glyphs are checked before applying or saving edits.
+- **Fonts:** 68 offline faces in seventeen families, including Adobe's Source Sans 3, Source Serif 4 and Source Code Pro. Full Source Sans/Serif fonts supplement the bundled subsets. Open-source alternatives include Arimo (Arial), Tinos (Times New Roman), Cousine (Courier New), Carlito (Calibri) and Caladea (Cambria). Installed TTF/OTF fonts and supported font imports are available. Missing glyphs are checked before applying or saving edits. These additions are in the local development build; published downloads remain unchanged.
 - **Annotations:** highlight, underline, strikeout, text, shapes, drawing, images and signatures, with selection, removal and undo/redo.
 - **OCR:** offline English recognition with accurate and fast models, automatic/column/block layouts, page ranges, searchable output and explicit save-copy/overwrite actions.
 - **Find:** result list, matching text excerpts, case/whole-word filters, F3 navigation and searchable edited/placed text.
@@ -118,6 +118,11 @@ npm run build:linux
 Build Linux packages on Linux; its packaging dependencies include rpm, fakeroot and binutils. Outputs go to `release/`. Local builds do not publish automatically. See [.github/workflows](.github/workflows) for the reproducible build and compatibility checks.
 
 ## Limitations
+
+An unreleased [Tauri/Rust migration](src-tauri/README.md) retains this app's
+React UI in the system webview. Its local validation and remaining release
+gates are documented separately; the published downloads remain the Electron
+release.
 
 - Scanned text has estimated typography. Replacing recognized text removes image pixels in the edited region; background reconstruction and automatic paragraph reflow are limited.
 - OCR currently recognizes English. Accuracy depends on scan quality and layout; review the output.

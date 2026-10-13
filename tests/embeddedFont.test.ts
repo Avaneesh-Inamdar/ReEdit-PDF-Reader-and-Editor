@@ -42,7 +42,7 @@ describe('embedded font preservation', () => {
     const files = readdirSync('src/renderer/src/assets/fonts').filter((file) =>
       /\.(woff|otf)$/.test(file)
     )
-    expect(files).toHaveLength(48)
+    expect(files).toHaveLength(76)
     for (const file of files) {
       const pdf = await PDFDocument.create()
       pdf.registerFontkit(fontkit)

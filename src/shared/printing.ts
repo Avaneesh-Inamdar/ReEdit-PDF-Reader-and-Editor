@@ -12,4 +12,6 @@ export interface PrinterOption {
   name: string
   displayName: string
   isDefault: boolean
+  available?: boolean
+  isVirtual?: boolean
 }

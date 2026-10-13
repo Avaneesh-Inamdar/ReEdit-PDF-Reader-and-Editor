@@ -7,6 +7,13 @@ const assets = import.meta.glob('../assets/fonts/*.{woff,otf}', {
   eager: true
 }) as Record<string, string>
 export const bundledFonts = [
+  ['Arimo', 'arimo'],
+  ['Tinos', 'tinos'],
+  ['Cousine', 'cousine'],
+  ['Carlito', 'carlito'],
+  ['Caladea', 'caladea'],
+  ['Roboto Condensed', 'roboto-condensed'],
+  ['Montserrat', 'montserrat'],
   ['Lato', 'lato'],
   ['Libre Baskerville', 'libre-baskerville'],
   ['Noto Sans', 'noto-sans'],

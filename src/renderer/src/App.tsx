@@ -50,6 +50,14 @@ function App(): React.JSX.Element {
   const [printOpen, setPrintOpen] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
   const [toolsOpen, setToolsOpen] = useState(true)
+  useEffect(()=>useUIStore.subscribe((state,previous)=>{
+    if(previous.rightPane==='edit'&&state.rightPane!=='edit')useAnnotationStore.getState().setSelected(null)
+  }),[])
+  useEffect(() => {
+    const error = (event: Event): void => setError(String((event as CustomEvent).detail))
+    window.addEventListener('desktop:error', error)
+    return () => window.removeEventListener('desktop:error', error)
+  }, [setError])
   useEffect(() => {
     const show = (): void => setToolsOpen(true)
     window.addEventListener('workspace:showTools', show)

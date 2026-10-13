@@ -1,6 +1,7 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { useThumbnails } from '../lib/useThumbnails'
 import { Icon } from './Icon'
+import {appConfirm} from '../lib/appDialogs'
 import { prepareDocument } from '../lib/documentActions'
 import { useAnnotationStore } from '../stores/useAnnotationStore'
 import { useEditStore } from '../stores/useEditStore'
@@ -155,7 +156,7 @@ export function OrganizePagesModal(): React.JSX.Element {
   const onDelete = async (): Promise<void> => {
     const idxs = getSelectedIndices()
     if (!idxs.length || !data) return
-    if (!confirm(`Delete ${idxs.length} page(s)?`)) return
+    if (!(await appConfirm(`Delete ${idxs.length} page(s)?`))) return
     try {
       setBusy(true)
       const bytes = await deletePages((await prepareDocument()).slice().buffer as ArrayBuffer, idxs)

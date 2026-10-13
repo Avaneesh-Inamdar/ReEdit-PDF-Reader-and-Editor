@@ -4,6 +4,7 @@ import { useUIStore } from '../stores/useUIStore'
 import { requestPdfText } from './textEditRequest'
 import type { PdfTextRun } from './pdfText'
 import type { TextSelectionInfo } from './textSelection'
+import {trackInlineMutation} from './inlineText'
 
 export function selectedRuns(range: Range): PdfTextRun[] {
   const element =
@@ -39,7 +40,9 @@ export function selectedRuns(range: Range): PdfTextRun[] {
   return fragments
 }
 
-export async function editSelection(selection: TextSelectionInfo): Promise<void> {
+export function editSelection(selection: TextSelectionInfo): Promise<void> {return trackInlineMutation(editSelected(selection))}
+async function editSelected(selection: TextSelectionInfo):Promise<void>{
+  useUIStore.getState().setRightPane('edit')
   if (selection.annotationId) {
     const store = useAnnotationStore.getState()
     const annotation = store.annotations.find((a) => a.id === selection.annotationId)
@@ -76,7 +79,7 @@ export async function editSelection(selection: TextSelectionInfo): Promise<void>
         (index
           ? baselineOffset(run, fragments[index - 1]) > first.size * 0.5
             ? '\n'
-            : run.x -
+            : !/\s$/.test(fragments[index - 1].text) && !/^\s/.test(run.text) && run.x -
                   fragments[index - 1].x -
                   fragments[index - 1].width * (fragments[index - 1].matrix?.[0] || 1) >
                 first.size * 0.15

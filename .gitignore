@@ -6,6 +6,8 @@ release
 .eslintcache
 *.log*
 .vscode/
+target/
 test-*.pdf
 
 src/renderer/public/pdfjs/
+src-tauri/gen/

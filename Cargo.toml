@@ -1,0 +1,12 @@
+[workspace]
+members = ["native", "src-tauri"]
+resolver = "2"
+exclude = ["native/vendor/mupdf"]
+
+[patch.crates-io]
+mupdf = { path = "native/vendor/mupdf" }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"

@@ -6,13 +6,17 @@ import { requestText } from './requestText'
 import { bundledFonts, bundledFontData, originalFontSelected } from './fonts'
 import { fontkitForPdfGlyphs } from './embeddedFont'
 import { registerPreviewFont } from './fontFaces'
+import { inlinePlacement, requestInlineText } from './inlineText'
+import { alternativeFontLabel, suggestedFont } from './fontAlternatives'
 
 export async function requestPdfText(
   source: PdfTextRun | undefined,
   initial: string,
-  annotation?: Annotation
+  annotation?: Annotation,
+  placement?: {page:HTMLElement;matrix:number[]}
 ): Promise<{ text: string; style: Partial<Annotation> } | null> {
   const system = await window.api.getSystemFonts().catch(() => [])
+  const suggested = suggestedFont(annotation?.fontFamily || source?.fontFamily || '')
   let selection = 'original',
     selectedBytes: Uint8Array | undefined
   const choices = [
@@ -24,15 +28,18 @@ export async function requestPdfText(
           ? ' · ' + (annotation?.fontFamily || source?.fontFamily)
           : '')
     },
-    ...bundledFonts.map(([name]) => ({ id: 'bundled:' + name, name })),
+    ...bundledFonts.map(([name]) => ({
+      id: 'bundled:' + name,
+      name: alternativeFontLabel(name) + (name === suggested ? ' · suggested' : '')
+    })),
     ...system.map((font) => ({ id: 'system:' + font.id, name: font.name + ' · installed' }))
   ]
-  const text = await requestText('Edit PDF text', initial, {
+  const options = {
     fonts: choices,
-    onFontChange: (id) => {
+    onFontChange: (id: string) => {
       selection = id
     },
-    validate: async (value, id) => {
+    validate: async (value: string, id: string) => {
       if (!value.trim()) return null
       let bytes: Uint8Array | undefined
       if (id.startsWith('bundled:'))
@@ -82,7 +89,10 @@ export async function requestPdfText(
         return 'This font does not contain these characters. Choose a bundled or installed font above.'
       }
     }
-  })
+  }
+  const text = source && (placement || inlinePlacement(source))
+    ? await requestInlineText(source,initial,options,annotation,placement)
+    : await requestText('Edit PDF text',initial,options)
   if (text === null) return null
   if (selection === 'original') return { text, style: {} }
   const installed = system.find((font) => 'system:' + font.id === selection)

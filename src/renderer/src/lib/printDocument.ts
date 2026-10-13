@@ -13,6 +13,12 @@ export async function printDocument(
   let doc: import('pdfjs-dist').PDFDocumentProxy | undefined
   try {
     progress('Preparing document for printing…')
+    if (window.api.printPdf) {
+      const data = prepared || await prepareDocument(true)
+      progress('Sending document to printer…')
+      await window.api.printPdf(data, options)
+      return
+    }
     doc = await pdfjsLib.getDocument({
       ...pdfAssetOptions(),
       data: prepared?.slice() || (await prepareDocument(true))

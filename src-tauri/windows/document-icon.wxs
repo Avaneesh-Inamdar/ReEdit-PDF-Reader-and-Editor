@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <DirectoryRef Id="INSTALLDIR">
+      <Component Id="PdfDocumentCapabilities" Guid="894F2FB9-8D97-4D93-93F3-44ED4D1AD5B9" Win64="yes">
+        <RegistryValue Root="HKLM" Key="Software\Classes\ReEditPDF.Document\DefaultIcon" Type="string" Value="[INSTALLDIR]document.ico,0" KeyPath="yes" />
+        <RegistryValue Root="HKLM" Key="Software\ReEditPDF\Capabilities" Name="ApplicationName" Type="string" Value="Re-Edit PDF" />
+        <RegistryValue Root="HKLM" Key="Software\ReEditPDF\Capabilities" Name="ApplicationDescription" Type="string" Value="Read and edit PDF documents" />
+        <RegistryValue Root="HKLM" Key="Software\ReEditPDF\Capabilities\FileAssociations" Name=".pdf" Type="string" Value="ReEditPDF.Document" />
+        <RegistryValue Root="HKLM" Key="Software\RegisteredApplications" Name="Re-Edit PDF" Type="string" Value="Software\ReEditPDF\Capabilities" />
+      </Component>
+    </DirectoryRef>
+  </Fragment>
+</Wix>

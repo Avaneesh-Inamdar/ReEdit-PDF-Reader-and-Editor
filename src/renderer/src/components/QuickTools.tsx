@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Icon, type IconName } from './Icon'
+import {appConfirm} from '../lib/appDialogs'
 import { useUIStore } from '../stores/useUIStore'
 import { useAnnotationStore, type AnnotationTool } from '../stores/useAnnotationStore'
 import { usePdfStore } from '../stores/usePdfStore'
@@ -135,8 +136,8 @@ export function QuickTools(): React.JSX.Element | null {
           <button
             className="quick-tool-option"
             disabled={!annotations.length}
-            onClick={() => {
-              if (confirm('Clear all annotations?')) {
+            onClick={async () => {
+              if (await appConfirm('Clear all annotations?')) {
                 clearAll()
                 setMore(false)
               }

@@ -1,5 +1,6 @@
 import { TextLayer } from 'pdfjs-dist'
 import { installPdfDragSelection } from '../lib/pdfDragSelection'
+import {installPdfGestures} from '../lib/pdfGestures'
 import { pageText, outputScale, renderPage } from '../lib/rendering'
 import { Icon, BrandLogo } from './Icon'
 import { ExistingTextLayer } from './ExistingTextLayer'
@@ -122,6 +123,7 @@ function PageCanvas({
       const styledRuns = await styledTextRuns(page, textContent, pageNumber, pdfDoc)
       if (version !== renderVersion.current) return
       const container = textLayerRef.current
+      container.dataset.pdfTransform = JSON.stringify(viewport.transform)
       selectionCleanup.current?.()
       container.replaceChildren()
       container.style.setProperty('--scale-factor', String(scale))
@@ -585,39 +587,34 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
     if (!element || !pdfDoc) return
     let frame = 0
     let pendingZoom = usePdfStore.getState().zoom
-    const onWheel = (event: WheelEvent): void => {
+    const cleanup=installPdfGestures(element,(factor,clientX,clientY)=>{
       // Chromium delivers precision-trackpad pinch as Ctrl+wheel. Ordinary
       // two-finger scrolling remains native, including horizontal scrolling.
-      if (!event.ctrlKey) return
-      event.preventDefault()
+      if(!Number.isFinite(factor)||factor<=0)return
       const rect = element.getBoundingClientRect()
       const page =
-        (event.target as Element).closest<HTMLElement>('[data-page-slot]') ||
+        document.elementFromPoint(clientX,clientY)?.closest<HTMLElement>('[data-page-slot]') ||
         element.querySelector<HTMLElement>(`#page-${usePdfStore.getState().currentPage}`)
       if (page && !frame) {
         const bounds = page.getBoundingClientRect()
         zoomAnchor.current = {
           page,
-          x: (event.clientX - bounds.left) / bounds.width,
-          y: (event.clientY - bounds.top) / bounds.height,
-          clientX: event.clientX - rect.left,
-          clientY: event.clientY - rect.top
+          x: (clientX - bounds.left) / bounds.width,
+          y: (clientY - bounds.top) / bounds.height,
+          clientX: clientX - rect.left,
+          clientY: clientY - rect.top
         }
         pendingZoom = usePdfStore.getState().zoom
       }
-      const delta =
-        event.deltaY *
-        (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? element.clientHeight : 1)
-      pendingZoom = Math.max(0.1, Math.min(10, pendingZoom * Math.exp(-delta * 0.005)))
+      pendingZoom = Math.max(0.1, Math.min(10, pendingZoom * factor))
       if (!frame)
         frame = requestAnimationFrame(() => {
           usePdfStore.getState().setZoom(pendingZoom)
           frame = 0
         })
-    }
-    element.addEventListener('wheel', onWheel, { passive: false })
+    })
     return () => {
-      element.removeEventListener('wheel', onWheel)
+      cleanup()
       cancelAnimationFrame(frame)
     }
   }, [pdfDoc])

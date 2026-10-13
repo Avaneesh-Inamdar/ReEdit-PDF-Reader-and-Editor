@@ -8,12 +8,13 @@ import { printDocument } from '../lib/printDocument'
 import type { PrintOptions, PrinterOption } from '../../../shared/printing'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import '../assets/document-operations.css'
+import { connectedPrinter, PDF_DESTINATION } from '../lib/printerDestination'
 
 export function PrintModal({ onClose }: { onClose: () => void }): React.JSX.Element {
   const { currentPage, numPages, fileName } = usePdfStore()
   const [printers, setPrinters] = useState<PrinterOption[]>([])
   const [options, setOptions] = useState<PrintOptions>({
-    deviceName: '',
+    deviceName: PDF_DESTINATION,
     copies: 1,
     color: true,
     duplex: 'simplex',
@@ -32,27 +33,33 @@ export function PrintModal({ onClose }: { onClose: () => void }): React.JSX.Elem
   const [error, setError] = useState('')
   const [progress, setProgress] = useState<string | null>(null)
   const canvas = useRef<HTMLCanvasElement>(null)
+  const [session,setSession]=useState<string|null>(null)
+  const [sheetCount,setSheetCount]=useState(numPages)
+  const [previewReady,setPreviewReady]=useState(false)
+  const autoDestination=useRef(true)
+  const preferredDestination=useRef<string|null>(null)
   useEffect(() => {
     let cancelled = false,
       loaded: PDFDocumentProxy | undefined,
-      loading: import('pdfjs-dist').PDFDocumentLoadingTask | undefined
-    void window.api
+      loading: import('pdfjs-dist').PDFDocumentLoadingTask | undefined,
+      sessionId:string|undefined
+    let checking=false
+    const refresh=():void=>{if(checking)return;checking=true;void window.api
       .getPrinters()
       .then((list) => {
         if (!cancelled) {
           setPrinters(list)
-          setOptions((old) => ({
-            ...old,
-            deviceName: (list.find((p) => p.isDefault) || list[0])?.name || ''
-          }))
+          setOptions(old=>{const preferred=preferredDestination.current;const deviceName=autoDestination.current ? connectedPrinter(list) : preferred===PDF_DESTINATION ? PDF_DESTINATION : list.some(p=>p.name===preferred&&p.available!==false) ? preferred! : PDF_DESTINATION;return deviceName===old.deviceName ? old : {...old,deviceName,color:deviceName===PDF_DESTINATION?true:old.color}})
         }
       })
-      .catch((e) => {
-        if (!cancelled) setError(String(e))
-      })
+      .catch(() => {
+        if (!cancelled) {setPrinters([]);setOptions(old=>({...old,deviceName:PDF_DESTINATION}));}
+      }).finally(()=>{checking=false})}
+    refresh();const poll=setInterval(refresh,5000)
     void prepareDocument(true)
       .then(async (data) => {
         if (cancelled) return
+        if(window.api.beginPrint){sessionId=await window.api.beginPrint(data);if(cancelled){void window.api.closePrint?.(sessionId);return}setBytes(data);setSession(sessionId);return}
         loading = pdfjsLib.getDocument({ ...pdfAssetOptions(), data: data.slice() })
         loaded = await loading.promise
         if (cancelled) {
@@ -67,11 +74,13 @@ export function PrintModal({ onClose }: { onClose: () => void }): React.JSX.Elem
       })
     return () => {
       cancelled = true
+      clearInterval(poll)
+      if(sessionId)void window.api.closePrint?.(sessionId)
       void loading?.destroy()
     }
   }, [])
   useEffect(() => {
-    if (!doc || !canvas.current) return
+    if (!doc || !canvas.current || window.api.beginPrint) return
     let cancelled = false,
       task: import('pdfjs-dist').RenderTask | undefined
     void doc
@@ -120,6 +129,16 @@ export function PrintModal({ onClose }: { onClose: () => void }): React.JSX.Elem
   } catch (e) {
     rangeError = String(e).replace(/^Error: /, '')
   }
+  const pageKey=selected.join(',')
+  useEffect(()=>{
+    if(!session||!window.api.previewPrint||rangeError)return
+    let cancelled=false
+    const timer=setTimeout(()=>{setPreviewReady(false);void window.api.previewPrint!(session,{...options,pages:selected},preview-1).then(result=>{
+      if(cancelled)return;setSheetCount(result.sheets);if(preview>result.sheets){setPreview(result.sheets);return}
+      const image=new Image();image.onload=()=>{if(cancelled||!canvas.current)return;const target=canvas.current;target.width=image.naturalWidth;target.height=image.naturalHeight;target.dataset.paperWidth=String(result.width);target.dataset.paperHeight=String(result.height);target.getContext('2d')!.drawImage(image,0,0);setPreviewReady(true)};image.src=result.image
+    }).catch(e=>{if(!cancelled)setError(String(e))})},120)
+    return()=>{cancelled=true;clearTimeout(timer)}
+  },[session,options,preview,pageKey,rangeError])
   const set = <K extends keyof PrintOptions>(key: K, value: PrintOptions[K]): void =>
     setOptions((old) => ({ ...old, [key]: value }))
   const print = async (): Promise<void> => {
@@ -135,7 +154,12 @@ export function PrintModal({ onClose }: { onClose: () => void }): React.JSX.Elem
     setError('')
     setProgress('Preparing print job…')
     try {
-      await printDocument(setProgress, { ...options, pages: selected }, bytes)
+      if(session&&options.deviceName===PDF_DESTINATION&&window.api.exportPrint){
+        const output=await window.api.exportPrint(session,{...options,pages:selected});
+        const saved=await window.api.saveAttachment(output,(fileName||'document.pdf').replace(/\.pdf$/i,'')+'-printed.pdf');
+        if(!saved)return
+      }else if(session&&window.api.submitPrint){await window.api.submitPrint(session,{...options,pages:selected})}
+      else await printDocument(setProgress, { ...options, pages: selected }, bytes)
       onClose()
     } catch (e) {
       setError(String(e))
@@ -170,17 +194,19 @@ export function PrintModal({ onClose }: { onClose: () => void }): React.JSX.Elem
                   <select
                     aria-label="Printer"
                     value={options.deviceName}
-                    onChange={(e) => set('deviceName', e.target.value)}
+                    onChange={(e) => {autoDestination.current=false;preferredDestination.current=e.target.value;setOptions(old=>({...old,deviceName:e.target.value,color:e.target.value===PDF_DESTINATION?true:old.color}))}}
                   >
+                    <option value={PDF_DESTINATION}>Save as PDF</option>
                     {printers.length ? (
                       printers.map((p) => (
-                        <option key={p.name} value={p.name}>
+                        <option key={p.name} value={p.name} disabled={p.available===false}>
                           {p.displayName}
                           {p.isDefault ? ' (default)' : ''}
+                          {p.available===false ? ' · offline' : ''}
                         </option>
                       ))
                     ) : (
-                      <option value="">No printers available</option>
+                      null
                     )}
                   </select>
                 </label>
@@ -203,7 +229,7 @@ export function PrintModal({ onClose }: { onClose: () => void }): React.JSX.Elem
                       onChange={(e) => set('color', e.target.value === 'color')}
                     >
                       <option value="color">Color</option>
-                      <option value="gray">Grayscale</option>
+                      <option value="gray" disabled={options.deviceName===PDF_DESTINATION}>Grayscale · printer output</option>
                     </select>
                   </label>
                 </div>
@@ -326,7 +352,7 @@ export function PrintModal({ onClose }: { onClose: () => void }): React.JSX.Elem
             </div>
             <div className="print-preview-sheet">
               <canvas ref={canvas} />
-              {!doc && !error && <span>Preparing preview…</span>}
+              {!doc && !previewReady && !error && <span>Preparing preview…</span>}
             </div>
             <div className="print-preview-navigation">
               <button
@@ -338,25 +364,25 @@ export function PrintModal({ onClose }: { onClose: () => void }): React.JSX.Elem
                 <Icon name="previous" />
               </button>
               <span>
-                Page {preview} of {numPages}
+                Sheet {preview} of {sheetCount}
               </span>
               <button
                 className="tb-btn"
                 title="Next preview page"
-                disabled={preview >= numPages}
+                disabled={preview >= sheetCount}
                 onClick={() => setPreview((p) => p + 1)}
               >
                 <Icon name="next" />
               </button>
             </div>
             <p className="operation-caption">
-              Preview shows the document content. Paper size and scaling apply to the print job.
+              Preview shows the selected pages on the chosen paper, with orientation and scaling applied.
             </p>
           </aside>
         </div>
         <footer className="operation-dialog-footer">
           <span role="status">
-            {progress || error || (!printers.length ? 'Add a printer in system settings.' : '')}
+            {progress || error || (options.deviceName===PDF_DESTINATION ? 'Save a PDF of this print layout.' : '')}
           </span>
           <button className="operation-secondary" disabled={!!progress} onClick={onClose}>
             Cancel
@@ -373,7 +399,7 @@ export function PrintModal({ onClose }: { onClose: () => void }): React.JSX.Elem
             }
             onClick={() => void print()}
           >
-            Print
+            {options.deviceName===PDF_DESTINATION ? 'Save PDF' : 'Print'}
           </button>
         </footer>
       </section>

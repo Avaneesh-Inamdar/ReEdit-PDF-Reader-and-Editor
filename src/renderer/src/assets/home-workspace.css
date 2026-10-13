@@ -372,11 +372,11 @@
   gap: 18px;
   width: 100%;
   min-height: 84px;
-  padding: 18px 0;
+  padding: 16px;
   border: 0;
-  border-bottom: 1px solid var(--acrobat-pane-border);
-  border-radius: 0;
-  background: transparent;
+  border: 1px solid var(--acrobat-pane-border);
+  border-radius: 6px;
+  background: var(--acrobat-pane-bg);
   color: var(--acrobat-pane-text);
   text-align: left;
   cursor: pointer;
@@ -438,8 +438,11 @@
 .tools-category-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 36px 44px;
+  gap: 24px;
 }
+
+.tools-category { display: flex; flex-direction: column; gap: 10px; }
+.tools-workspace .tool-card:hover { transform: none; box-shadow: none; }
 
 .tools-category h2 {
   margin: 0 0 6px;

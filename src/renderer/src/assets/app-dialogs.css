@@ -1,0 +1,29 @@
+.app-dialog,.file-dialog { position: fixed; inset: 0; margin: auto; max-height: calc(100dvh - 32px); overflow: auto; background: var(--acrobat-pane-bg); color: var(--acrobat-text); border: 1px solid var(--acrobat-border); border-radius: 8px; padding: 0; box-shadow: 0 16px 60px #0005; }
+.app-dialog::backdrop,.file-dialog::backdrop { background: #0006; }
+.app-dialog { width: min(460px,90vw); }
+.app-dialog h2,.app-dialog p { margin: 20px 24px; }
+.app-dialog h2,.file-dialog h2 { font-size: 19px; font-weight: 600; }
+.app-dialog p { white-space: pre-wrap; line-height: 1.5; font-size: 13px; }
+.file-dialog { width: min(850px,94vw); max-height: 90vh; }
+.file-dialog[open] { display: flex; flex-direction: column; }
+.file-dialog header { padding: 18px 24px; border-bottom: 1px solid var(--acrobat-border); }
+.file-dialog h2 { margin: 0; }
+.file-location { display: flex; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--acrobat-border); }
+.file-dialog input { border: 1px solid var(--acrobat-input-border); border-radius: 4px; background: var(--acrobat-input-bg); color: var(--acrobat-text); font-size: 13px; padding: 8px 10px; flex: 1; min-width: 0; }
+.file-browser { display: grid; grid-template-columns: 155px 1fr; min-height: 260px; height: 42vh; }
+.file-browser nav { padding: 10px; border-right: 1px solid var(--acrobat-border); overflow-y: auto; }
+.file-browser button { border: 0; color: inherit; background: transparent; cursor: pointer; text-align: left; border-radius: 4px; }
+.file-browser nav button { display: block; width: 100%; padding: 10px; font-size: 13px; }
+.file-list { overflow-y: auto; padding: 8px; }
+.file-entry { display: flex; justify-content: space-between; gap: 20px; width: 100%; padding: 9px 12px; font-size: 13px; }
+.file-entry span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-entry span:last-child { font-size: 11px; color: var(--acrobat-text-muted); flex-shrink: 0; }
+.file-browser button:hover { background: var(--acrobat-pane-hover); }
+.file-entry[aria-pressed=true] { background: var(--acrobat-selection-bg, #1473e625); outline: 1px solid var(--acrobat-accent); }
+.file-dialog .operation-error { padding: 0 20px; }
+.update-dialog { width: min(600px,92vw); }
+.update-content { padding: 24px; }
+.update-content h3 { margin: 0 0 12px; font-size: 17px; }
+.update-content p { font-size: 13px; line-height: 1.5; }
+.update-notes { white-space: pre-wrap; max-height: 220px; overflow: auto; font: inherit; line-height: 1.5; }
+.update-content progress { width: 100%; accent-color: var(--acrobat-accent); }

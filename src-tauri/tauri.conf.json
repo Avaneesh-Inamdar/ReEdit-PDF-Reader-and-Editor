@@ -1,0 +1,96 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Re-Edit PDF",
+  "version": "2.0.0-alpha.1",
+  "identifier": "com.avaneeshinamdar.readitpdf",
+  "build": {
+    "beforeDevCommand": "npm run dev:ui",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build:ui",
+    "frontendDist": "../out/tauri",
+    "windows": {
+      "staticVCRuntime": false
+    }
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Re-Edit PDF",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "decorations": true,
+        "dragDropEnabled": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' ipc: http://ipc.localhost data: blob:; script-src 'self' blob: 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost blob: data:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "publisher": "Avaneesh Inamdar",
+    "category": "Productivity",
+    "shortDescription": "Desktop PDF reader and editor",
+    "license": "AGPL-3.0-only",
+    "licenseFile": "../LICENSE",
+    "icon": ["../build/icon.ico", "../build/icon.png"],
+    "resources": {
+      "../build/document.ico": "document.ico",
+      "../THIRD-PARTY-NOTICES.md": "THIRD-PARTY-NOTICES.md",
+      "../src/renderer/src/assets/fonts/*-LICENSE.txt": "font-licenses/"
+    },
+    "fileAssociations": [
+      {
+        "ext": ["pdf"],
+        "name": "ReEditPDF.Document",
+        "description": "PDF document",
+        "mimeType": "application/pdf",
+        "role": "Editor"
+      }
+    ],
+    "windows": {
+      "nsis": {
+        "displayLanguageSelector": false,
+        "installMode": "currentUser",
+        "installerIcon": "../build/icon.ico",
+        "installerHooks": "windows/hooks.nsh"
+      },
+      "webviewInstallMode": { "type": "embedBootstrapper", "silent": true },
+      "wix": {
+        "fragmentPaths": ["windows/document-icon.wxs"],
+        "componentRefs": ["PdfDocumentCapabilities"]
+      }
+    },
+    "linux": {
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0",
+          "libfontconfig1",
+          "xdg-desktop-portal-gtk",
+          "cups-client"
+        ]
+      },
+      "rpm": {
+        "depends": ["webkit2gtk4.1", "gtk3", "fontconfig", "xdg-desktop-portal-gtk", "cups-client"]
+      }
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDE5RjhDM0I2MTlBQTU0NTkKUldSWlZLb1p0c1A0R1IvYk8zV1d2dC9Nb3MvZXRFejVlUm4vSUg5bm1MWGk3cXZpeC9yeXJ3amsK",
+      "endpoints": [
+        "https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      },
+      "requireSignedVersion": true
+    }
+  }
+}

@@ -9,8 +9,10 @@ import { captureSession } from './documentSession'
 import { bakeAnnotationsToPdf } from './pdfEditing'
 import { fillFormAndSave } from './forms'
 import { textRemovalRegions } from './textRemoval'
+import {commitInlineEdit} from './inlineText'
 
 export async function prepareDocument(flatten = false): Promise<Uint8Array> {
+  if(!(await commitInlineEdit()))throw new Error('Finish the text edit before saving or printing. The current font cannot encode the change.')
   const data = usePdfStore.getState().data
   if (!data) throw new Error('Open a PDF first.')
   const annotations = useAnnotationStore.getState().annotations
@@ -57,8 +59,11 @@ export async function saveDocument(
   if (saving || !usePdfStore.getState().data) return false
   saving = true
   const id = useTabStore.getState().activeTabId
-  const before = captureSession()
+  const dataBefore=usePdfStore.getState().data
   try {
+    if(!(await commitInlineEdit()))return false
+    if(useTabStore.getState().activeTabId!==id||usePdfStore.getState().data!==dataBefore)return false
+    const before = captureSession()
     const bytes = await prepareDocument(flatten)
     const name =
       suggestedName ||

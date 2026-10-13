@@ -1,5 +1,5 @@
 import { openTool } from '../lib/toolActions'
-import { BrandLogo, Icon } from './Icon'
+import { Icon } from './Icon'
 import { exportWord } from '../lib/officeExport'
 import { closeDocument } from '../lib/documentActions'
 import { useEffect, useRef, useCallback } from 'react'
@@ -195,10 +195,6 @@ export function Titlebar(): React.JSX.Element {
             ))}
           </div>
         )}
-      </div>
-      <div className="workspace-brand" title="Re-Edit PDF">
-        <BrandLogo size={23} />
-        <span>Re-Edit</span>
       </div>
     </div>
   )

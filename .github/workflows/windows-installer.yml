@@ -24,9 +24,7 @@ jobs:
           name: re-edit-pdf-Windows
           path: release
       - name: Install and uninstall exact release package
-        run: ./scripts/test-windows-installer.ps1
-      - name: Finish launches the installed app
-        run: ./scripts/test-windows-finish.ps1
+        run: ./scripts/test-native-installer.ps1
       - name: Installer diagnostics
         if: always()
         run: |

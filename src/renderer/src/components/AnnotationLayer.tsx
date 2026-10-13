@@ -1,5 +1,7 @@
 import { Icon } from './Icon'
 import { requestText } from '../lib/requestText'
+import {requestPdfText} from '../lib/textEditRequest'
+import {trackInlineMutation} from '../lib/inlineText'
 import { useState, useRef, useEffect } from 'react'
 import { useAnnotationStore, type Annotation } from '../stores/useAnnotationStore'
 import { useEditStore } from '../stores/useEditStore'
@@ -207,8 +209,15 @@ export function AnnotationLayer({
     if (a.type === 'text') {
       const fam = (a.fontFamily || 'Helvetica').toLowerCase()
       const family = a.previewFont || (fam.includes('times') ? 'Times New Roman, serif' : fam.includes('courier') ? 'Courier New, monospace' : fam.includes('helvetica') ? 'Arial, sans-serif' : a.fontFamily || 'Arial')
+      const editPlaced=():Promise<void>=>trackInlineMutation((async()=>{
+        if(useUIStore.getState().rightPane!=='edit')return
+        const page=document.getElementById(`page-${pageNumber}`);if(!page)return
+        setSelected(a.id);const size=a.fontSize||12,ascent=size*0.8;
+        const value=await requestPdfText({key:`${pageNumber}:placed:${a.id}`,text:a.text||'',x:0,y:0,width:Math.max(40,pw/zoom),size,ascent,descent:size*0.2,angle:0,fontFamily:a.fontFamily||'Helvetica',previewFont:a.previewFont,color:a.color,bold:a.bold,italic:a.italic},a.text||'',a,{page,matrix:[zoom,0,0,zoom,px+4,py+2+(ascent+2)*zoom]})
+        if(value!==null)updateAnnotation(a.id,{text:value.text,...value.style})
+      })())
       return (
-        <g key={a.id} data-anno-id={a.id} onClick={() => setSelected(a.id)} onDoubleClick={async (e) => { e.stopPropagation(); setSelected(a.id); const value = await requestText('Edit placed text', a.text || ''); if (value !== null) updateAnnotation(a.id, { text: value }) }} style={{ cursor: 'text', outline: outline as never, pointerEvents: 'auto' }}>
+        <g key={a.id} data-anno-id={a.id} onClick={() => {setSelected(a.id);void editPlaced()}} style={{ cursor: 'text', outline: outline as never, pointerEvents: 'auto' }}>
           <rect x={px} y={py} width={pw} height={ph} fill="transparent" stroke={isSelected ? '#38bdf8' : 'transparent'} strokeWidth={isSelected ? 1.5 : 1} style={{ pointerEvents: 'all' }} />
           <foreignObject x={px+4} y={py+2} width={pw-8} height={ph-4} style={{ pointerEvents: 'auto' }}>
             <div style={{ fontSize: (a.fontSize || 12) * zoom, color: a.color, fontFamily: family, fontWeight: a.bold || /bold/i.test(a.fontFamily || '') ? 700 : 400, fontStyle: a.italic ? 'italic' : 'normal', lineHeight: 1.2, overflow: 'visible', whiteSpace: 'pre-wrap', wordBreak: 'break-word', width: '100%', height: '100%', pointerEvents: 'auto', userSelect: 'text' }}>{a.text}</div>

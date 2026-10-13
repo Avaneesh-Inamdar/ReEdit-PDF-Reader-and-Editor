@@ -1,96 +1,133 @@
 name: Build desktop packages
 on:
   workflow_dispatch:
-    inputs:
-      platforms:
-        description: Runner OS list as JSON
-        default: '["windows-latest", "ubuntu-22.04"]'
 permissions:
   contents: read
 jobs:
   packages:
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(inputs.platforms) }}
+        os: [windows-latest, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_BUILD_JOBS: 4
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - name: Linux tools and Office conversion runtime
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - name: Linux native build and desktop prerequisites
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y binutils rpm fakeroot libgtk-3-0 libnss3 libasound2 libxss1 libgbm1 libnotify4 libxtst6 xvfb xauth xdg-utils desktop-file-utils libreoffice-writer
-      - run: npm ci
-      - run: node node_modules/electron/install.js
-      - name: Unit and conversion tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang libclang-dev libwebkit2gtk-4.1-dev libgtk-3-dev libfontconfig1-dev librsvg2-dev patchelf rpm squashfs-tools xvfb xauth dbus-x11 xdg-utils desktop-file-utils cups-client libreoffice-writer
+      - name: Windows compiler and redistributable paths
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          . ./scripts/rust-env.ps1
+          "LIBCLANG_PATH=$env:LIBCLANG_PATH" >> $env:GITHUB_ENV
+          "MUPDF_MSVC_PLATFORM_TOOLSET=$env:MUPDF_MSVC_PLATFORM_TOOLSET" >> $env:GITHUB_ENV
+          $crt = Get-ChildItem -LiteralPath (Join-Path $vsRoot 'VC/Redist/MSVC') -Filter 'Microsoft.VC*.CRT' -Directory -Recurse | Where-Object { $_.Parent.Name -eq 'x64' } | Sort-Object FullName -Descending | Select-Object -First 1
+          if (!$crt) { throw 'MSVC runtime redistributables not found' }
+          "REEDIT_CRT_DIR=$($crt.FullName)" >> $env:GITHUB_ENV
+      - run: npm ci --ignore-scripts
+      - name: Renderer tests and native core tests
         shell: bash
+        env:
+          READIT_TEST_OFFICE: ${{ runner.os == 'Linux' && '1' || '0' }}
         run: |
-          if [ "$RUNNER_OS" = Linux ]; then export READIT_TEST_OFFICE=1; fi
-          npm test
-      - name: Windows packages
+          npm run typecheck:web
+          npx vitest run --reporter=dot
+          cargo test --locked -p re-edit-pdf-native -p re-edit-pdf-desktop --no-default-features
+      - name: Prepare packaging configuration
+        run: node scripts/prepare-native-package.mjs
+      - name: Windows setup EXE and MSI
         if: runner.os == 'Windows'
-        run: npm run package:win
-      - name: Windows packaged workflows
-        if: runner.os == 'Windows'
-        env:
-          READIT_SMOKE_PACKAGED: 1
-        run: npm run test:desktop
-      - name: Windows selection, recent files, and offline OCR regressions
-        if: runner.os == 'Windows'
-        env:
-          READIT_141_APP: release/win-unpacked/resources/app.asar
-        run: npx electron scripts/smoke-1.4.1.cjs
-      - name: Windows installer and uninstaller
-        if: runner.os == 'Windows'
-        run: ./scripts/test-windows-installer.ps1
-      - name: Windows font, gestures, sidebar and Find regressions
-        if: runner.os == 'Windows'
-        env:
-          READIT_142_APP: release/win-unpacked/resources/app.asar
-        run: npx electron scripts/smoke-1.4.2.cjs
-      - name: Windows Finish launches installed app
-        if: runner.os == 'Windows'
-        run: ./scripts/test-windows-finish.ps1
-      - name: Windows long selection, repeated edits and font import regressions
-        if: runner.os == 'Windows'
-        env:
-          READIT_143_APP: release/win-unpacked/resources/app.asar
-        run: npx electron scripts/smoke-1.4.3.cjs
-      - name: Linux packages
+        shell: pwsh
+        run: |
+          . ./scripts/rust-env.ps1
+          npx tauri build --ci --bundles nsis,msi --config release/native-build-config.json
+          if ($LASTEXITCODE -ne 0) { throw 'Windows packaging failed' }
+      - name: Linux DEB RPM and AppImage
         if: runner.os == 'Linux'
         env:
-          ELECTRON_BUILDER_COMPRESSION_LEVEL: 5
-        run: npm run build:linux
-      - name: Windows print, OCR, font and memory regressions
+          APPIMAGE_EXTRACT_AND_RUN: 1
+        run: npx tauri build --ci --bundles deb,rpm,appimage --config release/native-build-config.json
+      - name: Collect production packages and provenance
+        run: node scripts/collect-native-packages.mjs
+      - name: Windows portable package
         if: runner.os == 'Windows'
-        env:
-          READIT_144_APP: release/win-unpacked/resources/app.asar
-        run: npx electron scripts/smoke-1.4.4.cjs
-      - name: Linux installation and packaged workflows
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          Compress-Archive -LiteralPath "release/portable/Re-Edit-PDF-$version" -DestinationPath "release/native-packages/Re-Edit-PDF-$version-windows-x64-portable.zip"
+      - name: Corresponding native MuPDF source
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get install -y ./release/*.deb
-          sh scripts/test-linux-package.sh '/opt/Re-Edit PDF/re-edit-pdf' ubuntu-22.04
-          xvfb-run -a node scripts/test-linux-launch.cjs
+          source_dir=$(find "$HOME/.cargo/registry/src" -maxdepth 2 -type d -name mupdf-sys-0.8.0 -print -quit)
+          test -f "$source_dir/mupdf/COPYING"
+          tar -czf release/native-packages/mupdf-native-source-1.27.2.tar.gz -C "$(dirname "$source_dir")" mupdf-sys-0.8.0
+      - name: Build isolated application validation executable
+        run: cargo build --release --locked -p re-edit-pdf-desktop --features custom-protocol,desktop-test
+      - name: Windows runtime checks
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:REEDIT_TEST_SUITE = 'fonts-dialog'
+          ./scripts/measure-desktop.ps1 -Executable target/release/Re-Edit-PDF.exe
+          Copy-Item release/native-validation/tauri/result.json release/native-validation/tauri/fonts-dialog-result.json
+          node scripts/generate-ocr-paper.mjs
+          $env:REEDIT_TEST_SUITE = 'ocr-edit'
+          ./scripts/measure-desktop.ps1 -Executable target/release/Re-Edit-PDF.exe -Fixture release/native-validation/tauri/ocr-paper.pdf
+          Copy-Item release/native-validation/tauri/result.json release/native-validation/tauri/ocr-edit-result.json
+          ./scripts/test-native-installer.ps1
+      - name: Linux native WebView smoke test
+        if: runner.os == 'Linux'
+        run: sh scripts/test-native-linux.sh target/release/Re-Edit-PDF ubuntu-22.04
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: re-edit-pdf-${{ runner.os }}
+          if-no-files-found: error
           path: |
-            release/*.exe
-            release/*.deb
-            release/*.rpm
-            release/*.AppImage
-            release/*.tar.gz
-            release/smoke/result.json
-            release/linux-launch.json
-            release/linux-tests/**/result.json
-            release/smoke-1.4.1/result.json
-            release/smoke-1.4.2/result.json
-            release/smoke-1.4.3/result.json
-            release/smoke-1.4.4/result.json
-            release/windows-finish-result.json
-            release/windows-installer-result.json
+            release/native-packages/*
+            release/native-validation/**/*.json
+            release/native-validation/**/*.png
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux' && success()
+        with:
+          name: native-validation-tools-Linux
+          path: target/release/Re-Edit-PDF
+  distributions:
+    needs: packages
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [debian:12, ubuntu:24.04, fedora:43]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: re-edit-pdf-Linux
+          path: release/downloaded
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-validation-tools-Linux
+          path: release/validation-tool
+      - name: Install and launch distribution package
+        run: docker run --rm --security-opt seccomp=unconfined -v "$PWD:/work" -w /work '${{ matrix.image }}' sh scripts/test-native-distro.sh '${{ matrix.image }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-distro-${{ strategy.job-index }}
+          path: release/native-validation/distros/**/*.json

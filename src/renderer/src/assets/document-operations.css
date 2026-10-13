@@ -31,10 +31,12 @@
   display: grid;
   grid-template-columns: 390px 1fr;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
+  max-height: calc(92vh - 160px);
 }
 .print-settings {
   padding: 4px 24px 16px;
+  overflow-y: auto;
 }
 .print-settings fieldset {
   margin: 0;
@@ -154,13 +156,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 220px;
+  min-height: 0;
   flex: 1;
 }
 .print-preview-sheet canvas {
   display: block;
   max-width: 100%;
-  max-height: 450px;
+  max-height: min(450px, calc(92vh - 270px));
   object-fit: contain;
   box-shadow: var(--acrobat-page-shadow);
 }

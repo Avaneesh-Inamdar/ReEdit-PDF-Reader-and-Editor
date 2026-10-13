@@ -8,6 +8,8 @@ import { encodedPreview } from '../lib/pdfTextStyle'
 import { textMatrix, type PdfTextRun } from '../lib/pdfText'
 import type { Annotation } from '../stores/useAnnotationStore'
 import { registerPreviewFont } from '../lib/fontFaces'
+import {trackInlineMutation} from '../lib/inlineText'
+import { replacementSpacing } from '../lib/textSpacing'
 
 function ReplacementText({
   annotation,
@@ -36,6 +38,7 @@ function ReplacementText({
     }
   }, [source.fontData, annotation.fontFamily, annotation.fontData])
   const size = annotation.fontSize || source.size
+  const spacing = replacementSpacing(annotation)
   useLayoutEffect(() => {
     let cancelled = false
     const measure = (): void => {
@@ -60,7 +63,7 @@ function ReplacementText({
     restoredFont
   ])
   const select = (): void => useAnnotationStore.getState().setSelected(annotation.id)
-  const edit = async (): Promise<void> => {
+  const edit = (): Promise<void> => trackInlineMutation((async()=>{
     select()
     const data = usePdfStore.getState().data
     const replacement = await requestPdfText(source, annotation.text || '', annotation)
@@ -68,7 +71,7 @@ function ReplacementText({
       useAnnotationStore
         .getState()
         .updateAnnotation(annotation.id, { text: replacement.text, ...replacement.style })
-  }
+  })())
   return (
     <g
       data-edited-text={annotation.id}
@@ -80,24 +83,24 @@ function ReplacementText({
         width={Math.max(4, bounds.width + 2)}
         height={Math.max(size, bounds.height + 2)}
         fill="transparent"
-        stroke={selected ? '#1473e6' : 'none'}
+        stroke={editing && selected ? '#1473e6' : 'none'}
         strokeWidth={0.6}
-        style={{ pointerEvents: 'all', cursor: 'text' }}
+        style={{ pointerEvents: editing ? 'all' : 'none', cursor: 'text' }}
         onClick={() => {
           select()
           if (editing) void edit()
         }}
         onDoubleClick={() => {
-          if (!editing) void edit()
+          if (editing) void edit()
         }}
       />
       <text
         ref={text}
         data-replacement-text="true"
         fontSize={size}
-        letterSpacing={((source.characterSpacing || 0) * size) / source.size}
+        letterSpacing={spacing.character}
         wordSpacing={
-          ((source.wordSpacing || 0) * size) / source.size + previewSpaceAdjustment(annotation)
+          spacing.word + previewSpaceAdjustment(annotation)
         }
         fill={annotation.color}
         fontFamily={
@@ -124,7 +127,7 @@ function ReplacementText({
           if (editing) void edit()
         }}
         onDoubleClick={() => {
-          if (!editing) void edit()
+          if (editing) void edit()
         }}
       >
         {(annotation.text || '').split('\n').map((line, index) => (
@@ -158,7 +161,7 @@ export function ExistingTextLayer({
   const editing = rightPane === 'edit' && pointerMode !== 'hand' && !spaceHeld
   const edits = annotations.filter((a) => a.page === pageNumber && a.sourceText)
 
-  const edit = async (run: PdfTextRun): Promise<void> => {
+  const edit = (run: PdfTextRun): Promise<void> => trackInlineMutation((async()=>{
     if (!editing) return
     const data = usePdfStore.getState().data
     const existing = edits.find(
@@ -205,7 +208,7 @@ export function ExistingTextLayer({
     const original = group
       .map(
         (item, index) =>
-          (index &&
+          (index && !/\s$/.test(group[index - 1].text) && !/^\s/.test(item.text) &&
           item.x -
             group[index - 1].x -
             group[index - 1].width * (group[index - 1].matrix?.[0] || 1) >
@@ -244,7 +247,7 @@ export function ExistingTextLayer({
       ...replacement.style
     })
     setSelected(id)
-  }
+  })())
 
   useEffect(() => {
     const handle = (event: Event): void => {

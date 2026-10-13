@@ -9,14 +9,13 @@ import {
   breakTextIntoLines,
   pushGraphicsState,
   popGraphicsState,
-  concatTransformationMatrix,
-  setCharacterSpacing,
-  setWordSpacing
+  concatTransformationMatrix
 } from 'pdf-lib'
 import fontkit from '@pdf-lib/fontkit'
 import { bundledFontData, originalFontSelected } from './fonts'
 import { fontkitForPdfGlyphs, embedFontWithOutlines } from './embeddedFont'
 import type { Annotation } from '../stores/useAnnotationStore'
+import { drawReplacementText } from './pdfTextDrawing'
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const m = hex.replace('#', '')
@@ -202,20 +201,8 @@ export async function bakeAnnotationsToPdf(
               source.y
             )
           )
-        page.pushOperators(
-          setCharacterSpacing(
-            ((source.characterSpacing || 0) * (anno.fontSize || source.size)) / source.size
-          ),
-          setWordSpacing(((source.wordSpacing || 0) * (anno.fontSize || source.size)) / source.size)
-        )
-        page.drawText(anno.text, {
-          x: transformed ? 0 : source.x,
-          y: transformed ? 0 : source.y,
-          size: anno.fontSize || source.size,
-          lineHeight: anno.lineHeight || (anno.fontSize || source.size) * 1.2,
-          font: await annotationFont(anno),
-          color: rgb(col.r, col.g, col.b)
-        })
+        drawReplacementText(page, anno, await annotationFont(anno), rgb(col.r, col.g, col.b),
+          transformed ? 0 : source.x, transformed ? 0 : source.y)
         page.pushOperators(popGraphicsState())
       }
       continue

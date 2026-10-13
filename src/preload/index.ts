@@ -61,6 +61,14 @@ export interface PdfApi {
     pages: { image: string; width: number; height: number }[],
     options: PrintOptions
   ) => Promise<void>
+  printPdf?: (bytes: Uint8Array, options: PrintOptions) => Promise<void>
+  beginPrint?: (bytes:Uint8Array)=>Promise<string>
+  previewPrint?: (id:string,options:PrintOptions,sheet:number)=>Promise<{image:string;sheets:number;width:number;height:number}>
+  submitPrint?: (id:string,options:PrintOptions)=>Promise<void>
+  exportPrint?: (id:string,options:PrintOptions)=>Promise<Uint8Array>
+  closePrint?: (id:string)=>Promise<void>
+  restartApp?:()=>Promise<void>
+  resetPageScale?:()=>Promise<void>
   isMaximized: () => Promise<boolean>
   onMaximizeChanged: (cb: (isMax: boolean) => void) => () => void
 }

@@ -131,6 +131,13 @@ select:focus-visible {
 .workspace-convert {
   position: relative;
 }
+.workspace-global-bar { position: relative; z-index: 90; }
+.workspace-convert-menu { background-color: var(--acrobat-menu-bg); opacity: 1; isolation: isolate; }
+.pdf-inline-editor { position: absolute; top: 0; left: 0; transform-origin: 0 0; z-index: 100; }
+.pdf-inline-editor textarea { display: block; border: 1px solid #1473e6; outline: none; padding: 1px; background: white; border-radius: 0; resize: both; min-width: 40px; max-width: 1200px; }
+.pdf-inline-actions { position: absolute; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; z-index: 101; padding: 6px; border: 1px solid var(--acrobat-border); border-radius: 5px; background: var(--acrobat-menu-bg); color: var(--acrobat-text); box-shadow: 0 2px 8px #0003; font-size: 12px; }
+.pdf-inline-actions select { max-width: 240px; }
+.pdf-inline-actions .operation-error { flex-basis: 100%; margin: 0; max-width: 360px; }
 .workspace-convert-menu {
   left: 0;
   right: auto;
@@ -431,7 +438,7 @@ select:focus-visible {
   min-width: 190px;
   border: 1px solid var(--acrobat-border);
   border-radius: 5px;
-  background: var(--acrobat-menu-bg);
+  background: var(--acrobat-menu-bg, var(--acrobat-pane-bg));
   color: var(--acrobat-text);
   box-shadow: 0 3px 14px rgba(0, 0, 0, 0.14);
 }

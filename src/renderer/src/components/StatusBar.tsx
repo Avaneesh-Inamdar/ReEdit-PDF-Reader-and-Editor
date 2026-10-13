@@ -4,7 +4,7 @@ import { usePdfStore } from '../stores/usePdfStore'
 import { useUIStore } from '../stores/useUIStore'
 
 export function StatusBar({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): React.JSX.Element {
-  const { currentPage, isDirty, data } = usePdfStore()
+  const { currentPage, isDirty, data, rotation } = usePdfStore()
   const units = useUIStore((s) => s.pageUnits)
   const [size, setSize] = useState<{ width: number; height: number } | null>(null)
   useEffect(() => {
@@ -14,14 +14,14 @@ export function StatusBar({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
       void pdfDoc
         .getPage(currentPage)
         .then((page) => {
-          const viewport = page.getViewport({ scale: 1 })
+          const viewport = page.getViewport({ scale: 1, rotation: (page.rotate + rotation) % 360 })
           if (!cancelled) setSize({ width: viewport.width, height: viewport.height })
         })
         .catch(() => {})
     return () => {
       cancelled = true
     }
-  }, [pdfDoc, currentPage])
+  }, [pdfDoc, currentPage, rotation])
   const dimension = size
     ? units === 'inches'
       ? `${(size.width / 72).toFixed(2)} × ${(size.height / 72).toFixed(2)} in`
@@ -32,7 +32,7 @@ export function StatusBar({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
   return (
     <footer className="workspace-status">
       <span>{data ? (isDirty ? 'Unsaved changes' : 'Saved') : ''}</span>
-      <span>{dimension}</span>
+      <span title="Physical dimensions of the current PDF page. Zoom changes the view, not the paper size.">{dimension ? `Page ${currentPage} size: ${dimension}` : ''}</span>
     </footer>
   )
 }

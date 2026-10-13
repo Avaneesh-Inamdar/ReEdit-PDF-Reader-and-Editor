@@ -7,6 +7,13 @@ import {
   existsSync
 } from 'node:fs'
 const packages = [
+  'arimo',
+  'tinos',
+  'cousine',
+  'carlito',
+  'caladea',
+  'roboto-condensed',
+  'montserrat',
   'lato',
   'libre-baskerville',
   'noto-sans',
