@@ -42,7 +42,7 @@ jobs:
       - name: Renderer tests and native core tests
         shell: bash
         env:
-          READIT_TEST_OFFICE: ${{ runner.os == 'Linux' && '1' || '0' }}
+          READIT_TEST_OFFICE: ${{ runner.os == 'Linux' && '1' || '' }}
         run: |
           npm run typecheck:web
           npx vitest run --reporter=dot
