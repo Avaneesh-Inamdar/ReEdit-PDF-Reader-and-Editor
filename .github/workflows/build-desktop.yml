@@ -135,4 +135,6 @@ jobs:
         if: always()
         with:
           name: native-distro-${{ strategy.job-index }}
-          path: release/native-validation/distros/**/*.json
+          path: |
+            release/native-validation/distros/**/result.json
+            release/native-validation/distros/**/package-result.json
