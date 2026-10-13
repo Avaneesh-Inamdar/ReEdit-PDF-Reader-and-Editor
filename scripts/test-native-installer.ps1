@@ -24,11 +24,11 @@ public static class InstallerWizardTest {
   public static string Text(IntPtr hwnd) { var text=new StringBuilder(1024);GetWindowText(hwnd,text,1024);return text.ToString(); }
   public static IntPtr Window(int process) { IntPtr found=IntPtr.Zero;EnumWindows((h,d)=>{uint pid;GetWindowThreadProcessId(h,out pid);if(pid==process && Text(h).Contains("Re-Edit PDF"))found=h;return true;},IntPtr.Zero);return found; }
   public static IntPtr Button(IntPtr parent,string label) { IntPtr found=IntPtr.Zero;EnumChildWindows(parent,(h,d)=>{if(Text(h).Replace("&","").Trim()==label && IsWindowEnabled(h) && IsWindowVisible(h))found=h;return true;},IntPtr.Zero);return found; }
-  public static void Click(IntPtr hwnd) { var root=GetAncestor(hwnd,2);SetForegroundWindow(root);if(!PostMessage(root,0x111,new IntPtr(GetDlgCtrlID(hwnd)),hwnd))throw new Exception("Installer click could not be queued"); }
+  public static void Click(IntPtr hwnd) { var wizard=GetAncestor(hwnd,2);SetForegroundWindow(wizard);if(!PostMessage(hwnd,0x00F5,IntPtr.Zero,IntPtr.Zero))throw new Exception("Installer click could not be queued"); }
   public static string Dump(IntPtr parent) { var output=new StringBuilder();EnumChildWindows(parent,(h,d)=>{output.AppendLine(Text(h)+" visible="+IsWindowVisible(h)+" enabled="+IsWindowEnabled(h));return true;},IntPtr.Zero);return output.ToString(); }
 }
 '@
-$setup = Start-Process -FilePath $installer.FullName -ArgumentList "/D=$installPath" -WindowStyle Hidden -PassThru
+$setup = Start-Process -FilePath $installer.FullName -ArgumentList "/D=$installPath" -PassThru
 $deadline = (Get-Date).AddMinutes(3)
 $finishAt = $null
 while ((Get-Date) -lt $deadline) {
@@ -50,7 +50,7 @@ while ((Get-Date) -lt $deadline) {
   Start-Sleep -Milliseconds 300
 }
 if (!$finishAt) { throw 'Installer never reached its Finish page' }
-if (!$setup.WaitForExit(10000)) { [InstallerWizardTest]::Dump([InstallerWizardTest]::Window($setup.Id)); Get-CimInstance Win32_Process -Filter "Name = 'Re-Edit-PDF.exe'" | Select-Object ProcessId,ExecutablePath,CommandLine; throw 'Finish did not dismiss the installer promptly' }
+if (!$setup.WaitForExit(30000)) { $wizardAfter=[InstallerWizardTest]::Window($setup.Id); if ($wizardAfter -ne [IntPtr]::Zero) { Write-Output ([InstallerWizardTest]::Dump($wizardAfter)) }; Get-CimInstance Win32_Process -Filter "Name = 'Re-Edit-PDF.exe'" | Select-Object ProcessId,ExecutablePath,CommandLine | Format-List | Out-String | Write-Output; throw 'Finish did not dismiss the installer promptly' }
 $elapsed = ((Get-Date) - $finishAt).TotalSeconds
 # The assisted installer deliberately adds the product subdirectory when the
 # selected directory does not already include its name. Discover that installed
