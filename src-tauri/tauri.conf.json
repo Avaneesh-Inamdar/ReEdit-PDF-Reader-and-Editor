@@ -61,6 +61,7 @@
       },
       "webviewInstallMode": { "type": "embedBootstrapper", "silent": true },
       "wix": {
+        "version": "2.0.0.1",
         "fragmentPaths": ["windows/document-icon.wxs"],
         "componentRefs": ["PdfDocumentCapabilities"]
       }
