@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       build_run:
-        description: Successful Build desktop packages run ID
+        description: Run containing the Linux native packages and validation executable
         required: true
 permissions:
   contents: read
@@ -11,46 +11,29 @@ permissions:
 jobs:
   distributions:
     runs-on: ubuntu-22.04
-    timeout-minutes: 45
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - image: debian:12
-            label: debian-12
-            alsa: ''
-          - image: ubuntu:24.04
-            label: ubuntu-24.04
-            alsa: t64
-          - image: fedora:43
-            label: fedora-43
-            alsa: ''
+        image: [debian:12, ubuntu:24.04, fedora:43]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - name: Prepare matching desktop test runtime
-        run: npm ci && node node_modules/electron/install.js
       - uses: actions/download-artifact@v4
         with:
           run-id: ${{ inputs.build_run }}
           github-token: ${{ github.token }}
           name: re-edit-pdf-Linux
-          path: release/ci/re-edit-pdf-Linux
-      - name: Install and test distribution packages
-        env:
-          READIT_DISTRO: ${{ matrix.label }}
-          READIT_ALSA_SUFFIX: ${{ matrix.alsa }}
-        run: |
-          node_dir=$(dirname "$(dirname "$(command -v node)")")
-          docker run --rm -v "$PWD:/work" -v "$node_dir:/node:ro" -w /work -e PATH=/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin -e READIT_DISTRO -e READIT_ALSA_SUFFIX '${{ matrix.image }}' sh scripts/test-linux-distribution.sh
-      - name: Fix test artifact ownership
-        if: always()
-        run: sudo chown -R "$(id -u):$(id -g)" release/linux-tests release/linux-validation 2>/dev/null || true
+          path: release/downloaded
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.build_run }}
+          github-token: ${{ github.token }}
+          name: native-validation-tools-Linux
+          path: release/validation-tool
+      - name: Install and launch distribution package
+        run: docker run --rm --security-opt seccomp=unconfined -v "$PWD:/work" -w /work '${{ matrix.image }}' sh scripts/test-native-distro.sh '${{ matrix.image }}'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: linux-validation-${{ matrix.label }}
-          path: release/linux-tests/${{ matrix.label }}/
+          name: native-distro-${{ strategy.job-index }}
+          path: release/native-validation/distros/**/*.json

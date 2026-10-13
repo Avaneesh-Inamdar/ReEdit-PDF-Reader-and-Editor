@@ -1,6 +1,10 @@
 name: Build desktop packages
 on:
   workflow_dispatch:
+    inputs:
+      platforms:
+        description: Runner OS list as JSON
+        default: '["windows-latest", "ubuntu-22.04"]'
 permissions:
   contents: read
 jobs:
@@ -9,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-22.04]
+        os: ${{ fromJSON(inputs.platforms) }}
     runs-on: ${{ matrix.os }}
     env:
       CARGO_BUILD_JOBS: 4
@@ -107,6 +111,7 @@ jobs:
           name: native-validation-tools-Linux
           path: target/release/Re-Edit-PDF
   distributions:
+    if: contains(inputs.platforms, 'ubuntu')
     needs: packages
     runs-on: ubuntu-22.04
     timeout-minutes: 25

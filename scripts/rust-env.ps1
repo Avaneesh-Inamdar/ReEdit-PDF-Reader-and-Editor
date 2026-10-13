@@ -12,6 +12,6 @@ if (Test-Path -LiteralPath $vsLocator) {
     $platform=Join-Path $_.FullName 'Platforms\x64\PlatformToolsets'
     if (Test-Path -LiteralPath $platform) { Get-ChildItem -LiteralPath $platform -Directory }
   }
-  $toolset=$toolsets | Sort-Object Name -Descending | Select-Object -First 1
+  $toolset=$toolsets | Where-Object { $_.Name -match '^v\d+$' } | Sort-Object Name -Descending | Select-Object -First 1
   if ($toolset) { $env:MUPDF_MSVC_PLATFORM_TOOLSET=$toolset.Name }
 }
