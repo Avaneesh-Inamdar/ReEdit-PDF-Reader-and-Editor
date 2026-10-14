@@ -7,7 +7,7 @@ $log=Join-Path $env:TEMP ('ReEditPDF-MSI-Log-'+[guid]::NewGuid().ToString('N')+'
 $install=Start-Process msiexec.exe -ArgumentList @('/i',('"'+$msi+'"'),'/qn','/norestart',('INSTALLDIR="'+$folder+'"'),'/L*v',('"'+$log+'"')) -WindowStyle Hidden -PassThru -Wait
 if ($install.ExitCode -notin @(0,3010)) { Get-Content -LiteralPath $log -Tail 60; throw "MSI install failed: $($install.ExitCode)" }
 $binary=Join-Path $folder 'Re-Edit-PDF.exe'
-if (!(Test-Path -LiteralPath $binary)) { throw 'MSI did not install the application to the requested directory' }
+if (!(Test-Path -LiteralPath $binary)) { Get-Content -LiteralPath $log | Select-String -Pattern 'INSTALLDIR|InstallDir|Product:|Return value 3' | Select-Object -Last 25; throw 'MSI did not install the application to the requested directory' }
 foreach($runtime in @('vcruntime140.dll','msvcp140.dll')) { if (!(Test-Path -LiteralPath (Join-Path $folder $runtime))) { throw "MSI omitted $runtime" } }
 $app=Start-Process -FilePath $binary -WindowStyle Hidden -PassThru
 $deadline=(Get-Date).AddSeconds(35)

@@ -44,7 +44,7 @@ jobs:
           $version=(Get-Content -Raw package.json | ConvertFrom-Json).version
           $setup=Get-ChildItem target/release/bundle/nsis -Filter '*.exe' | Select-Object -First 1
           Copy-Item -LiteralPath $setup.FullName "release/native-packages/Re-Edit-PDF-$version-windows-x64-setup.exe"
-          @{packagingCommit=(git rev-parse HEAD);binaryBuildRun='${{ inputs.build_run }}';binaryUnchanged=$true} | ConvertTo-Json | Set-Content release/native-packages/build-info-nsis.json
+          @{packagingCommit=(git rev-parse HEAD);binaryBuildRun='${{ inputs.build_run }}';applicationSourceUnchanged=$true;note='Tauri patches bundle-type metadata in the tested executable before bundling.'} | ConvertTo-Json | Set-Content release/native-packages/build-info-nsis.json
       - run: ./scripts/test-native-installer.ps1
       - name: Validate MSI independently
         if: always()
@@ -58,3 +58,19 @@ jobs:
             release/native-packages/build-info-nsis.json
             release/native-validation/tauri/windows-installer-result.json
             release/native-validation/tauri/windows-msi-result.json
+  msi:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.build_run }}
+          github-token: ${{ github.token }}
+          name: re-edit-pdf-Windows
+          path: release
+      - run: ./scripts/test-native-msi.ps1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: standalone-msi-validation
+          path: release/native-validation/tauri/windows-msi-result.json
