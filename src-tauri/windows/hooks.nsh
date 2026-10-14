@@ -2,7 +2,7 @@
 ; the protected Windows UserChoice setting; users choose their default app.
 !macro NSIS_HOOK_POSTINSTALL
   WriteRegStr SHCTX "Software\Classes\ReEditPDF.Document\DefaultIcon" "" "$INSTDIR\document.ico,0"
-  WriteRegStr SHCTX "Software\Classes\ReEditPDF.Document\shell\open\command" "" '$"$INSTDIR\${MAINBINARYNAME}.exe$" $"%1$"'
+  WriteRegStr SHCTX "Software\Classes\ReEditPDF.Document\shell\open\command" "" '"$INSTDIR\${MAINBINARYNAME}.exe" "%1"'
   WriteRegStr SHCTX "Software\ReEditPDF\Capabilities" "ApplicationName" "Re-Edit PDF"
   WriteRegStr SHCTX "Software\ReEditPDF\Capabilities" "ApplicationDescription" "Read and edit PDF documents"
   WriteRegStr SHCTX "Software\ReEditPDF\Capabilities" "ApplicationIcon" "$INSTDIR\${MAINBINARYNAME}.exe,0"

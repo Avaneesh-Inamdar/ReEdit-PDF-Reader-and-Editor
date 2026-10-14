@@ -83,7 +83,7 @@ while ((Get-Date) -lt $deadline) {
   if ($started) { break }
   Start-Sleep -Milliseconds 200
 }
-if (!$started) { throw 'Finish did not launch the installed app' }
+if (!$started) { Get-CimInstance Win32_Process -Filter "Name = 'Re-Edit-PDF.exe'" | Select-Object ProcessId,ExecutablePath,CommandLine | Format-List | Out-String | Write-Output; throw 'Finish did not launch the installed app' }
 $application = Get-Process -Id $started.ProcessId
 $deadline = (Get-Date).AddSeconds(30)
 while (!$application.MainWindowHandle -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 200; $application.Refresh() }

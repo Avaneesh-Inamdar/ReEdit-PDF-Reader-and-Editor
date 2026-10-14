@@ -420,7 +420,7 @@ Var AppStartMenuFolder
 Function RunMainBinary
   ; currentUser setup is already unelevated: launch asynchronously without Explorer COM.
   !if "${INSTALLMODE}" == "currentUser"
-    Exec '$"$INSTDIR\${MAINBINARYNAME}.exe$"'
+    Exec '"$INSTDIR\${MAINBINARYNAME}.exe"'
   !else
     nsis_tauri_utils::RunAsUser "$INSTDIR\${MAINBINARYNAME}.exe" ""
   !endif
