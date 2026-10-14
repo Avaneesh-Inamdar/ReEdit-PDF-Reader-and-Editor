@@ -1,0 +1,169 @@
+{
+  "distros/native-distro-2/fedora-43/result.json": {
+    "checks": {
+      "centered_dialog": true,
+      "dialog_cancel": true,
+      "find_opens": true,
+      "font_discovery": true,
+      "landscape_preview": true,
+      "pdf_transport": true,
+      "print_preview": true,
+      "print_session_released": true,
+      "reader_rendered": true
+    },
+    "errors": [],
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15"
+  },
+  "Windows/native-validation/tauri/result.json": {
+    "checks": {
+      "can_reedit": true,
+      "invisible_ocr_source": true,
+      "saved_pdf": true
+    },
+    "errors": []
+  },
+  "distros/native-distro-1/ubuntu-24.04/result.json": {
+    "checks": {
+      "centered_dialog": true,
+      "dialog_cancel": true,
+      "find_opens": true,
+      "font_discovery": true,
+      "landscape_preview": true,
+      "pdf_transport": true,
+      "print_preview": true,
+      "print_session_released": true,
+      "reader_rendered": true
+    },
+    "errors": [],
+    "userAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15"
+  },
+  "Windows/native-validation/tauri/fonts-dialog-result.json": {
+    "checks": {
+      "alternative_labels": true,
+      "answer_cancel": true,
+      "answer_discard": true,
+      "answer_save": true,
+      "centered_cancel": true,
+      "centered_discard": true,
+      "centered_save": true,
+      "editor_cleanup": true,
+      "font_assets_load": true,
+      "new_font_families": true,
+      "replacement_spacing_reset": true
+    },
+    "errors": [],
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36 Edg/153.0.0.0"
+  },
+  "windows-verified/windows-installer-validation-1/windows-msi-result.json": {
+    "version": "2.0.0-alpha.1",
+    "checks": [
+      "MSI installs",
+      "runtime DLLs present",
+      "installed app opens",
+      "installed app closes",
+      "MSI uninstalls"
+    ],
+    "passed": true
+  },
+  "Linux/native-validation/distros/ubuntu-22.04/result.json": {
+    "checks": {
+      "centered_dialog": true,
+      "dialog_cancel": true,
+      "find_opens": true,
+      "font_discovery": true,
+      "landscape_preview": true,
+      "pdf_transport": true,
+      "print_preview": true,
+      "print_session_released": true,
+      "reader_rendered": true
+    },
+    "errors": [],
+    "userAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15"
+  },
+  "windows-verified/windows-installer-validation-1/windows-installer-result.json": {
+    "checks": [
+      "assisted wizard reaches Finish",
+      "Finish dismisses promptly",
+      "Finish launches installed app",
+      "app shows its window",
+      "test app closes",
+      "test uninstall exits successfully"
+    ],
+    "passed": true,
+    "version": "2.0.0-alpha.1",
+    "finishDismissSeconds": 0.2601595
+  },
+  "distros/native-distro-0/debian-12/package-result.json": {
+    "distribution": "debian-12",
+    "installedPackageLaunched": true,
+    "environment": "container/Xvfb; real desktop gestures and printers not tested"
+  },
+  "Windows/native-validation/tauri/ocr-edit-result.json": {
+    "checks": {
+      "can_reedit": true,
+      "invisible_ocr_source": true,
+      "saved_pdf": true
+    },
+    "errors": []
+  },
+  "distros/native-distro-2/fedora-43/package-result.json": {
+    "distribution": "fedora-43",
+    "installedPackageLaunched": true,
+    "environment": "container/Xvfb; real desktop gestures and printers not tested"
+  },
+  "distros/native-distro-1/ubuntu-24.04/package-result.json": {
+    "distribution": "ubuntu-24.04",
+    "installedPackageLaunched": true,
+    "environment": "container/Xvfb; real desktop gestures and printers not tested"
+  },
+  "msi-final/windows-msi-result.json": {
+    "passed": true,
+    "version": "2.0.0-alpha.1",
+    "checks": [
+      "MSI installs",
+      "runtime DLLs present",
+      "installed app opens",
+      "installed app closes",
+      "MSI uninstalls"
+    ]
+  },
+  "distros/native-distro-0/debian-12/result.json": {
+    "checks": {
+      "centered_dialog": true,
+      "dialog_cancel": true,
+      "find_opens": true,
+      "font_discovery": true,
+      "landscape_preview": true,
+      "pdf_transport": true,
+      "print_preview": true,
+      "print_session_released": true,
+      "reader_rendered": true
+    },
+    "errors": [],
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15"
+  },
+  "windows-verified/windows-installer-validation-2/windows-installer-result.json": {
+    "version": "2.0.0-alpha.1",
+    "checks": [
+      "assisted wizard reaches Finish",
+      "Finish dismisses promptly",
+      "Finish launches installed app",
+      "app shows its window",
+      "test app closes",
+      "test uninstall exits successfully"
+    ],
+    "finishDismissSeconds": 0.8870745,
+    "passed": true
+  },
+  "windows-verified/windows-installer-validation-2/windows-msi-result.json": {
+    "passed": true,
+    "checks": [
+      "MSI installs",
+      "runtime DLLs present",
+      "installed app opens",
+      "installed app closes",
+      "MSI uninstalls"
+    ],
+    "version": "2.0.0-alpha.1"
+  }
+}

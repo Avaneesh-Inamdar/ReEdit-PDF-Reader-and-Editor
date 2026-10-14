@@ -1,0 +1,6 @@
+{
+  "packagingCommit": "e3ed0e9f2ea0cf05df2e2d581818564d3fc62251",
+  "applicationSourceUnchanged": true,
+  "binaryBuildRun": "38460150919",
+  "note": "Tauri patches bundle-type metadata in the tested executable before bundling."
+}

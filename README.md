@@ -21,22 +21,27 @@
 
 ## Download
 
-Download installers, portable builds, SHA-256 checksums and validation reports from [GitHub Releases](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest).
+Download the [Rust/Tauri preview, v2.0.0-alpha.1](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/tag/v2.0.0-alpha.1). It uses a Rust desktop backend and the existing React workspace in the system webview, without the Electron runtime.
 
-The [Rust/Tauri preview, v2.0.0-alpha.1](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/tag/v2.0.0-alpha.1), provides Windows setup EXE, MSI and portable ZIP, plus Linux DEB, RPM, AppImage and tar.gz packages. It retains the existing React workspace. The 1.4.4 Electron release remains the stable download while native desktop validation continues.
+The [1.4.4 Electron release](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest) remains the stable download while native desktop validation continues. Preview downloads are manual; the stable update channel does not enroll users in prereleases.
 
 The download badge counts release-asset downloads across all versions. Repeat downloads and supporting files count separately; it is not a count of unique users.
 
 | Platform            | Package      | Installation                                            |
 | ------------------- | ------------ | ------------------------------------------------------- |
 | Windows x64         | Setup EXE    | Run the installer; Finish can launch the app.           |
-| Windows x64         | Portable EXE | Run directly without installing.                        |
-| Debian / Ubuntu x64 | DEB          | `sudo apt install ./re-edit-pdf-*.deb`                  |
-| Fedora / RPM x64    | RPM          | `sudo dnf install ./re-edit-pdf-*.rpm`                  |
+| Windows x64         | MSI          | Alternative Windows installer.                          |
+| Windows x64         | Portable ZIP | Extract and run `Re-Edit-PDF.exe`; keep the DLLs.        |
+| Debian / Ubuntu x64 | DEB          | `sudo apt install ./Re-Edit-PDF-*.deb`                  |
+| Fedora / RPM x64    | RPM          | `sudo dnf install ./Re-Edit-PDF-*.rpm`                  |
 | Linux x64           | AppImage     | Make executable, then run. Requires FUSE or extraction. |
-| Linux x64           | tar.gz       | Extract and run `re-edit-pdf` inside the directory.     |
+| Linux x64           | tar.gz       | Extract and run `squashfs-root/AppRun`; no FUSE mount.  |
 
-Windows publisher signing is not configured. The native preview includes download/updater signatures and checksums; they do not remove Windows publisher warnings. Linux native packages require a glibc desktop environment and GTK/WebKitGTK support. Alpine/musl, ARM64 and macOS are not validated. The release validation report identifies the exact tested distributions, environments and build commits.
+The setup EXE installs WebView2 when needed. Portable Windows builds require WebView2 to be installed already. Windows publisher signing is not configured; Windows may show a publisher warning.
+
+Release assets contain the seven app packages, `SHA256SUMS`, the signed updater manifest (`latest.json`) and the corresponding native MuPDF source archive required for source distribution. Build provenance and test reports are kept in [release documentation](docs/releases/v2.0.0-alpha.1/VALIDATION.md), rather than as separate downloads. The updater verifies signatures against the public key configured in the app.
+
+Linux native packages require a glibc desktop environment and GTK/WebKitGTK support. Alpine/musl, ARM64 and macOS are not validated.
 
 The installer registers PDF **Open With** support and a separate document icon. Choose Re-Edit PDF in Windows **Settings → Apps → Default apps**. Linux Preferences can set the PDF default through `xdg-mime`.
 
@@ -57,6 +62,16 @@ The installer registers PDF **Open With** support and a separate document icon. 
 This project is independent of Adobe. It does not claim complete Acrobat Premium compatibility.
 
 ## Getting started
+
+### Changes in the Rust/Tauri preview
+
+- Native Open dialogs and the previous React workspace in a system webview.
+- Inline text editing, corrected replacement spacing, additional open-source font alternatives, and centered save/discard/cancel dialogs.
+- OCR text replacement reconstructs the surrounding paper to avoid white patches; saved replacements remain searchable and can be edited again.
+- The Windows setup launches the app from Finish, registers a distinct PDF document icon, and appears in Windows Default Apps.
+- Windows EXE/MSI lifecycle checks passed on two isolated runners. Linux packages were checked on Debian 12, Ubuntu 24.04 and Fedora 43 using containers/Xvfb. See the [validation report](docs/releases/v2.0.0-alpha.1/VALIDATION.md) for coverage and remaining work.
+
+### Basic workflow
 
 1. Open a PDF from Home, the file menu or the operating system.
 2. Choose **Edit** to edit existing text, or select words and press **Ctrl+E**.
@@ -129,7 +144,7 @@ Electron reference; use the native workflow for this preview.
 The [Tauri/Rust preview](src-tauri/README.md) retains this app's React UI in the
 system webview. Physical printer/trackpad, stock desktop/Wayland and broader
 large-document checks remain outstanding. Native WOFF2 import is not supported
-yet. [Validation and stable promotion gates](native/LOCAL-VALIDATION.md) are
+yet. Very early close requests can arrive before the WebView close handler is ready; immediate startup shutdown responsiveness still needs investigation. [Release validation](docs/releases/v2.0.0-alpha.1/VALIDATION.md) and [stable promotion gates](native/LOCAL-VALIDATION.md) are
 documented separately. Container/Xvfb results are not stock-desktop validation.
 
 - Scanned text has estimated typography. Replacing recognized text removes image pixels in the edited region; background reconstruction and automatic paragraph reflow are limited.
@@ -146,6 +161,6 @@ Report reproducible issues with the app version, OS, steps and a sample PDF you 
 
 Created by **Avaneesh Inamdar**. Released under [AGPL-3.0-only](LICENSE).
 
-Built with Electron, React, TypeScript, PDF.js, pdf-lib, MuPDF and Tesseract.js. Icons use Lucide; the application and PDF document marks are custom vectors.
+The native preview uses Rust, Tauri, React, TypeScript, PDF.js, pdf-lib, MuPDF and Tesseract.js. The previous Electron app is retained as a development reference. Icons use Lucide; the application and PDF document marks are custom vectors.
 
-See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for software, font and model notices. Each release provides the application source tag, corresponding MuPDF source archive, build provenance, validation report and checksums.
+See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for software, font and model notices. The preview release includes the application source tag, corresponding MuPDF source archive and checksums. [Build provenance and validation reports](docs/releases/v2.0.0-alpha.1/VALIDATION.md) are available in the repository.
