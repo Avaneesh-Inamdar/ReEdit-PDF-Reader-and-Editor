@@ -88,6 +88,8 @@ $application = Get-Process -Id $started.ProcessId
 $deadline = (Get-Date).AddSeconds(30)
 while (!$application.MainWindowHandle -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 200; $application.Refresh() }
 if (!$application.MainWindowHandle) { throw 'Launched app did not show its window' }
+$application.WaitForInputIdle(15000) | Out-Null
+Start-Sleep -Seconds 5
 $application.CloseMainWindow() | Out-Null
 if (!$application.WaitForExit(10000)) { throw 'Test app did not close' }
 $uninstaller = @(Get-ChildItem -LiteralPath $installedDirectory -Filter '*Uninstall*.exe' -File)

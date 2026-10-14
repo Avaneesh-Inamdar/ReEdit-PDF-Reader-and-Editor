@@ -13,6 +13,9 @@ $app=Start-Process -FilePath $binary -WindowStyle Hidden -PassThru
 $deadline=(Get-Date).AddSeconds(35)
 while (!$app.MainWindowHandle -and !$app.HasExited -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 200; $app.Refresh() }
 if (!$app.MainWindowHandle) { throw 'MSI-installed application did not show its window' }
+$app.WaitForInputIdle(15000) | Out-Null
+# The native window appears before the system WebView has mounted its close handler.
+Start-Sleep -Seconds 5
 $app.CloseMainWindow() | Out-Null
 if (!$app.WaitForExit(15000)) { throw 'MSI-installed application did not close normally' }
 $uninstall=Start-Process msiexec.exe -ArgumentList @('/x',('"'+$msi+'"'),'/qn','/norestart') -WindowStyle Hidden -PassThru -Wait
