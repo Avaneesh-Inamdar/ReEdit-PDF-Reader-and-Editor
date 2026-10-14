@@ -5,6 +5,9 @@ on:
       build_run:
         description: Run containing the Windows packages to validate
         required: true
+      setup_run:
+        description: Optional run containing repaired-windows-setup to overlay
+        required: false
 permissions:
   contents: read
   actions: read
@@ -22,6 +25,13 @@ jobs:
           run-id: ${{ inputs.build_run }}
           github-token: ${{ github.token }}
           name: re-edit-pdf-Windows
+          path: release
+      - uses: actions/download-artifact@v4
+        if: inputs.setup_run != ''
+        with:
+          run-id: ${{ inputs.setup_run }}
+          github-token: ${{ github.token }}
+          name: repaired-windows-setup
           path: release
       - name: Install and uninstall exact release package
         run: ./scripts/test-native-installer.ps1
