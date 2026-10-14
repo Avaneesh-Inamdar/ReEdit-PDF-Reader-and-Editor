@@ -1,0 +1,60 @@
+name: Repair and validate Windows setup
+on:
+  workflow_dispatch:
+    inputs:
+      build_run:
+        required: true
+        description: Validated production binary artifact run
+permissions:
+  contents: read
+  actions: read
+jobs:
+  setup:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.build_run }}
+          github-token: ${{ github.token }}
+          name: re-edit-pdf-Windows
+          path: release
+      - run: npm ci --ignore-scripts
+      - name: Stage the exact tested production binary
+        shell: pwsh
+        run: |
+          $version=(Get-Content -Raw package.json | ConvertFrom-Json).version
+          Expand-Archive -LiteralPath "release/native-packages/Re-Edit-PDF-$version-windows-x64-portable.zip" -DestinationPath release/repackage
+          $binary=Get-ChildItem release/repackage -Filter Re-Edit-PDF.exe -Recurse | Select-Object -First 1
+          New-Item target/release -ItemType Directory -Force | Out-Null
+          Copy-Item -LiteralPath $binary.FullName target/release/Re-Edit-PDF.exe
+          "REEDIT_CRT_DIR=$($binary.DirectoryName)" >> $env:GITHUB_ENV
+      - run: node scripts/prepare-native-package.mjs
+      - run: npm run build:ui
+      - name: Repackage without rebuilding application code
+        shell: pwsh
+        run: |
+          npx tauri bundle --bundles nsis --config release/native-build-config.json
+          if ($LASTEXITCODE -ne 0) { throw 'NSIS packaging failed' }
+          $version=(Get-Content -Raw package.json | ConvertFrom-Json).version
+          $setup=Get-ChildItem target/release/bundle/nsis -Filter '*.exe' | Select-Object -First 1
+          Copy-Item -LiteralPath $setup.FullName "release/native-packages/Re-Edit-PDF-$version-windows-x64-setup.exe"
+          @{packagingCommit=(git rev-parse HEAD);binaryBuildRun='${{ inputs.build_run }}';binaryUnchanged=$true} | ConvertTo-Json | Set-Content release/native-packages/build-info-nsis.json
+      - run: ./scripts/test-native-installer.ps1
+      - name: Validate MSI independently
+        if: always()
+        run: ./scripts/test-native-msi.ps1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: repaired-windows-setup
+          path: |
+            release/native-packages/*setup.exe
+            release/native-packages/build-info-nsis.json
+            release/native-validation/tauri/windows-installer-result.json
+            release/native-validation/tauri/windows-msi-result.json

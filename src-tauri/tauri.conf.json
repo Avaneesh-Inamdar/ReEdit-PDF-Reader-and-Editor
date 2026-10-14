@@ -57,7 +57,8 @@
         "displayLanguageSelector": false,
         "installMode": "currentUser",
         "installerIcon": "../build/icon.ico",
-        "installerHooks": "windows/hooks.nsh"
+        "installerHooks": "windows/hooks.nsh",
+        "template": "windows/installer.nsi"
       },
       "webviewInstallMode": { "type": "embedBootstrapper", "silent": true },
       "wix": {
