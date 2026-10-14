@@ -38,6 +38,12 @@ while ((Get-Date) -lt $deadline) {
   if ($wizard -ne [IntPtr]::Zero) {
     $finish = [InstallerWizardTest]::Button($wizard, 'Finish')
     if ($finish -ne [IntPtr]::Zero) {
+      # NSIS changes the Next button's caption before it finishes constructing
+      # the final page. Wait for its Run checkbox before clicking Finish.
+      $run = [InstallerWizardTest]::Button($wizard, 'Run Re-Edit PDF')
+      if ($run -eq [IntPtr]::Zero) { Start-Sleep -Milliseconds 300; continue }
+      Start-Sleep -Milliseconds 1000
+      $finish = [InstallerWizardTest]::Button($wizard, 'Finish')
       $finishAt = Get-Date
       [InstallerWizardTest]::Click($finish)
       break
