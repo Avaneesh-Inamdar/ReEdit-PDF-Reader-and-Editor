@@ -68,7 +68,9 @@ if ($installed.Count -ne 1) { throw 'Expected one installed app in the test dire
 $binary = $installed[0].FullName
 $installedDirectory = $installed[0].DirectoryName
 $docIcon = (Get-Item -LiteralPath 'HKCU:/Software/Classes/ReEditPDF.Document/DefaultIcon').GetValue('')
-if ($docIcon -ne "$installedDirectory\document.ico,0") { throw "PDF document icon mismatch: registered [$docIcon], expected [$installedDirectory\document.ico,0]" }
+if (!$docIcon.EndsWith(',0')) { throw "Unexpected document icon index: $docIcon" }
+$registeredIcon = Get-Item -LiteralPath $docIcon.Substring(0, $docIcon.Length - 2)
+if ($registeredIcon.FullName -ne "$installedDirectory\document.ico") { throw "PDF document icon mismatch: registered [$docIcon], expected [$installedDirectory\document.ico,0]" }
 $capabilities = (Get-Item -LiteralPath 'HKCU:/Software/RegisteredApplications').GetValue('Re-Edit PDF')
 if ($capabilities -ne 'Software\ReEditPDF\Capabilities') { throw 'Windows Default Apps registration is missing' }
 foreach ($runtime in @('vcruntime140.dll','msvcp140.dll')) {
