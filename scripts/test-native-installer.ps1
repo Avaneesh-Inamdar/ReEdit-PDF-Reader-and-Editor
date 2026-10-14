@@ -19,12 +19,14 @@ public static class InstallerWizardTest {
   [DllImport("user32.dll")] static extern int GetDlgCtrlID(IntPtr hwnd);
   [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr hwnd);
   [DllImport("user32.dll")] static extern IntPtr GetAncestor(IntPtr hwnd,uint flags);
+  [DllImport("user32.dll")] static extern IntPtr GetParent(IntPtr hwnd);
   [DllImport("user32.dll", SetLastError=true)] static extern IntPtr SendMessageTimeout(IntPtr hwnd, uint msg, IntPtr w, IntPtr l, uint flags, uint timeout, out IntPtr result);
   [DllImport("user32.dll", SetLastError=true)] static extern bool PostMessage(IntPtr hwnd, uint msg, IntPtr w, IntPtr l);
   public static string Text(IntPtr hwnd) { var text=new StringBuilder(1024);GetWindowText(hwnd,text,1024);return text.ToString(); }
   public static IntPtr Window(int process) { IntPtr found=IntPtr.Zero;EnumWindows((h,d)=>{uint pid;GetWindowThreadProcessId(h,out pid);if(pid==process && Text(h).Contains("Re-Edit PDF"))found=h;return true;},IntPtr.Zero);return found; }
   public static IntPtr Button(IntPtr parent,string label) { IntPtr found=IntPtr.Zero;EnumChildWindows(parent,(h,d)=>{if(Text(h).Replace("&","").Trim()==label && IsWindowEnabled(h) && IsWindowVisible(h))found=h;return true;},IntPtr.Zero);return found; }
   public static void Click(IntPtr hwnd) { var wizard=GetAncestor(hwnd,2);SetForegroundWindow(wizard);if(!PostMessage(hwnd,0x00F5,IntPtr.Zero,IntPtr.Zero))throw new Exception("Installer click could not be queued"); }
+  public static void Finish(IntPtr hwnd) { if(!PostMessage(GetParent(hwnd),0x111,new IntPtr(GetDlgCtrlID(hwnd)),hwnd))throw new Exception("Finish notification could not be queued"); }
   public static string Dump(IntPtr parent) { var output=new StringBuilder();EnumChildWindows(parent,(h,d)=>{output.AppendLine(Text(h)+" visible="+IsWindowVisible(h)+" enabled="+IsWindowEnabled(h));return true;},IntPtr.Zero);return output.ToString(); }
 }
 '@
@@ -45,7 +47,7 @@ while ((Get-Date) -lt $deadline) {
       Start-Sleep -Milliseconds 1000
       $finish = [InstallerWizardTest]::Button($wizard, 'Finish')
       $finishAt = Get-Date
-      [InstallerWizardTest]::Click($finish)
+      [InstallerWizardTest]::Finish($finish)
       break
     }
     foreach ($label in @('Next >', 'I Agree', 'Install')) {
