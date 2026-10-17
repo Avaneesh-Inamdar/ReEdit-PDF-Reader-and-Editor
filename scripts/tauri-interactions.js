@@ -24,7 +24,7 @@
     let before=width();const viewer=document.querySelector('[data-pdf-viewer]').getBoundingClientRect();const x=viewer.left+viewer.width/2,y=viewer.top+viewer.height/2
     await protocol('Input.dispatchMouseEvent',{type:'mouseWheel',x,y,deltaX:0,deltaY:-60,modifiers:2})
     await wait(()=>width()>before,'Trusted wheel zoom');checks.trusted_wheel_zoom=true
-    before=width();await protocol('Input.dispatchMouseEvent',{type:'mouseWheel',x:180,y:20,deltaX:0,deltaY:-120,modifiers:2});await wait(()=>width()>before,'Native user zoom relay');checks.native_zoom_relay=true
+    before=width();await protocol('Input.dispatchMouseEvent',{type:'mouseWheel',x:180,y:20,deltaX:0,deltaY:-120,modifiers:2});await wait(()=>width()>before,'Workspace wheel zoom');checks.workspace_wheel_zoom=true
     before=width();await protocol('Input.synthesizePinchGesture',{x,y,scaleFactor:1.3,relativeSpeed:500,gestureSourceType:'touch'})
     await wait(()=>width()>before*1.05,'Native page pinch in');await wait(()=>Math.abs(window.visualViewport.scale-1)<0.001,'Reset viewport pinch');checks.native_pinch_in=true
     before=width();await protocol('Input.synthesizePinchGesture',{x,y,scaleFactor:0.8,relativeSpeed:500,gestureSourceType:'touch'})
