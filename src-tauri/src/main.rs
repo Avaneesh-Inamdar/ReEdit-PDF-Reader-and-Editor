@@ -158,7 +158,16 @@ fn main() {
         commands::export_print,
         commands::close_print
     ]);
+    let context = tauri::generate_context!();
+    #[cfg(feature = "desktop-test")]
+    let context = {
+        let mut context = context;
+        // Only the opt-in harness serves its harmless signed fixture on loopback.
+        // Production builds retain HTTPS-only updater transport.
+        context.config_mut().plugins.0.get_mut("updater").unwrap()["dangerousInsecureTransportProtocol"] = serde_json::json!(true);
+        context
+    };
     builder
-        .run(tauri::generate_context!())
+        .run(context)
         .expect("Unable to launch Re-Edit PDF");
 }
