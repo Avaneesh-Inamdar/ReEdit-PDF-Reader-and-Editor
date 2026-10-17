@@ -1,0 +1,53 @@
+{
+  "version": "2.0.0-alpha.2",
+  "windows": {
+    "run": 39052871536,
+    "commit": "f7153428f32de4445dff6883b73b7ffb8f056986",
+    "artifactSha256": "3aef37c7586fda547acfa7116a8bf9c9b7dce913bb82fdc59ae87e952a907937"
+  },
+  "linux": {
+    "run": 39052154706,
+    "commit": "36a1476a2735118de0ee37e2f2e4405a4fd4d950",
+    "job": 117452761607,
+    "artifactSha256": "cf6bfea4ff96ef819af802dffd584f5e9c5b6d9fc93175366659b51b1eb0bcae"
+  },
+  "distributionValidation": {
+    "run": 39052896955,
+    "result": "success"
+  },
+  "updateFeedValidation": {
+    "run": 39053352894,
+    "result": "success"
+  },
+  "notes": "Platform builds share the same application fixes. Later changes are Windows test synchronization and release-feed automation/documentation. Updater signatures verified locally for all five payloads; Windows publisher signing is not configured.",
+  "assets": {
+    "Re-Edit-PDF-2.0.0-alpha.2-windows-x64-setup.exe": {
+      "bytes": 40227768,
+      "sha256": "d9c2c0f347dff8c9079b0c0374e82b0ce886c2fc8a476ce4b0a524314d27ff5d"
+    },
+    "Re-Edit-PDF-2.0.0-alpha.2-linux-amd64.deb": {
+      "bytes": 43538736,
+      "sha256": "225f58c9a56fe61cdc492d48b74243ecb7e88be8e892bc6d81fbf3dcaa4157ac"
+    },
+    "Re-Edit-PDF-2.0.0-alpha.2-linux-x86_64.rpm": {
+      "bytes": 43540821,
+      "sha256": "4f4afb723abadc33b4dfa71ea3c364fee58cae9067149d8f59f9733fc77b75cc"
+    },
+    "Re-Edit-PDF-2.0.0-alpha.2-linux-x86_64.AppImage": {
+      "bytes": 120527352,
+      "sha256": "fa9571fc21414d95cd7d09c7e7d9c1f382270f3a7347ec82149df875b3df86fb"
+    },
+    "mupdf-native-source-1.27.2.tar.gz": {
+      "bytes": 14942836,
+      "sha256": "8be9156d146f438da590656dbf57b9e891fcd10f847e4c4fa0ef214c339ec0ab"
+    },
+    "latest.json": {
+      "bytes": 6341,
+      "sha256": "d2f02f45b162a4926c92f370846b9007a630b1b5378d80707ee534a7537d2155"
+    },
+    "SHA256SUMS": {
+      "bytes": 629,
+      "sha256": "0d25f23795e661c42375bfe42922b8ca2bf884f9125cfa33496e506e1a526723"
+    }
+  }
+}

@@ -1,0 +1,1471 @@
+{
+  "windows": {
+    "regressions/editing-regression/native-settings.json": {
+      "recent": [
+        {
+          "path": "\\\\?\\D:\\a\\ReEdit-PDF-Reader-and-Editor\\ReEdit-PDF-Reader-and-Editor\\test-fixtures\\simple-text.pdf",
+          "name": "simple-text.pdf"
+        }
+      ]
+    },
+    "regressions/editing-regression/result.json": {
+      "checks": {
+        "convert_surface": true,
+        "font_faces_bounded": true,
+        "font_fallback_visible": true,
+        "no_font_error": true,
+        "removal_controls": true,
+        "replacement_keeps_following_words": true,
+        "selection_keeps_sentence": true,
+        "tool_button_labels_fit": true
+      },
+      "errors": []
+    },
+    "regressions/interactions/native-settings.json": {
+      "recent": [
+        {
+          "path": "\\\\?\\D:\\a\\ReEdit-PDF-Reader-and-Editor\\ReEdit-PDF-Reader-and-Editor\\release\\native-validation\\regressions\\interactions\\interactions-saved.pdf",
+          "name": "interactions-saved.pdf"
+        },
+        {
+          "path": "\\\\?\\D:\\a\\ReEdit-PDF-Reader-and-Editor\\ReEdit-PDF-Reader-and-Editor\\test-fixtures\\simple-text.pdf",
+          "name": "simple-text.pdf"
+        }
+      ]
+    },
+    "regressions/interactions/result.json": {
+      "checks": {
+        "convert_menu_opaque": true,
+        "double_click_word": true,
+        "drag_ten_lines": true,
+        "edit_outline_cleared": true,
+        "header_brand_removed": true,
+        "inline_edit": true,
+        "inline_reedit": true,
+        "landscape_preview": true,
+        "native_page_scale_translation": true,
+        "no_installer_run": true,
+        "page_dimensions_label": true,
+        "paper_preview": true,
+        "print_sessions_released": true,
+        "printer_connected": true,
+        "printer_disconnected_pdf": true,
+        "printer_reconnected": true,
+        "reopened_edited_text": true,
+        "repeated_open_close": true,
+        "save_theme_matches": true,
+        "saved_pdf": true,
+        "scale_preview": true,
+        "signed_update_download": true,
+        "tampered_update_rejected": true,
+        "triple_click_line": true,
+        "trusted_mouse_input": true,
+        "trusted_wheel_zoom": true,
+        "trusted_wheel_zoom_out": true,
+        "workspace_wheel_zoom": true
+      },
+      "errors": [],
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36 Edg/154.0.0.0"
+    },
+    "regressions/interactions/webview-profile/EBWebView/component_crx_cache/metadata.json": {
+      "hashes": {}
+    },
+    "regressions/layout-stability/native-settings.json": {
+      "recent": [
+        {
+          "path": "\\\\?\\D:\\a\\ReEdit-PDF-Reader-and-Editor\\ReEdit-PDF-Reader-and-Editor\\release\\validation-oct17\\layout\\mixed-pages.pdf",
+          "name": "mixed-pages.pdf"
+        }
+      ]
+    },
+    "regressions/layout-stability/result.json": {
+      "checks": {
+        "continuous_scroll_keeps_zoom": true,
+        "fit_width_has_no_horizontal_overflow": true,
+        "landscape_geometry_stable": true
+      },
+      "errors": [],
+      "samples": {
+        "viewport_0": [
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          }
+        ],
+        "viewport_1": [
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          }
+        ],
+        "viewport_2": [
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          }
+        ],
+        "viewport_3": [
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          }
+        ]
+      }
+    },
+    "regressions/layout-stability/webview-profile/EBWebView/component_crx_cache/metadata.json": {
+      "hashes": {}
+    },
+    "regressions/ocr-recognition/native-settings.json": {
+      "recent": [
+        {
+          "path": "\\\\?\\D:\\a\\ReEdit-PDF-Reader-and-Editor\\ReEdit-PDF-Reader-and-Editor\\release\\native-validation\\tauri\\ocr-image-only.pdf",
+          "name": "ocr-image-only.pdf"
+        }
+      ]
+    },
+    "regressions/ocr-recognition/result.json": {
+      "checks": {
+        "all_words_have_selection_geometry": true,
+        "body_recognized": true,
+        "no_text_before": true,
+        "small_footer_recognized": true
+      },
+      "errors": []
+    },
+    "regressions/updates/native-settings.json": {
+      "recent": [
+        {
+          "path": "\\\\?\\D:\\a\\ReEdit-PDF-Reader-and-Editor\\ReEdit-PDF-Reader-and-Editor\\test-fixtures\\simple-text.pdf",
+          "name": "simple-text.pdf"
+        }
+      ]
+    },
+    "regressions/updates/result.json": {
+      "checks": {
+        "button_labels_fit": true,
+        "download_details": true,
+        "prompt_does_not_repeat": true,
+        "release_download_available": true,
+        "startup_prompt": true,
+        "theme_surface": true
+      },
+      "errors": []
+    },
+    "regressions/updates/webview-profile/EBWebView/component_crx_cache/metadata.json": {
+      "hashes": {}
+    },
+    "tauri/fonts-dialog-result.json": {
+      "checks": {
+        "alternative_labels": true,
+        "answer_cancel": true,
+        "answer_discard": true,
+        "answer_save": true,
+        "centered_cancel": true,
+        "centered_discard": true,
+        "centered_save": true,
+        "editor_cleanup": true,
+        "font_assets_load": true,
+        "new_font_families": true,
+        "replacement_spacing_reset": true
+      },
+      "errors": [],
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36 Edg/154.0.0.0"
+    },
+    "tauri/native-settings.json": {
+      "recent": [
+        {
+          "path": "\\\\?\\D:\\a\\ReEdit-PDF-Reader-and-Editor\\ReEdit-PDF-Reader-and-Editor\\test-fixtures\\simple-text.pdf",
+          "name": "simple-text.pdf"
+        },
+        {
+          "path": "\\\\?\\D:\\a\\ReEdit-PDF-Reader-and-Editor\\ReEdit-PDF-Reader-and-Editor\\release\\native-validation\\tauri\\ocr-edited.pdf",
+          "name": "ocr-edited.pdf"
+        },
+        {
+          "path": "\\\\?\\D:\\a\\ReEdit-PDF-Reader-and-Editor\\ReEdit-PDF-Reader-and-Editor\\release\\native-validation\\tauri\\ocr-paper.pdf",
+          "name": "ocr-paper.pdf"
+        }
+      ]
+    },
+    "tauri/ocr-edit-result.json": {
+      "checks": {
+        "can_reedit": true,
+        "invisible_ocr_source": true,
+        "saved_pdf": true
+      },
+      "errors": []
+    },
+    "tauri/open-close-result.json": {
+      "checks": {
+        "binary_font_transport": true,
+        "binary_pdf_transport": true,
+        "layout": true,
+        "pinch_event": true,
+        "print_dialog": true,
+        "print_escape": true,
+        "reader": true,
+        "rendered": true,
+        "repeated_open_close": true,
+        "search": true,
+        "search_close_clears_highlights": true,
+        "sidebar": true,
+        "webview_page_zoom_unchanged": true
+      },
+      "cycles": [
+        {
+          "index": 1,
+          "jsHeap": 12246484,
+          "milliseconds": 1023
+        },
+        {
+          "index": 2,
+          "jsHeap": 13202652,
+          "milliseconds": 919
+        },
+        {
+          "index": 3,
+          "jsHeap": 12747005,
+          "milliseconds": 926
+        },
+        {
+          "index": 4,
+          "jsHeap": 13074045,
+          "milliseconds": 1015
+        },
+        {
+          "index": 5,
+          "jsHeap": 12621161,
+          "milliseconds": 1032
+        },
+        {
+          "index": 6,
+          "jsHeap": 12557773,
+          "milliseconds": 1020
+        },
+        {
+          "index": 7,
+          "jsHeap": 12766505,
+          "milliseconds": 907
+        },
+        {
+          "index": 8,
+          "jsHeap": 12697327,
+          "milliseconds": 916
+        },
+        {
+          "index": 9,
+          "jsHeap": 13193474,
+          "milliseconds": 929
+        },
+        {
+          "index": 10,
+          "jsHeap": 13364100,
+          "milliseconds": 929
+        },
+        {
+          "index": 11,
+          "jsHeap": 12758790,
+          "milliseconds": 1017
+        },
+        {
+          "index": 12,
+          "jsHeap": 13126467,
+          "milliseconds": 936
+        }
+      ],
+      "errors": [],
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36 Edg/154.0.0.0"
+    },
+    "tauri/process-memory.json": [
+      {
+        "seconds": 0.06,
+        "privateBytes": 4935680,
+        "workingBytes": 23769088,
+        "handles": 251,
+        "processes": 1
+      },
+      {
+        "seconds": 0.86,
+        "privateBytes": 176287744,
+        "workingBytes": 451579904,
+        "handles": 2739,
+        "processes": 7
+      },
+      {
+        "seconds": 1.64,
+        "privateBytes": 181624832,
+        "workingBytes": 485695488,
+        "handles": 3023,
+        "processes": 7
+      },
+      {
+        "seconds": 2.43,
+        "privateBytes": 196206592,
+        "workingBytes": 531222528,
+        "handles": 3053,
+        "processes": 7
+      },
+      {
+        "seconds": 3.23,
+        "privateBytes": 203812864,
+        "workingBytes": 584757248,
+        "handles": 3091,
+        "processes": 7
+      },
+      {
+        "seconds": 4.01,
+        "privateBytes": 214147072,
+        "workingBytes": 600076288,
+        "handles": 3161,
+        "processes": 7
+      },
+      {
+        "seconds": 4.8,
+        "privateBytes": 224878592,
+        "workingBytes": 642891776,
+        "handles": 3171,
+        "processes": 7
+      },
+      {
+        "seconds": 5.58,
+        "privateBytes": 219979776,
+        "workingBytes": 610631680,
+        "handles": 3165,
+        "processes": 7
+      },
+      {
+        "seconds": 6.36,
+        "privateBytes": 229773312,
+        "workingBytes": 653213696,
+        "handles": 3165,
+        "processes": 7
+      },
+      {
+        "seconds": 7.17,
+        "privateBytes": 240533504,
+        "workingBytes": 674885632,
+        "handles": 3177,
+        "processes": 7
+      },
+      {
+        "seconds": 7.97,
+        "privateBytes": 224808960,
+        "workingBytes": 608391168,
+        "handles": 3190,
+        "processes": 7
+      },
+      {
+        "seconds": 8.77,
+        "privateBytes": 224989184,
+        "workingBytes": 611983360,
+        "handles": 3192,
+        "processes": 7
+      },
+      {
+        "seconds": 9.55,
+        "privateBytes": 225280000,
+        "workingBytes": 602378240,
+        "handles": 3192,
+        "processes": 7
+      },
+      {
+        "seconds": 10.35,
+        "privateBytes": 225861632,
+        "workingBytes": 601448448,
+        "handles": 3192,
+        "processes": 7
+      },
+      {
+        "seconds": 11.13,
+        "privateBytes": 235798528,
+        "workingBytes": 646373376,
+        "handles": 3217,
+        "processes": 7
+      },
+      {
+        "seconds": 11.92,
+        "privateBytes": 236691456,
+        "workingBytes": 646717440,
+        "handles": 3227,
+        "processes": 7
+      },
+      {
+        "seconds": 12.71,
+        "privateBytes": 218681344,
+        "workingBytes": 589926400,
+        "handles": 3198,
+        "processes": 7
+      },
+      {
+        "seconds": 13.5,
+        "privateBytes": 226738176,
+        "workingBytes": 610836480,
+        "handles": 3217,
+        "processes": 7
+      },
+      {
+        "seconds": 14.28,
+        "privateBytes": 228552704,
+        "workingBytes": 605380608,
+        "handles": 3217,
+        "processes": 7
+      }
+    ],
+    "tauri/windows-installer-result.json": {
+      "passed": true,
+      "version": "2.0.0-alpha.2",
+      "finishDismissSeconds": 0.1165757,
+      "checks": [
+        "assisted wizard reaches Finish",
+        "Finish dismisses promptly",
+        "Finish launches installed app",
+        "app shows its window",
+        "test app closes",
+        "test uninstall exits successfully"
+      ]
+    },
+    "tauri/windows-msi-result.json": {
+      "passed": true,
+      "version": "2.0.0-alpha.2",
+      "checks": [
+        "MSI installs",
+        "runtime DLLs present",
+        "installed app opens",
+        "installed app closes",
+        "MSI uninstalls"
+      ]
+    }
+  },
+  "linux": {
+    "distros/ubuntu-22.04/native-settings.json": {
+      "recent": [
+        {
+          "path": "/home/runner/work/ReEdit-PDF-Reader-and-Editor/ReEdit-PDF-Reader-and-Editor/test-fixtures/simple-text.pdf",
+          "name": "simple-text.pdf"
+        }
+      ]
+    },
+    "distros/ubuntu-22.04/result.json": {
+      "checks": {
+        "centered_dialog": true,
+        "dialog_cancel": true,
+        "find_opens": true,
+        "font_discovery": true,
+        "landscape_preview": true,
+        "pdf_transport": true,
+        "print_preview": true,
+        "print_session_released": true,
+        "reader_rendered": true
+      },
+      "errors": [],
+      "userAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15"
+    },
+    "regressions/editing-regression/native-settings.json": {
+      "recent": [
+        {
+          "path": "/home/runner/work/ReEdit-PDF-Reader-and-Editor/ReEdit-PDF-Reader-and-Editor/test-fixtures/simple-text.pdf",
+          "name": "simple-text.pdf"
+        }
+      ]
+    },
+    "regressions/editing-regression/result.json": {
+      "checks": {
+        "convert_surface": true,
+        "font_faces_bounded": true,
+        "font_fallback_visible": true,
+        "no_font_error": true,
+        "removal_controls": true,
+        "replacement_keeps_following_words": true,
+        "selection_keeps_sentence": true,
+        "tool_button_labels_fit": true
+      },
+      "errors": []
+    },
+    "regressions/layout-stability/native-settings.json": {
+      "recent": [
+        {
+          "path": "/home/runner/work/ReEdit-PDF-Reader-and-Editor/ReEdit-PDF-Reader-and-Editor/release/validation-oct17/layout/mixed-pages.pdf",
+          "name": "mixed-pages.pdf"
+        }
+      ]
+    },
+    "regressions/layout-stability/result.json": {
+      "checks": {
+        "continuous_scroll_keeps_zoom": true,
+        "fit_width_has_no_horizontal_overflow": true,
+        "landscape_geometry_stable": true
+      },
+      "errors": [],
+      "samples": {
+        "viewport_0": [
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          }
+        ],
+        "viewport_1": [
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          }
+        ],
+        "viewport_2": [
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          }
+        ],
+        "viewport_3": [
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          }
+        ]
+      }
+    },
+    "regressions/ocr-recognition/native-settings.json": {
+      "recent": [
+        {
+          "path": "/home/runner/work/ReEdit-PDF-Reader-and-Editor/ReEdit-PDF-Reader-and-Editor/release/native-validation/tauri/ocr-image-only.pdf",
+          "name": "ocr-image-only.pdf"
+        }
+      ]
+    },
+    "regressions/ocr-recognition/result.json": {
+      "checks": {
+        "all_words_have_selection_geometry": true,
+        "body_recognized": true,
+        "no_text_before": true,
+        "small_footer_recognized": true
+      },
+      "errors": []
+    },
+    "regressions/updates/native-settings.json": {
+      "recent": [
+        {
+          "path": "/home/runner/work/ReEdit-PDF-Reader-and-Editor/ReEdit-PDF-Reader-and-Editor/test-fixtures/simple-text.pdf",
+          "name": "simple-text.pdf"
+        }
+      ]
+    },
+    "regressions/updates/result.json": {
+      "checks": {
+        "button_labels_fit": true,
+        "download_details": true,
+        "prompt_does_not_repeat": true,
+        "release_download_available": true,
+        "startup_prompt": true,
+        "theme_surface": true
+      },
+      "errors": []
+    }
+  },
+  "distributions": {
+    "native-distro-0/debian-12/package-result.json": {
+      "distribution": "debian-12",
+      "installedPackageLaunched": true,
+      "appImageExtractAndRunLaunched": true,
+      "environment": "container/Xvfb; FUSE, real desktop gestures and printers not tested"
+    },
+    "native-distro-0/debian-12/result.json": {
+      "checks": {
+        "centered_dialog": true,
+        "dialog_cancel": true,
+        "find_opens": true,
+        "font_discovery": true,
+        "landscape_preview": true,
+        "pdf_transport": true,
+        "print_preview": true,
+        "print_session_released": true,
+        "reader_rendered": true
+      },
+      "errors": [],
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15"
+    },
+    "native-distro-1/ubuntu-24.04/package-result.json": {
+      "distribution": "ubuntu-24.04",
+      "installedPackageLaunched": true,
+      "appImageExtractAndRunLaunched": true,
+      "environment": "container/Xvfb; FUSE, real desktop gestures and printers not tested"
+    },
+    "native-distro-1/ubuntu-24.04/result.json": {
+      "checks": {
+        "centered_dialog": true,
+        "dialog_cancel": true,
+        "find_opens": true,
+        "font_discovery": true,
+        "landscape_preview": true,
+        "pdf_transport": true,
+        "print_preview": true,
+        "print_session_released": true,
+        "reader_rendered": true
+      },
+      "errors": [],
+      "userAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15"
+    },
+    "native-distro-2/fedora-43/package-result.json": {
+      "distribution": "fedora-43",
+      "installedPackageLaunched": true,
+      "appImageExtractAndRunLaunched": true,
+      "environment": "container/Xvfb; FUSE, real desktop gestures and printers not tested"
+    },
+    "native-distro-2/fedora-43/result.json": {
+      "checks": {
+        "centered_dialog": true,
+        "dialog_cancel": true,
+        "find_opens": true,
+        "font_discovery": true,
+        "landscape_preview": true,
+        "pdf_transport": true,
+        "print_preview": true,
+        "print_session_released": true,
+        "reader_rendered": true
+      },
+      "errors": [],
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15"
+    }
+  },
+  "localFrontend": {
+    "passed": 142,
+    "skipped": 1,
+    "files": 28,
+    "optionalSkip": "LibreOffice integration on Windows"
+  },
+  "nativeTests": {
+    "desktop": 6,
+    "core": 21,
+    "failed": 0
+  }
+}

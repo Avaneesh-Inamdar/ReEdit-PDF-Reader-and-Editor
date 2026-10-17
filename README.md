@@ -81,6 +81,7 @@ This project is independent of Adobe. It does not claim complete Acrobat Premium
 - OCR text replacement reconstructs the surrounding paper to avoid white patches; saved replacements remain searchable and can be edited again.
 - The Windows setup launches the app from Finish, registers a distinct PDF document icon, and appears in Windows Default Apps.
 - Installer, WebView regression and Linux package checks are documented in the [validation report](docs/releases/v2.0.0-alpha.2/VALIDATION.md). Container/Xvfb checks do not replace stock desktop testing.
+- Alpha.2 validation passed 142 local frontend tests, 27 native Rust tests, 76 Windows WebView checks, Windows installer lifecycle checks, and Debian/Ubuntu/Fedora package launches. Preview font and open/close cleanup checks passed in the measured scenarios.
 
 ### Basic workflow
 
