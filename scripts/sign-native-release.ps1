@@ -37,5 +37,16 @@ $nsis=UpdateAsset '*windows-x64-setup.exe'
 $linux=UpdateAsset '*linux-x86_64.AppImage'
 $manifest=@{version=$version;notes=$Notes;pub_date=(Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ');platforms=@{'windows-x86_64'=$nsis;'windows-x86_64-nsis'=$nsis;'linux-x86_64'=$linux}}
 if (@($assets | Where-Object Name -Like '*windows-x64.msi').Count -eq 1) {$manifest.platforms['windows-x86_64-msi']=UpdateAsset '*windows-x64.msi'}
+# Keep manual DEB/RPM/source verification in the same public metadata instead
+# of adding detached signature clutter to the release's download list.
+$downloads=@{}
+foreach($asset in $assets) {
+  $downloads[$asset.Name]=@{
+    url=$base+[Uri]::EscapeDataString($asset.Name)
+    signature=(Get-Content -Raw -LiteralPath ($asset.FullName+'.sig')).Trim()
+    sha256=(Get-FileHash -LiteralPath $asset.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+  }
+}
+$manifest.downloads=$downloads
 [IO.File]::WriteAllText((Join-Path $assetDirectory 'latest.json'),($manifest | ConvertTo-Json -Depth 8))
 Write-Output "Signed $($assets.Count) package/source artifacts for $version. No Windows publisher certificate was used."

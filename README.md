@@ -38,6 +38,8 @@ The setup EXE installs WebView2 when needed. Windows publisher signing is not co
 
 Release assets contain these four app packages, `SHA256SUMS`, the updater manifest (`latest.json`, with embedded package signatures), and the corresponding native MuPDF source archive. Build logs, screenshots and test reports stay in Actions or [release documentation](docs/releases/v2.0.0-alpha.2/VALIDATION.md), rather than appearing as extra downloads.
 
+The manifest's `downloads` entries include the hashes and version-bound signatures for all four packages and the MuPDF source archive. The app uses its configured public key to verify supported automatic updates.
+
 Native previews check the [preview update feed](updates/native-preview.json) without uploading PDF content. Updates require confirmation before downloading and installing; unsaved documents must be resolved first. AppImage builds support in-app updating. DEB/RPM users should download and install the matching package through their package manager.
 
 Linux native packages require a glibc desktop environment and GTK/WebKitGTK support. Alpine/musl, ARM64 and macOS are not validated.
