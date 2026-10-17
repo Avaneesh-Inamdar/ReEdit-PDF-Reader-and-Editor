@@ -315,6 +315,11 @@
     await wait(() => !document.querySelector('.file-dialog'), 'Save copy')
     checks.saved_pdf =
       (await window.api.readPdf(await window.api.getCurrentPath())).byteLength > 100
+    // Saving retains editable overlays in memory. Close and reopen the saved
+    // file before checking its baked PDF text layer.
+    document.querySelector('[title="Close tab"]').click()
+    await wait(() => !document.querySelector('#page-1'), 'Close saved document')
+    await invoke('desktop_test_reopen')
     await wait(
       () => document.querySelector('#page-1 [data-pdf-run]')?.textContent,
       'Reload saved PDF'
