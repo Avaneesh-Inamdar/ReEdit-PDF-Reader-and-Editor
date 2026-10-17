@@ -27,6 +27,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           cache-on-failure: true
+          save-if: ${{ !cancelled() }}
       - name: Linux native build and desktop prerequisites
         if: runner.os == 'Linux'
         run: |
@@ -124,7 +125,7 @@ jobs:
             release/native-validation/**/*.json
             release/native-validation/**/*.png
       - uses: actions/upload-artifact@v4
-        if: runner.os == 'Linux' && success()
+        if: runner.os == 'Linux' && always()
         with:
           name: native-validation-tools-Linux
           path: target/release/Re-Edit-PDF

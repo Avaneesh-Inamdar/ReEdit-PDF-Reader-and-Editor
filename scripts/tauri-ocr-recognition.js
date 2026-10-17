@@ -49,7 +49,7 @@
         span.getBoundingClientRect().width > 0 &&
         span.getBoundingClientRect().height > 0
     )
-    await invoke('desktop_test_snapshot', { name: 'editing' })
+    if (navigator.userAgent.includes('Windows')) await invoke('desktop_test_snapshot', { name: 'editing' })
     if (Object.values(checks).some((value) => !value)) throw Error('OCR result: ' + words)
   } catch (error) {
     errors.push(String(error))
