@@ -1,23 +1,46 @@
 {
-  "notes": "Rust desktop preview with native file opening, additional open-source fonts, inline editing, OCR background repair and print preview.",
-  "version": "2.0.0-alpha.1",
-  "pub_date": "2026-10-14T03:54:39Z",
+  "pub_date": "2026-10-17T17:32:31Z",
+  "downloads": {
+    "Re-Edit-PDF-2.0.0-alpha.2-windows-x64-setup.exe": {
+      "sha256": "d9c2c0f347dff8c9079b0c0374e82b0ce886c2fc8a476ce4b0a524314d27ff5d",
+      "url": "https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/download/v2.0.0-alpha.2/Re-Edit-PDF-2.0.0-alpha.2-windows-x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSWlZLb1p0c1A0R2E0SXg0eEwyL2h5S1Y0clkrZkIrZ0FUenArSU1pbzhBR0kvUE9ZdUNoTklqUExuTG9wUzBIV0hpMzRMTVU0MTE5aTNIUjZ1NjdaUjIrUTFqV0NCOUFFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMjU4MzUxCWZpbGU6UmUtRWRpdC1QREYtMi4wLjAtYWxwaGEuMi13aW5kb3dzLXg2NC1zZXR1cC5leGUJdmVyc2lvbjoyLjAuMC1hbHBoYS4yCkpMdEJBbTB0ZjdzdHdOUU16Y08wdnU5K293V28rTUdnODBBYTRROFRqRjEvSUtheTZaZlVvR3g0dVhlZHZTZ0hWWmtJNUdnOUtNdHZ3cXBqNGgvWENnPT0K"
+    },
+    "Re-Edit-PDF-2.0.0-alpha.2-linux-amd64.deb": {
+      "sha256": "225f58c9a56fe61cdc492d48b74243ecb7e88be8e892bc6d81fbf3dcaa4157ac",
+      "url": "https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/download/v2.0.0-alpha.2/Re-Edit-PDF-2.0.0-alpha.2-linux-amd64.deb",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSWlZLb1p0c1A0R1dLbVlBdENMb3huVXh0TGFwWkpQRGZsd0tIZjJWSVBYUzF3WFYxMGJFM3VQejNmU0ovQW1wWnBWTWJmRld1QWdlWUdiSG8wZXIxYS9uVEEzYjhzVkFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMjU4MzUwCWZpbGU6UmUtRWRpdC1QREYtMi4wLjAtYWxwaGEuMi1saW51eC1hbWQ2NC5kZWIJdmVyc2lvbjoyLjAuMC1hbHBoYS4yCkRzYkVZS2JRRVBTbTlRczVXZXlyL0ppZ21TRDlZVlJSTkVocmN6bDdZUzNBbUw2QjBuZTgvWjNnUmRjOHN5eHRQRFNaNEl1K3ZhZEg0R0Q3VTBMaEJnPT0K"
+    },
+    "mupdf-native-source-1.27.2.tar.gz": {
+      "sha256": "8be9156d146f438da590656dbf57b9e891fcd10f847e4c4fa0ef214c339ec0ab",
+      "url": "https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/download/v2.0.0-alpha.2/mupdf-native-source-1.27.2.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSWlZLb1p0c1A0R2ZnL1ljZFB0YkIzdktUVS93YWJyOGhmSkJWL29XeXFGNnR3YTdpOXhkZzM4NGVEbEFUbzRDVzNqZW5xTTNFakN4K2ltLy9CdDFzNFovVTgrclZLNlFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMjU4MzUwCWZpbGU6bXVwZGYtbmF0aXZlLXNvdXJjZS0xLjI3LjIudGFyLmd6CXZlcnNpb246Mi4wLjAtYWxwaGEuMgp4NTdma0xzaG9IbHJQVjN6Wk1VbTAxdldIVlo0RWdWTHFaNEFJcVFkN1dqZnRnQ0N5cC9iNndDdVU5SkdsZ2JlTmRLcEZsL3htWlR2Q1p6eTBrY3REdz09Cg=="
+    },
+    "Re-Edit-PDF-2.0.0-alpha.2-linux-x86_64.AppImage": {
+      "sha256": "fa9571fc21414d95cd7d09c7e7d9c1f382270f3a7347ec82149df875b3df86fb",
+      "url": "https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/download/v2.0.0-alpha.2/Re-Edit-PDF-2.0.0-alpha.2-linux-x86_64.AppImage",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSWlZLb1p0c1A0R1FKYWNRWVlCelBybUEyb2I3bDJBTmQ1b05xa251cVdzMmRCSTBsYkhZOWl5di9BYkRXQkcwQ1QxWFZWcnRpTHdZQUMxaXlnOHVGak13VFZKcjNqVEE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMjU4MzUwCWZpbGU6UmUtRWRpdC1QREYtMi4wLjAtYWxwaGEuMi1saW51eC14ODZfNjQuQXBwSW1hZ2UJdmVyc2lvbjoyLjAuMC1hbHBoYS4yCjd4ZlBYMnFDZ0lNaGxiOStjTm9BUmFWMlJkQVp0ekszaDBoem13dERkYWFsWW9LYlBpMmpOVnZ3czNhZ29JeVpkOUF5Rmo5disvbUM3V2JzK05DK0FBPT0K"
+    },
+    "Re-Edit-PDF-2.0.0-alpha.2-linux-x86_64.rpm": {
+      "sha256": "4f4afb723abadc33b4dfa71ea3c364fee58cae9067149d8f59f9733fc77b75cc",
+      "url": "https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/download/v2.0.0-alpha.2/Re-Edit-PDF-2.0.0-alpha.2-linux-x86_64.rpm",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSWlZLb1p0c1A0R1dnaldNUUU3VzNaSzk4dkdJajFHMEIwY3pPdysxMXNxWWxRb3VqQzJqZFc1N2NJOGUybmlJR3NBMlpnSGNZT3oyeG1zTGxwUmdOQWR4VGVsaGwzMndzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMjU4MzUwCWZpbGU6UmUtRWRpdC1QREYtMi4wLjAtYWxwaGEuMi1saW51eC14ODZfNjQucnBtCXZlcnNpb246Mi4wLjAtYWxwaGEuMgo5Z0JPSnZEVWQxcS9OZGNaL1hqbWlwS09yOThLSjVtazNRbTRKTm9YaGhlS254TFVYdERIdmtlNEgwZ0xncTRmQU1tZm9yRm1keFNWN2xpNVpQUTVCQT09Cg=="
+    }
+  },
+  "version": "2.0.0-alpha.2",
   "platforms": {
     "windows-x86_64-nsis": {
-      "url": "https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/download/v2.0.0-alpha.1/Re-Edit-PDF-2.0.0-alpha.1-windows-x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSWlZLb1p0c1A0R1E3VjQ1V1JXRFdiVDdnazJOaU5KbTQ5ZWRORlFUN3lCdlpkR1RacEd0MTFxa2lITzR2MEpXRXh3QUlLSks3UWJuemZVbUV5MnN1QkQ0WmhZTEgrMlEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxOTUwMDc5CWZpbGU6UmUtRWRpdC1QREYtMi4wLjAtYWxwaGEuMS13aW5kb3dzLXg2NC1zZXR1cC5leGUJdmVyc2lvbjoyLjAuMC1hbHBoYS4xCnEzT3B4a3RGQkpMd0p0MHVKalBxR0N4ZWJybENTcjFNU3hrZ0Y4V3BsVGJwUnVYeU1MOVA4QWQ0UVVpYk0xUURUTUtxdFBKS29meVZjK1RjcWdIeUJnPT0K"
-    },
-    "linux-x86_64": {
-      "url": "https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/download/v2.0.0-alpha.1/Re-Edit-PDF-2.0.0-alpha.1-linux-x86_64.AppImage",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSWlZLb1p0c1A0R1ZuZnZJRVNqMkdZVzNxUkt1RGxnUVh5ZW95UzJmT3hTU1JISUlvQ2JlQmhSNlJERnMySWN0S2tKVFY5RnJZUmxydGdVMHN5NVRHZk5HanZxdDFFOHd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxOTUwMDc4CWZpbGU6UmUtRWRpdC1QREYtMi4wLjAtYWxwaGEuMS1saW51eC14ODZfNjQuQXBwSW1hZ2UJdmVyc2lvbjoyLjAuMC1hbHBoYS4xCit3SEZZQUc4b3FtR1RYaVFJM0oydmh4Unp0cytSNlNHYWorQ1lneG1pNitkL2lnNGZSMit4M2ZXUm5YK3Q2T3lFTE5IUnhraTBkY0J5RUV5RFdwVERnPT0K"
-    },
-    "windows-x86_64-msi": {
-      "url": "https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/download/v2.0.0-alpha.1/Re-Edit-PDF-2.0.0-alpha.1-windows-x64.msi",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSWlZLb1p0c1A0R2Q0R3hHVE1tMkNOQmxSb29RM2lCRklvNjZxdDZxY25raDBTMjdXaHJxWWdkazRNT2JnWGRRckoySm1IZkhDODYrc0syM3kxbmliTUhZeU9UL05xTXdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxOTUwMDc5CWZpbGU6UmUtRWRpdC1QREYtMi4wLjAtYWxwaGEuMS13aW5kb3dzLXg2NC5tc2kJdmVyc2lvbjoyLjAuMC1hbHBoYS4xCnc0OHlCeG5wc2h6aWhEZ2RiRlF1dUVSMjVsL205eEp2V3ZNSzFLdElFV0ZNVjh1NWpsMWorb0FneGpqeXVYUUd1WnE1SmVvakEvWkpPK0JYRllIWUFBPT0K"
+      "url": "https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/download/v2.0.0-alpha.2/Re-Edit-PDF-2.0.0-alpha.2-windows-x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSWlZLb1p0c1A0R2E0SXg0eEwyL2h5S1Y0clkrZkIrZ0FUenArSU1pbzhBR0kvUE9ZdUNoTklqUExuTG9wUzBIV0hpMzRMTVU0MTE5aTNIUjZ1NjdaUjIrUTFqV0NCOUFFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMjU4MzUxCWZpbGU6UmUtRWRpdC1QREYtMi4wLjAtYWxwaGEuMi13aW5kb3dzLXg2NC1zZXR1cC5leGUJdmVyc2lvbjoyLjAuMC1hbHBoYS4yCkpMdEJBbTB0ZjdzdHdOUU16Y08wdnU5K293V28rTUdnODBBYTRROFRqRjEvSUtheTZaZlVvR3g0dVhlZHZTZ0hWWmtJNUdnOUtNdHZ3cXBqNGgvWENnPT0K"
     },
     "windows-x86_64": {
-      "url": "https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/download/v2.0.0-alpha.1/Re-Edit-PDF-2.0.0-alpha.1-windows-x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSWlZLb1p0c1A0R1E3VjQ1V1JXRFdiVDdnazJOaU5KbTQ5ZWRORlFUN3lCdlpkR1RacEd0MTFxa2lITzR2MEpXRXh3QUlLSks3UWJuemZVbUV5MnN1QkQ0WmhZTEgrMlEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxOTUwMDc5CWZpbGU6UmUtRWRpdC1QREYtMi4wLjAtYWxwaGEuMS13aW5kb3dzLXg2NC1zZXR1cC5leGUJdmVyc2lvbjoyLjAuMC1hbHBoYS4xCnEzT3B4a3RGQkpMd0p0MHVKalBxR0N4ZWJybENTcjFNU3hrZ0Y4V3BsVGJwUnVYeU1MOVA4QWQ0UVVpYk0xUURUTUtxdFBKS29meVZjK1RjcWdIeUJnPT0K"
+      "url": "https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/download/v2.0.0-alpha.2/Re-Edit-PDF-2.0.0-alpha.2-windows-x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSWlZLb1p0c1A0R2E0SXg0eEwyL2h5S1Y0clkrZkIrZ0FUenArSU1pbzhBR0kvUE9ZdUNoTklqUExuTG9wUzBIV0hpMzRMTVU0MTE5aTNIUjZ1NjdaUjIrUTFqV0NCOUFFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMjU4MzUxCWZpbGU6UmUtRWRpdC1QREYtMi4wLjAtYWxwaGEuMi13aW5kb3dzLXg2NC1zZXR1cC5leGUJdmVyc2lvbjoyLjAuMC1hbHBoYS4yCkpMdEJBbTB0ZjdzdHdOUU16Y08wdnU5K293V28rTUdnODBBYTRROFRqRjEvSUtheTZaZlVvR3g0dVhlZHZTZ0hWWmtJNUdnOUtNdHZ3cXBqNGgvWENnPT0K"
+    },
+    "linux-x86_64": {
+      "url": "https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/download/v2.0.0-alpha.2/Re-Edit-PDF-2.0.0-alpha.2-linux-x86_64.AppImage",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSWlZLb1p0c1A0R1FKYWNRWVlCelBybUEyb2I3bDJBTmQ1b05xa251cVdzMmRCSTBsYkhZOWl5di9BYkRXQkcwQ1QxWFZWcnRpTHdZQUMxaXlnOHVGak13VFZKcjNqVEE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMjU4MzUwCWZpbGU6UmUtRWRpdC1QREYtMi4wLjAtYWxwaGEuMi1saW51eC14ODZfNjQuQXBwSW1hZ2UJdmVyc2lvbjoyLjAuMC1hbHBoYS4yCjd4ZlBYMnFDZ0lNaGxiOStjTm9BUmFWMlJkQVp0ekszaDBoem13dERkYWFsWW9LYlBpMmpOVnZ3czNhZ29JeVpkOUF5Rmo5disvbUM3V2JzK05DK0FBPT0K"
     }
-  }
+  },
+  "notes": "Native preview: stable certificate sizing, automatic font matching, connected-line editing, improved OCR, existing-object removal and startup update notifications."
 }
