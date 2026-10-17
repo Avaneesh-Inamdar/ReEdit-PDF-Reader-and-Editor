@@ -39,6 +39,11 @@
     checks.download_details = document
       .querySelector('.update-content')
       .textContent.includes('99.0.0')
+    checks.button_labels_fit = [...document.querySelectorAll('.update-dialog button')].every(
+      (button) =>
+        button.scrollWidth <= button.clientWidth + 1 &&
+        button.scrollHeight <= button.clientHeight + 1
+    )
     checks.release_download_available = [
       ...document.querySelectorAll('.update-dialog button')
     ].some((button) => button.textContent === 'Download packages' && !button.disabled)

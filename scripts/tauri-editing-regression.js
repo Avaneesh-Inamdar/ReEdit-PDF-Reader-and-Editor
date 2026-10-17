@@ -28,6 +28,13 @@
     checks.removal_controls = !![...document.querySelectorAll('.document-objects button')].find(
       (button) => button.textContent.includes('scanned')
     )
+    checks.tool_button_labels_fit = [
+      ...document.querySelectorAll('.document-objects button')
+    ].every(
+      (button) =>
+        button.scrollWidth <= button.clientWidth + 1 &&
+        button.scrollHeight <= button.clientHeight + 1
+    )
     const span = document.querySelector('#page-1 [data-pdf-run]')
     const original = span.textContent
     // Reproduce the unavailable-font case while preserving the fixture's real geometry.
@@ -76,17 +83,20 @@
       'ExpandedReplacement' + original.slice(end)
     checks.no_font_error = !document.querySelector('.pdf-inline-actions .operation-error')
     await pause(1000)
-    const initialFonts=document.fonts.size
-    for(let i=0;i<6;i++){
-      document.querySelector('[data-edited-text] rect').dispatchEvent(new MouseEvent('click',{bubbles:true}))
-      await wait(()=>document.querySelector('.pdf-inline-editor'),'Repeat edit')
+    const initialFonts = document.fonts.size
+    for (let i = 0; i < 6; i++) {
+      document
+        .querySelector('[data-edited-text] rect')
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await wait(() => document.querySelector('.pdf-inline-editor'), 'Repeat edit')
       await pause(100)
       document.querySelector('.pdf-inline-actions .operation-secondary').click()
-      await wait(()=>!document.querySelector('.pdf-inline-editor'),'Cancel repeat edit')
+      await wait(() => !document.querySelector('.pdf-inline-editor'), 'Cancel repeat edit')
     }
     await pause(500)
-    checks.font_faces_bounded=document.fonts.size<=initialFonts+1
-    if (navigator.userAgent.includes('Windows')) await invoke('desktop_test_snapshot', { name: 'editing' })
+    checks.font_faces_bounded = document.fonts.size <= initialFonts + 1
+    if (navigator.userAgent.includes('Windows'))
+      await invoke('desktop_test_snapshot', { name: 'editing' })
     if (Object.values(checks).some((value) => !value))
       throw Error(
         'Failed: ' +

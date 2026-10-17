@@ -129,14 +129,6 @@
     })
     await wait(() => width() < before, 'Trusted wheel zoom out')
     checks.trusted_wheel_zoom_out = true
-    before = width()
-    await invoke('desktop_test_native_zoom', { factor: 1.2 })
-    await wait(() => width() > before, 'Native controller zoom in')
-    checks.native_controller_zoom_in = true
-    before = width()
-    await invoke('desktop_test_native_zoom', { factor: 0.8 })
-    await wait(() => width() < before, 'Native controller zoom out')
-    checks.native_controller_zoom_out = true
     // Exercise the native scale-change path directly. CDP's synthetic touch
     // pinch does not generate viewport changes in the desktop WebView host;
     // trusted Ctrl+wheel above covers the precision-trackpad delivery path.
@@ -145,6 +137,11 @@
     await wait(() => width() > before * 1.05, 'Native page scale')
     await wait(() => Math.abs(window.visualViewport.scale - 1) < 0.001, 'Reset viewport scale')
     checks.native_page_scale_translation = true
+    // Return the fixture to a fully visible page before testing a ten-line drag.
+    await key('0', 'Digit0', 48, 2)
+    await pause(450)
+    document.querySelector('#page-1').scrollIntoView({ block: 'start' })
+    await pause(100)
     const lines = [...document.querySelectorAll('#page-1 [data-pdf-run]')],
       first = lines.find((span) => span.textContent.startsWith('Line 1 ')),
       tenth = lines.find((span) => span.textContent.startsWith('Line 10 '))

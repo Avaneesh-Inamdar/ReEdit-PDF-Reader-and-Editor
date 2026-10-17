@@ -100,12 +100,20 @@
 }
 .operation-primary,
 .operation-secondary {
-  height: 34px;
-  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 34px;
+  height: auto;
+  max-width: 100%;
+  padding: 7px 18px;
   border-radius: 18px;
   font-size: 13px;
   font-weight: 600;
-  white-space: nowrap;
+  line-height: 18px;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .operation-primary {
   background: var(--acrobat-accent);
@@ -126,6 +134,7 @@
 }
 .operation-dialog-footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   padding: 16px 24px;

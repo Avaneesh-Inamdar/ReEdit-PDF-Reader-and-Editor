@@ -68,6 +68,7 @@ This project is independent of Adobe. It does not claim complete Acrobat Premium
 - Automatic font matching and connected-line editing, improved faint/sparse OCR text detection, and an opaque Convert menu.
 - Existing annotation/signature-field removal, a region eraser for flattened marks, and clearer document permissions.
 - Startup update notifications and a dedicated signed native-preview update feed.
+- Tool and dialog buttons wrap long labels instead of spilling text outside their borders.
 
 ### Native desktop integration
 
