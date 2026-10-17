@@ -1,4 +1,6 @@
 import { Icon } from './Icon'
+import {DocumentObjectsPanel} from './DocumentObjectsPanel'
+import type {PDFDocumentProxy} from 'pdfjs-dist'
 import { editSelection } from '../lib/editSelection'
 import { placeImage } from '../lib/imagePlacement'
 import { requestText } from '../lib/requestText'
@@ -27,7 +29,7 @@ const FONT_OPTIONS = [...standardFonts, ...bundledFonts.map(([name]) => name)].m
 
 const SIZE_OPTIONS = [8, 10, 12, 14, 16, 18, 24, 32, 48]
 
-export function EditPanel(): React.JSX.Element {
+export function EditPanel({pdfDoc}:{pdfDoc?:PDFDocumentProxy|null}={}): React.JSX.Element {
   const { data, currentPage } = usePdfStore()
   const { annotations, selectedId, updateAnnotation, deleteAnnotation, addAnnotation } =
     useAnnotationStore()
@@ -242,6 +244,7 @@ export function EditPanel(): React.JSX.Element {
       >
         Click text on the page to edit it.
       </div>
+      <DocumentObjectsPanel pdfDoc={pdfDoc}/>
       {/* FORMAT – wired to selected text annotation, like Word / Master PDF Editor */}
       <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
         <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-3">

@@ -31,6 +31,7 @@ export interface PdfApi {
     current: string
     latest?: string
     available: boolean
+    automatic?: boolean
     message: string
   }>
   openReleases: () => Promise<void>

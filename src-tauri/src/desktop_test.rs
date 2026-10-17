@@ -287,6 +287,10 @@ pub async fn desktop_test_snapshot(_app: AppHandle, _name: String) -> Result<(),
 pub fn start(window: &tauri::Webview) {
     if std::env::var_os("REEDIT_TEST_OUTPUT").is_some() {
         let script = match std::env::var("REEDIT_TEST_SUITE").as_deref() {
+            Ok("updates") => include_str!("../../scripts/tauri-updates.js"),
+            Ok("layout-stability") => include_str!("../../scripts/tauri-layout-stability.js"),
+            Ok("editing-regression") => include_str!("../../scripts/tauri-editing-regression.js"),
+            Ok("ocr-recognition") => include_str!("../../scripts/tauri-ocr-recognition.js"),
             Ok("interactions") => include_str!("../../scripts/tauri-interactions.js"),
             Ok("fonts-dialog") => include_str!("../../scripts/tauri-fonts-dialog.js"),
             Ok("ocr-edit") => include_str!("../../scripts/tauri-ocr-edit.js"),

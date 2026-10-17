@@ -21,25 +21,24 @@
 
 ## Download
 
-Download the [Rust/Tauri preview, v2.0.0-alpha.1](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/tag/v2.0.0-alpha.1). It uses a Rust desktop backend and the existing React workspace in the system webview, without the Electron runtime.
+Download the [Rust/Tauri preview, v2.0.0-alpha.2](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/tag/v2.0.0-alpha.2). It uses a Rust desktop backend and the existing React workspace in the system webview, without the Electron runtime.
 
-The [1.4.4 Electron release](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest) remains the stable download while native desktop validation continues. Preview downloads are manual; the stable update channel does not enroll users in prereleases.
+The [1.4.4 Electron release](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest) remains the stable download while native desktop validation continues. Starting with alpha.2, native previews check their own update channel shortly after launch and show an update notification. **Help → Check for Updates** also offers verified download and installation when supported. The Electron stable channel remains separate; older previews need a manual upgrade.
 
 The download badge counts release-asset downloads across all versions. Repeat downloads and supporting files count separately; it is not a count of unique users.
 
-| Platform            | Package      | Installation                                            |
-| ------------------- | ------------ | ------------------------------------------------------- |
-| Windows x64         | Setup EXE    | Run the installer; Finish can launch the app.           |
-| Windows x64         | MSI          | Alternative Windows installer.                          |
-| Windows x64         | Portable ZIP | Extract and run `Re-Edit-PDF.exe`; keep the DLLs.        |
-| Debian / Ubuntu x64 | DEB          | `sudo apt install ./Re-Edit-PDF-*.deb`                  |
-| Fedora / RPM x64    | RPM          | `sudo dnf install ./Re-Edit-PDF-*.rpm`                  |
-| Linux x64           | AppImage     | Make executable, then run. Requires FUSE or extraction. |
-| Linux x64           | tar.gz       | Extract and run `squashfs-root/AppRun`; no FUSE mount.  |
+| Platform | Package | Installation |
+| --- | --- | --- |
+| Windows x64 | Setup EXE | Run the installer; Finish can launch the app. |
+| Debian / Ubuntu x64 | DEB | `sudo apt install ./Re-Edit-PDF-*.deb` |
+| Fedora / RPM x64 | RPM | `sudo dnf install ./Re-Edit-PDF-*.rpm` |
+| Linux x64 | AppImage | Make executable, then run. Use `--appimage-extract-and-run` if FUSE is unavailable. |
 
-The setup EXE installs WebView2 when needed. Portable Windows builds require WebView2 to be installed already. Windows publisher signing is not configured; Windows may show a publisher warning.
+The setup EXE installs WebView2 when needed. Windows publisher signing is not configured; Windows may show a publisher warning. Updater signatures authenticate downloads; they are separate from Windows publisher signing.
 
-Release assets contain the seven app packages, `SHA256SUMS`, the signed updater manifest (`latest.json`) and the corresponding native MuPDF source archive required for source distribution. Build provenance and test reports are kept in [release documentation](docs/releases/v2.0.0-alpha.1/VALIDATION.md), rather than as separate downloads. The updater verifies signatures against the public key configured in the app.
+Release assets contain these four app packages, `SHA256SUMS`, the updater manifest (`latest.json`, with embedded package signatures), and the corresponding native MuPDF source archive. Build logs, screenshots and test reports stay in Actions or [release documentation](docs/releases/v2.0.0-alpha.2/VALIDATION.md), rather than appearing as extra downloads.
+
+Native previews check the [preview update feed](updates/native-preview.json) without uploading PDF content. Updates require confirmation before downloading and installing; unsaved documents must be resolved first. AppImage builds support in-app updating. DEB/RPM users should download and install the matching package through their package manager.
 
 Linux native packages require a glibc desktop environment and GTK/WebKitGTK support. Alpine/musl, ARM64 and macOS are not validated.
 
@@ -48,14 +47,14 @@ The installer registers PDF **Open With** support and a separate document icon. 
 ## Features
 
 - **Document workspace:** tabs, thumbnails, bookmarks, attachments, page navigation, fit/zoom controls, light/dark themes and a compact tool layout.
-- **Text editing:** select text and use Edit, Ctrl+E or the context menu. Supported embedded fonts retain size, color and transforms. Fragmented text is grouped into compatible lines; replacements can be edited again.
-- **Fonts:** the native preview includes 68 offline faces in seventeen families, including Adobe's Source Sans 3, Source Serif 4 and Source Code Pro. Full Source Sans/Serif fonts supplement the bundled subsets. Open-source alternatives include Arimo (Arial), Tinos (Times New Roman), Cousine (Courier New), Carlito (Calibri) and Caladea (Cambria). Installed TTF/OTF fonts and supported font imports are available. Missing glyphs are checked before applying or saving edits.
-- **Annotations:** highlight, underline, strikeout, text, shapes, drawing, images and signatures, with selection, removal and undo/redo.
-- **OCR:** offline English recognition with accurate and fast models, automatic/column/block layouts, page ranges, searchable output and explicit save-copy/overwrite actions.
+- **Text editing:** select text and use Edit, Ctrl+E or the context menu. Supported embedded fonts retain size, color and transforms. Fragmented text is grouped into compatible lines. Editing a selected word keeps its connected line together so following words move with it; replacements can be edited again.
+- **Fonts:** the native preview includes 68 offline faces in seventeen families, including Adobe's Source Sans 3, Source Serif 4 and Source Code Pro. Full Source Sans/Serif fonts supplement the bundled subsets. Open-source alternatives include Arimo (Arial), Tinos (Times New Roman), Cousine (Courier New), Carlito (Calibri) and Caladea (Cambria). Installed TTF/OTF fonts and supported font imports are available. Unavailable or incomplete original fonts are matched to installed or bundled alternatives, with a substitution notice. Missing glyphs are checked before applying or saving edits.
+- **Annotations:** highlight, underline, strikeout, text, shapes, drawing, images and signatures, with selection, removal and undo/redo. Existing annotation/field objects can be removed; a region eraser also handles flattened marks, with limited background reconstruction for scans.
+- **OCR:** offline English recognition with accurate and fast models, automatic/column/block layouts, page ranges, searchable output and explicit save-copy/overwrite actions. Accurate automatic recognition uses adaptive thresholding and a second pass for sparse text.
 - **Find:** result list, matching text excerpts, case/whole-word filters, F3 navigation and searchable edited/placed text.
 - **Printing:** application print dialog with printer selection, copies, grayscale, duplex, ranges, odd/even pages, reverse order, paper size, scaling and preview.
 - **Page tools:** combine, reorder, rotate, extract and delete pages.
-- **Forms and security:** supported AcroForm fields, P12 certificate signing, genuine content redaction, password clearing and document security information.
+- **Forms and security:** supported AcroForm fields, P12 certificate signing, genuine content redaction, password clearing and document permission details. Printing, copying, annotations, forms and assembly permissions are shown separately; this does not validate certificate trust.
 - **Conversion:** editable Word text export and Office-to-PDF import through an optional LibreOffice installation.
 - **Desktop integration:** native window controls, recent-file favorites/removal, file associations and Help → Check for Updates.
 
@@ -63,13 +62,20 @@ This project is independent of Adobe. It does not claim complete Acrobat Premium
 
 ## Getting started
 
-### Changes in the Rust/Tauri preview
+### Changes in alpha.2
+
+- Stable Fit Width sizing for landscape certificates and mixed-size PDFs; scrolling no longer repeatedly changes zoom.
+- Automatic font matching and connected-line editing, improved faint/sparse OCR text detection, and an opaque Convert menu.
+- Existing annotation/signature-field removal, a region eraser for flattened marks, and clearer document permissions.
+- Startup update notifications and a dedicated signed native-preview update feed.
+
+### Native desktop integration
 
 - Native Open dialogs and the previous React workspace in a system webview.
 - Inline text editing, corrected replacement spacing, additional open-source font alternatives, and centered save/discard/cancel dialogs.
 - OCR text replacement reconstructs the surrounding paper to avoid white patches; saved replacements remain searchable and can be edited again.
 - The Windows setup launches the app from Finish, registers a distinct PDF document icon, and appears in Windows Default Apps.
-- Windows EXE/MSI lifecycle checks passed on two isolated runners. Linux packages were checked on Debian 12, Ubuntu 24.04 and Fedora 43 using containers/Xvfb. See the [validation report](docs/releases/v2.0.0-alpha.1/VALIDATION.md) for coverage and remaining work.
+- Installer, WebView regression and Linux package checks are documented in the [validation report](docs/releases/v2.0.0-alpha.2/VALIDATION.md). Container/Xvfb checks do not replace stock desktop testing.
 
 ### Basic workflow
 
@@ -144,9 +150,10 @@ Electron reference; use the native workflow for this preview.
 The [Tauri/Rust preview](src-tauri/README.md) retains this app's React UI in the
 system webview. Physical printer/trackpad, stock desktop/Wayland and broader
 large-document checks remain outstanding. Native WOFF2 import is not supported
-yet. Very early close requests can arrive before the WebView close handler is ready; immediate startup shutdown responsiveness still needs investigation. [Release validation](docs/releases/v2.0.0-alpha.1/VALIDATION.md) and [stable promotion gates](native/LOCAL-VALIDATION.md) are
+yet. Very early close requests can arrive before the WebView close handler is ready; immediate startup shutdown responsiveness still needs investigation. [Release validation](docs/releases/v2.0.0-alpha.2/VALIDATION.md) and [stable promotion gates](native/LOCAL-VALIDATION.md) are
 documented separately. Container/Xvfb results are not stock-desktop validation.
 
+- Text editing currently reflows a compatible connected line, not arbitrary paragraphs across text boxes or pages.
 - Scanned text has estimated typography. Replacing recognized text removes image pixels in the edited region; background reconstruction and automatic paragraph reflow are limited.
 - OCR currently recognizes English. Accuracy depends on scan quality and layout; review the output.
 - A subset font cannot supply omitted glyphs. Use a full installed/imported font when needed. Proprietary Adobe Fonts are not redistributed.
@@ -163,4 +170,4 @@ Created by **Avaneesh Inamdar**. Released under [AGPL-3.0-only](LICENSE).
 
 The native preview uses Rust, Tauri, React, TypeScript, PDF.js, pdf-lib, MuPDF and Tesseract.js. The previous Electron app is retained as a development reference. Icons use Lucide; the application and PDF document marks are custom vectors.
 
-See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for software, font and model notices. The preview release includes the application source tag, corresponding MuPDF source archive and checksums. [Build provenance and validation reports](docs/releases/v2.0.0-alpha.1/VALIDATION.md) are available in the repository.
+See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for software, font and model notices. The preview release includes the application source tag, corresponding MuPDF source archive and checksums. [Build provenance and validation reports](docs/releases/v2.0.0-alpha.2/VALIDATION.md) are available in the repository.

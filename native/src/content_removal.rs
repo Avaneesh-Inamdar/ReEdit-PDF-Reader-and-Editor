@@ -15,6 +15,7 @@ pub struct Region {
     pub page: usize,
     pub annotation_id: Option<String>,
     pub remove_image_text: Option<bool>,
+    pub erase_objects: Option<bool>,
     pub quad: Option<[f32; 8]>,
     pub x: Option<f32>,
     pub y: Option<f32>,
@@ -55,7 +56,7 @@ pub fn remove(bytes: &[u8], regions: &[Region], secure: bool) -> Result<Vec<u8>>
             );
             let id = n.parse::<i32>()?;
             if let Some(a) = page.annotations().find(|a| {
-                a.xref().ok() == Some(id) && a.r#type().ok() == Some(PdfAnnotationType::FreeText)
+                a.xref().ok() == Some(id) && a.r#type().ok() != Some(PdfAnnotationType::Widget)
             }) {
                 page.delete_annotation(a)?;
             }
@@ -69,7 +70,7 @@ pub fn remove(bytes: &[u8], regions: &[Region], secure: bool) -> Result<Vec<u8>>
             );
             let m = page.ctm()?;
             let point = |i| Point::new(q[i], q[i + 1]).transform(&m);
-            if !secure && r.remove_image_text.unwrap_or(false) {
+            if !secure && (r.remove_image_text.unwrap_or(false) || r.erase_objects.unwrap_or(false)) {
                 paper_patch = Some(crate::ocr_background::capture(
                     &page,
                     [point(0), point(2), point(4), point(6)],
@@ -100,7 +101,7 @@ pub fn remove(bytes: &[u8], regions: &[Region], secure: bool) -> Result<Vec<u8>>
                 b.x0 + (x + w) * b.width(),
                 b.y0 + (y + h) * b.height(),
             );
-            if !secure && r.remove_image_text.unwrap_or(false) {
+            if !secure && (r.remove_image_text.unwrap_or(false) || r.erase_objects.unwrap_or(false)) {
                 paper_patch = Some(crate::ocr_background::capture(
                     &page,
                     [
@@ -111,7 +112,7 @@ pub fn remove(bytes: &[u8], regions: &[Region], secure: bool) -> Result<Vec<u8>>
                     ],
                 )?);
             }
-            if secure {
+            if secure || r.erase_objects.unwrap_or(false) {
                 let annotations: Vec<_> = page
                     .annotations()
                     .filter(|a| {
@@ -131,13 +132,15 @@ pub fn remove(bytes: &[u8], regions: &[Region], secure: bool) -> Result<Vec<u8>>
         }
         page.apply_redactions_with_options(PdfRedactOptions {
             black_boxes: secure,
-            image_method: if secure || r.remove_image_text.unwrap_or(false) {
+            image_method: if secure || (r.remove_image_text.unwrap_or(false) || r.erase_objects.unwrap_or(false)) {
                 PdfRedactImageMethod::Pixels
             } else {
                 PdfRedactImageMethod::None
             },
             line_art: if secure {
                 PdfRedactLineArtMethod::RemoveIfTouched
+            } else if r.erase_objects.unwrap_or(false) {
+                PdfRedactLineArtMethod::RemoveIfCovered
             } else {
                 PdfRedactLineArtMethod::None
             },
@@ -192,6 +195,7 @@ mod tests {
                 page: 1,
                 annotation_id: None,
                 remove_image_text: None,
+                erase_objects: None,
                 quad: None,
                 x: Some(b.x0 / bounds.width()),
                 y: Some(b.y0 / bounds.height()),
@@ -217,6 +221,7 @@ mod tests {
             page: 0,
             annotation_id: None,
             remove_image_text: None,
+                erase_objects: None,
             quad: None,
             x: Some(10.),
             y: Some(10.),

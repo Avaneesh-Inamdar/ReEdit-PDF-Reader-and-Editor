@@ -1,4 +1,4 @@
-param([string]$Directory='release/github-packages')
+param([string]$Directory='release/github-packages',[string]$Notes='Native preview: stable certificate sizing, automatic font matching, connected-line editing, improved OCR, existing-object removal and startup update notifications.')
 $ErrorActionPreference='Stop'
 $assetDirectory=(Resolve-Path -LiteralPath $Directory).Path
 $version=(Get-Content -Raw -LiteralPath package.json | ConvertFrom-Json).version
@@ -9,7 +9,7 @@ $publicKey=(Get-Content -Raw -LiteralPath (Join-Path $keyDirectory 're-edit-pdf-
 $configured=(Get-Content -Raw -LiteralPath src-tauri/tauri.conf.json | ConvertFrom-Json).plugins.updater.pubkey
 if ($publicKey -ne $configured) { throw 'Release key does not match the application updater identity' }
 $assets=@(Get-ChildItem -LiteralPath $assetDirectory -File | Where-Object { $_.Name -match '\.(exe|msi|deb|rpm|AppImage|tar\.gz|zip)$' })
-if ($assets.Count -lt 7) { throw 'Expected Windows and Linux packages before signing' }
+if ($assets.Count -lt 4) { throw 'Expected Windows and Linux packages before signing' }
 $secret=Get-Content -Raw -LiteralPath $passwordFile | ConvertTo-SecureString
 $pointer=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($secret)
 try {
@@ -34,8 +34,8 @@ function UpdateAsset($pattern) {
   return @{url=$base+[Uri]::EscapeDataString($asset[0].Name);signature=(Get-Content -Raw -LiteralPath ($asset[0].FullName+'.sig')).Trim()}
 }
 $nsis=UpdateAsset '*windows-x64-setup.exe'
-$msi=UpdateAsset '*windows-x64.msi'
 $linux=UpdateAsset '*linux-x86_64.AppImage'
-$manifest=@{version=$version;notes='Rust desktop preview with native file opening, additional open-source fonts, inline editing, OCR background repair and print preview.';pub_date=(Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ');platforms=@{'windows-x86_64'=$nsis;'windows-x86_64-nsis'=$nsis;'windows-x86_64-msi'=$msi;'linux-x86_64'=$linux}}
+$manifest=@{version=$version;notes=$Notes;pub_date=(Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ');platforms=@{'windows-x86_64'=$nsis;'windows-x86_64-nsis'=$nsis;'linux-x86_64'=$linux}}
+if (@($assets | Where-Object Name -Like '*windows-x64.msi').Count -eq 1) {$manifest.platforms['windows-x86_64-msi']=UpdateAsset '*windows-x64.msi'}
 [IO.File]::WriteAllText((Join-Path $assetDirectory 'latest.json'),($manifest | ConvertTo-Json -Depth 8))
 Write-Output "Signed $($assets.Count) package/source artifacts for $version. No Windows publisher certificate was used."

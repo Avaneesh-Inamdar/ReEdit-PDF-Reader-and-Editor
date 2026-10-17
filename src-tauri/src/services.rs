@@ -102,6 +102,7 @@ pub struct UpdateResult {
     pub current: String,
     pub latest: Option<String>,
     pub available: bool,
+    pub automatic: bool,
     pub message: String,
 }
 pub fn check_updates() -> Result<UpdateResult> {
@@ -109,43 +110,36 @@ pub fn check_updates() -> Result<UpdateResult> {
         .timeout_global(Some(Duration::from_secs(15)))
         .build();
     let agent = ureq::Agent::new_with_config(config);
-    let mut response=agent.get("https://api.github.com/repos/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest").header("User-Agent","Re-Edit-PDF").call()?;
+    let mut response = agent.get(UPDATE_FEED).header("User-Agent", "Re-Edit-PDF").call()?;
     let json: serde_json::Value = response.body_mut().read_json()?;
-    let tag = json["tag_name"]
-        .as_str()
-        .context("Release response has no version")?
-        .trim_start_matches('v')
-        .to_owned();
-    let current = env!("CARGO_PKG_VERSION");
-    let available = newer(&tag, current);
+    update_result(&json, env!("CARGO_PKG_VERSION"))
+}
+// This preview channel is shared with the signature-verifying Tauri updater.
+// Stable Electron releases stay on their existing stable channel.
+const UPDATE_FEED: &str = "https://raw.githubusercontent.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/main/updates/native-preview.json";
+fn update_result(json: &serde_json::Value, current: &str) -> Result<UpdateResult> {
+    let tag = json["version"].as_str().context("Update feed has no version")?
+        .trim_start_matches('v');
+    semver::Version::parse(tag).context("Update feed has an invalid version")?;
+    let available = newer(tag, current);
     Ok(UpdateResult {
         current: current.into(),
-        latest: Some(tag.clone()),
+        latest: Some(tag.into()),
         available,
+        automatic: cfg!(windows) || (cfg!(target_os = "linux") && std::env::var_os("APPIMAGE").is_some()),
         message: if available {
             format!("Re-Edit PDF {tag} is available")
         } else {
-            format!("No newer stable release is available. Current version: {current}")
+            format!("You are up to date on the native preview channel. Current version: {current}")
         },
     })
 }
-fn newer(a: &str, b: &str) -> bool {
-    let parse = |value: &str| -> Option<[u32; 3]> {
-        let mut parts = value.split('.');
-        let result = [
-            parts.next()?.parse().ok()?,
-            parts.next()?.parse().ok()?,
-            parts.next()?.parse().ok()?,
-        ];
-        parts.next().is_none().then_some(result)
-    };
-    let Some(latest) = parse(a.trim_start_matches('v')) else {
-        return false;
-    };
-    let Some(current) = parse(b.split('-').next().unwrap_or(b)) else {
-        return false;
-    };
-    latest > current || (latest == current && b.contains('-'))
+fn newer(latest: &str, current: &str) -> bool {
+    match (semver::Version::parse(latest.trim_start_matches('v')),
+           semver::Version::parse(current.trim_start_matches('v'))) {
+        (Ok(latest), Ok(current)) => latest > current,
+        _ => false,
+    }
 }
 #[derive(Deserialize)]
 pub struct WordLine {
@@ -177,6 +171,20 @@ mod tests {
     fn versions_do_not_offer_an_older_electron_build() {
         assert!(!newer("1.4.4", "2.0.0-alpha.1"));
         assert!(newer("2.1.0", "2.0.0"));
+    }
+    #[test]
+    fn preview_updates_use_semver_order_and_match_the_signed_feed() {
+        assert!(newer("2.0.0-alpha.10", "2.0.0-alpha.2"));
+        assert!(newer("2.0.0", "2.0.0-alpha.2"));
+        assert!(!newer("2.0.0-alpha.2", "2.0.0"));
+        assert!(!newer("2.0.0-alpha.2", "2.0.0-alpha.2"));
+        assert!(!newer("not-a-version", "2.0.0-alpha.2"));
+        let result = update_result(&serde_json::json!({"version":"2.0.0-alpha.3"}), "2.0.0-alpha.2").unwrap();
+        assert!(result.available);
+        assert_eq!(result.latest.as_deref(), Some("2.0.0-alpha.3"));
+        assert!(update_result(&serde_json::json!({"version":"bad"}), "2.0.0").is_err());
+        let config: serde_json::Value = serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
+        assert_eq!(config["plugins"]["updater"]["endpoints"][0], UPDATE_FEED);
     }
     #[test]
     fn word_export_contains_a_real_docx_zip() {

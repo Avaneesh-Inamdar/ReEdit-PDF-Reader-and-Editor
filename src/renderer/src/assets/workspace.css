@@ -138,12 +138,20 @@ select:focus-visible {
 .pdf-inline-actions { position: absolute; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; z-index: 101; padding: 6px; border: 1px solid var(--acrobat-border); border-radius: 5px; background: var(--acrobat-menu-bg); color: var(--acrobat-text); box-shadow: 0 2px 8px #0003; font-size: 12px; }
 .pdf-inline-actions select { max-width: 240px; }
 .pdf-inline-actions .operation-error { flex-basis: 100%; margin: 0; max-width: 360px; }
-.workspace-convert-menu {
+.document-view-menu.workspace-convert-menu {
   left: 0;
   right: auto;
   bottom: auto;
   top: calc(100% + 4px);
 }
+.pdf-inline-notice { flex-basis: 100%; max-width: 380px; margin: 0; color: var(--acrobat-text-muted); font-size: 11px; }
+.pdf-inline-notice:empty { display: none; }
+.document-objects { padding: 14px; border-bottom: 1px solid var(--acrobat-border); display: flex; flex-direction: column; gap: 8px; font-size: 12px; }
+.document-objects h3 { margin: 0; font-weight: 600; }
+.document-objects p { margin: 0; color: var(--acrobat-text-muted); line-height: 1.45; }
+.document-object-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.document-object-row span { min-width: 0; overflow-wrap: anywhere; }
+.security-permissions { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--acrobat-border); padding-top: 12px; }
 .workspace-global-bar .tb-btn {
   width: 34px;
   height: 34px;
@@ -522,3 +530,21 @@ select:focus-visible {
     height: 29px;
   }
 }
+.update-notification {
+  position: fixed;
+  right: 24px;
+  bottom: 48px;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: min(600px, calc(100vw - 48px));
+  padding: 16px;
+  border: 1px solid var(--acrobat-border);
+  border-radius: 8px;
+  background: var(--acrobat-chrome);
+  color: var(--acrobat-text);
+  box-shadow: 0 6px 24px #0003;
+  font-size: 12px;
+}
+.update-notification p { margin: 4px 0 0; color: var(--acrobat-text-muted); }

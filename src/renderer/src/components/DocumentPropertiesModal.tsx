@@ -4,6 +4,7 @@ import { usePdfStore } from '../stores/usePdfStore'
 import { useDetectionStore } from '../stores/useDetectionStore'
 import { useFormStore } from '../stores/useFormStore'
 import { useUIStore } from '../stores/useUIStore'
+import { securityPermissions } from '../lib/securityProperties'
 
 /* ── Document Properties Modal (Ctrl+D) ── */
 // Tabs: Description, Security, Fonts
@@ -15,13 +16,13 @@ export function DocumentPropertiesModal(): React.JSX.Element {
   const det = useDetectionStore()
   const form = useFormStore()
   const { setActiveModal } = useUIStore()
-  const [tab, setTab] = useState<Tab>('description')
+  const [tab, setTab] = useState<Tab>(()=>useUIStore.getState().rightPane==='protect'?'security':'description')
 
   const fileSize = data ? `${(data.byteLength / 1024).toFixed(1)} KB` : '—'
 
   return (
     <div className="modal-overlay" onClick={() => setActiveModal('none')}>
-      <div className="modal-card" style={{ width: 520, minHeight: 360 }} onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card" role="dialog" aria-modal="true" aria-label="Document Properties" style={{ width: 580, minHeight: 360, maxHeight:'85vh',overflowY:'auto' }} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-4" style={{ height: 44, borderBottom: '1px solid var(--acrobat-border)' }}>
           <span className="text-sm font-semibold" style={{ color: 'var(--acrobat-text)' }}>Document Properties</span>
@@ -71,7 +72,11 @@ export function DocumentPropertiesModal(): React.JSX.Element {
               <Row label="Encryption" value={det.isEncrypted ? 'Yes — Password Protected' : 'None'} />
               <Row label="AcroForm" value={form.hasAcroForm ? `Yes — ${form.fields.length} fields` : 'No'} />
               <Row label="XFA Forms" value={form.hasXfa ? 'Detected — Unsupported' : 'None'} />
-              <p className="text-xs">Document permission restrictions are not assessed by this app.</p>
+              <div className="security-permissions" aria-label="Document permissions">
+                <h3 className="text-xs font-semibold">Document permissions</h3>
+                {securityPermissions(det.permissionsError?undefined:det.permissions).map(row=><Row key={row.label} {...row}/>)}
+              </div>
+              <p className="text-xs" style={{color:'var(--acrobat-text-muted)'}}>These permissions are read from the PDF. Certificate identity and trust are not validated here. Editing a signed PDF changes its signed content and may invalidate the signature.</p>
             </>
           )}
 
@@ -111,8 +116,8 @@ export function DocumentPropertiesModal(): React.JSX.Element {
 function Row({ label, value }: { label: string; value: string }): React.JSX.Element {
   return (
     <div className="flex gap-4 text-xs">
-      <span style={{ width: 120, flexShrink: 0, color: 'var(--acrobat-text-muted)' }}>{label}</span>
-      <span className="truncate flex-1">{value}</span>
+      <span style={{ width: 180, flexShrink: 0, color: 'var(--acrobat-text-muted)' }}>{label}</span>
+      <span className="break-words flex-1" title={value}>{value}</span>
     </div>
   )
 }

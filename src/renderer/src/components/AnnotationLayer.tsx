@@ -1,7 +1,7 @@
 import { Icon } from './Icon'
 import { requestText } from '../lib/requestText'
 import {requestPdfText} from '../lib/textEditRequest'
-import {trackInlineMutation} from '../lib/inlineText'
+import {trackInlineMutation,commitInlineEdit} from '../lib/inlineText'
 import { useState, useRef, useEffect } from 'react'
 import { useAnnotationStore, type Annotation } from '../stores/useAnnotationStore'
 import { useEditStore } from '../stores/useEditStore'
@@ -61,7 +61,7 @@ export function AnnotationLayer({
       }
       return
     }
-    if (tool === 'select' || tool === 'eraser' || spaceHeld || pointerMode === 'hand') return
+    if (tool === 'select' || spaceHeld || pointerMode === 'hand') return
     ;(e.target as Element).setPointerCapture(e.pointerId)
     const p = getNorm(e)
     dragOrigin.current = p
@@ -167,6 +167,27 @@ export function AnnotationLayer({
       setDrawPoints([])
     } else if (draft) {
       if (draft.w < 0.01 && draft.h < 0.01) { setDraft(null); return }
+      if (tool === 'eraser') {
+        const region = { ...draft }
+        setDraft(null)
+        try { e.currentTarget.releasePointerCapture(e.pointerId) } catch {}
+        void (async () => {
+          try {
+            if (!(await commitInlineEdit())) return
+            const store = usePdfStore.getState(), data = store.data
+            if (!data) return
+            if (store.rotation !== 0) throw new Error('Reset view rotation before removing a scanned mark.')
+            const bytes = await window.api.removePdfContent(new Uint8Array(data.slice(0)), [{
+              page: pageNumber, x: Math.max(0, region.x), y: Math.max(0, region.y),
+              w: Math.min(region.w, 1 - region.x), h: Math.min(region.h, 1 - region.y), eraseObjects: true
+            }], false)
+            if (usePdfStore.getState().data !== data) throw new Error('The document changed. Try removing the mark again.')
+            store.pushHistory()
+            store.setData(bytes.slice().buffer as ArrayBuffer)
+          } catch (error) { alert(String(error)) }
+        })()
+        return
+      }
       addAnnotation(draft)
       setDraft(null)
     }

@@ -1,6 +1,7 @@
 import { createWorker } from 'tesseract.js'
 import type { OcrPage } from './ocrTypes'
 import { embedFontWithOutlines } from './embeddedFont'
+import {ocrLuminance} from './ocrRecognition'
 
 let worker: Awaited<ReturnType<typeof createWorker>> | null = null
 let initializing: Promise<Awaited<ReturnType<typeof createWorker>>> | null = null
@@ -49,7 +50,7 @@ export async function getOcrWorker(
   } as never)
   try {
     worker = await initializing
-    await worker.setParameters({ user_defined_dpi: '300', preserve_interword_spaces: '1' })
+    await worker.setParameters({ user_defined_dpi: '300', preserve_interword_spaces: '1',thresholding_method:quality==='accurate'?'2':'0' })
     return worker
   } finally {
     initializing = null
@@ -119,16 +120,9 @@ export function preprocessCanvasForOcr(canvas: HTMLCanvasElement): HTMLCanvasEle
       if (lum > maxLum) maxLum = lum
     }
 
-    const range = maxLum - minLum || 1
-
     // 2. Contrast stretching and clean-up threshold
     for (let i = 0; i < d.length; i += 4) {
-      let stretched = ((d[i] - minLum) / range) * 255
-      if (stretched > 195) {
-        stretched = 255
-      } else if (stretched < 80) {
-        stretched = Math.max(0, stretched * 0.6)
-      }
+      const stretched = ocrLuminance(d[i],minLum,maxLum)
       d[i] = stretched
       d[i + 1] = stretched
       d[i + 2] = stretched

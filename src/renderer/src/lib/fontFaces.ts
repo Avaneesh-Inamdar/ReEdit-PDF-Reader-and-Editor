@@ -5,7 +5,17 @@ import { useTabStore } from '../stores/useTabStore'
 type Entry = { face: FontFace; data: WeakRef<Uint8Array>; ready: Promise<void> }
 const faces = new Map<string, Entry>()
 const keys = new WeakMap<Uint8Array, Set<string>>()
+const activePreviews = new Map<string, number>()
 let schedulePrune: (() => void) | undefined
+export function retainPreviewFont(name: string): () => void {
+  activePreviews.set(name, (activePreviews.get(name) || 0) + 1)
+  return () => {
+    const count = (activePreviews.get(name) || 1) - 1
+    if (count) activePreviews.set(name, count)
+    else activePreviews.delete(name)
+    schedulePrune?.()
+  }
+}
 
 export async function registerPreviewFont(
   data: Uint8Array,
@@ -51,7 +61,7 @@ export function useManagedFontFaces(): void {
     let timer: ReturnType<typeof setTimeout> | undefined
     const prune = (): void => {
       const keep = new Set<string>(),
-        names = new Set<string>()
+        names = new Set<string>(activePreviews.keys())
       const collect = (annotations: Annotation[]): void => {
         for (const annotation of annotations) {
           if (annotation.previewFont) names.add(annotation.previewFont)

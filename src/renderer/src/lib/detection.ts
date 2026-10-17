@@ -13,6 +13,8 @@ export async function analyzeDocument(data: ArrayBuffer, existing?: PDFDocumentP
     if (md?.info) Object.entries(md.info).forEach(([k,v])=> metadata[k]= String(v))
   } catch {}
   let hasXfa = false, hasAcroForm = false, isEncrypted = false
+  let permissions:number[]|null|undefined, permissionsError=false
+  try{permissions=await doc.getPermissions();if(permissions!==null)isEncrypted=true}catch{permissionsError=true}
   // scan first bytes for tags
   try {
     const head = new TextDecoder().decode(new Uint8Array(data).slice(0, 60000))
@@ -38,6 +40,6 @@ export async function analyzeDocument(data: ArrayBuffer, existing?: PDFDocumentP
   if (!existing) await doc.destroy()
   return {
     sampledPages: sample.length, isScanned, textChars, avgCharsPerPage, numFonts: fonts.size, fonts: [...fonts].slice(0,20),
-    metadata, isEncrypted, hasXfa, hasAcroForm, isFlat
+    metadata, isEncrypted, hasXfa, hasAcroForm, isFlat, permissions, permissionsError
   }
 }

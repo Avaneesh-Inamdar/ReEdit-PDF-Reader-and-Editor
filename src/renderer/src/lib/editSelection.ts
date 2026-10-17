@@ -4,7 +4,8 @@ import { useUIStore } from '../stores/useUIStore'
 import { requestPdfText } from './textEditRequest'
 import type { PdfTextRun } from './pdfText'
 import type { TextSelectionInfo } from './textSelection'
-import {trackInlineMutation} from './inlineText'
+import { trackInlineMutation } from './inlineText'
+import { connectedTextLine, lineSource, lineText } from './textLine'
 
 export function selectedRuns(range: Range): PdfTextRun[] {
   const element =
@@ -40,35 +41,71 @@ export function selectedRuns(range: Range): PdfTextRun[] {
   return fragments
 }
 
-export function editSelection(selection: TextSelectionInfo): Promise<void> {return trackInlineMutation(editSelected(selection))}
-async function editSelected(selection: TextSelectionInfo):Promise<void>{
+export function editSelection(selection: TextSelectionInfo): Promise<void> {
+  return trackInlineMutation(editSelected(selection))
+}
+async function editSelected(selection: TextSelectionInfo): Promise<void> {
   useUIStore.getState().setRightPane('edit')
   if (selection.annotationId) {
     const store = useAnnotationStore.getState()
     const annotation = store.annotations.find((a) => a.id === selection.annotationId)
     if (!annotation) return
-    const replacement = await requestPdfText(annotation.sourceText, selection.text, annotation)
+    const replacement = await requestPdfText(
+      annotation.sourceText,
+      annotation.text || '',
+      annotation,
+      undefined,
+      {
+        start: selection.annotationStart ?? 0,
+        end: selection.annotationEnd ?? (annotation.text || '').length
+      }
+    )
     if (
       replacement === null ||
       useAnnotationStore.getState().annotations.find((a) => a.id === annotation.id) !== annotation
     )
       return
-    const value = annotation.text || ''
     store.updateAnnotation(annotation.id, {
-      text:
-        value.slice(0, selection.annotationStart) +
-        replacement.text +
-        value.slice(selection.annotationEnd),
+      text: replacement.text,
       ...replacement.style
     })
     store.setSelected(annotation.id)
     window.getSelection()?.removeAllRanges()
     return
   }
-  const fragments = selection.runs || []
+  let fragments = selection.runs || []
   if (!fragments.length) return
+  // Extend a word selection to its connected line, keeping the selected word
+  // selected inside the editor. Following words then move with the replacement.
+  let selectedRange: { start: number; end: number } | undefined
+  const selected = fragments[0]
+  if (fragments.every((run) => Math.abs(run.y - selected.y) < selected.size * 0.35)) {
+    const page = document.getElementById(`page-${selection.pageNum}`)
+    const all = [
+      ...(page?.querySelectorAll<HTMLElement & { pdfRun?: PdfTextRun }>('[data-pdf-run]') || [])
+    ]
+      .map((span) => span.pdfRun)
+      .filter((run): run is PdfTextRun => !!run)
+    const parent = all.find(
+      (run) => selected.key === run.key || selected.key.startsWith(run.key + ':')
+    )
+    if (parent) {
+      const group = connectedTextLine(parent, all),
+        text = lineText(group),
+        offset = /:(\d+)-(\d+)$/.exec(selected.key),
+        prefix = lineText(group.slice(0, group.indexOf(parent) + 1)).length - parent.text.length,
+        start =
+          prefix +
+          Number(offset?.[1] || 0) +
+          (selected.text.length - selected.text.trimStart().length)
+      if (text.slice(start, start + selection.text.length) === selection.text) {
+        fragments = group
+        selectedRange = { start, end: start + selection.text.length }
+      }
+    }
+  }
   const source = usePdfStore.getState().data
-  const first = fragments[0]
+  const first = selectedRange ? lineSource(fragments) : fragments[0]
   const baselineOffset = (run: PdfTextRun, previous: PdfTextRun): number =>
     Math.abs(
       (run.x - previous.x) * Math.sin(first.angle) - (run.y - previous.y) * Math.cos(first.angle)
@@ -79,16 +116,18 @@ async function editSelected(selection: TextSelectionInfo):Promise<void>{
         (index
           ? baselineOffset(run, fragments[index - 1]) > first.size * 0.5
             ? '\n'
-            : !/\s$/.test(fragments[index - 1].text) && !/^\s/.test(run.text) && run.x -
+            : !/\s$/.test(fragments[index - 1].text) &&
+                !/^\s/.test(run.text) &&
+                run.x -
                   fragments[index - 1].x -
                   fragments[index - 1].width * (fragments[index - 1].matrix?.[0] || 1) >
-                first.size * 0.15
+                  first.size * 0.15
               ? ' '
               : ''
           : '') + run.text
     )
     .join('')
-  const replacement = await requestPdfText(first, initial)
+  const replacement = await requestPdfText(first, initial, undefined, undefined, selectedRange)
   if (
     replacement === null ||
     (replacement.text === initial && !Object.keys(replacement.style).length) ||

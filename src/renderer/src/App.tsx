@@ -5,6 +5,7 @@ import { placeImage } from './lib/imagePlacement'
 import { openTool } from './lib/toolActions'
 import { CombineFilesModal } from './components/CombineFilesModal'
 import UpdatesModal from './components/UpdatesModal'
+import { UpdateNotification } from './components/UpdateNotification'
 import CertificateModal from './components/CertificateModal'
 import { exportWord } from './lib/officeExport'
 import { Icon, BrandLogo } from './components/Icon'
@@ -461,6 +462,7 @@ function App(): React.JSX.Element {
       )}
 
       {printOpen && <PrintModal onClose={() => setPrintOpen(false)} />}
+      <UpdateNotification />
       {/* Modals */}
       {activeModal === 'combineFiles' && <CombineFilesModal />}
       {activeModal === 'docProperties' && <DocumentPropertiesModal />}

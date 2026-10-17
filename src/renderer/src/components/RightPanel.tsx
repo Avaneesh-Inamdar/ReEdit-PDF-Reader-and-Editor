@@ -8,6 +8,7 @@ import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { useAnnotationStore } from '../stores/useAnnotationStore'
 import { useUIStore } from '../stores/useUIStore'
 import { useDetectionStore } from '../stores/useDetectionStore'
+import { securityPermissions } from '../lib/securityProperties'
 
 import { EditPanel } from './EditPanel'
 import { FormPanel } from './FormPanel'
@@ -203,6 +204,8 @@ function ProtectPanel(): React.JSX.Element {
   return (
     <div className="space-y-3">
       <div className="pane-title">Security Summary</div>
+      <button className="operation-secondary" onClick={()=>useUIStore.getState().setActiveModal('docProperties')}>Document properties…</button>
+      {securityPermissions(det.permissionsError?undefined:det.permissions).map(row=><div key={row.label} className="flex justify-between gap-3 text-xs"><span>{row.label}</span><span>{row.value}</span></div>)}
       <div className="space-y-2">
         <div className="flex justify-between text-xs">
           <span style={{ color: 'var(--acrobat-text-dim)' }}>Encryption</span>
@@ -227,7 +230,7 @@ function ProtectPanel(): React.JSX.Element {
   )
 }
 
-export function RightPanel({ pdfDoc: _pdfDoc, visible, onClose }: { pdfDoc: PDFDocumentProxy | null; visible: boolean; onClose: () => void }): React.JSX.Element | null {
+export function RightPanel({ pdfDoc, visible, onClose }: { pdfDoc: PDFDocumentProxy | null; visible: boolean; onClose: () => void }): React.JSX.Element | null {
   const { rightPane, setRightPane } = useUIStore()
   if (!visible && rightPane === 'none') return null
   const activeTool = TOOLS.find(t => t.id === rightPane)
@@ -247,7 +250,7 @@ export function RightPanel({ pdfDoc: _pdfDoc, visible, onClose }: { pdfDoc: PDFD
     </div> : <div className="workspace-tool-content">
       {rightPane === 'comment' && <CommentPanel />}
       {rightPane === 'sign' && <SignPanel />}
-      {rightPane === 'edit' && <EditPanel />}
+      {rightPane === 'edit' && <EditPanel pdfDoc={pdfDoc}/>}
       {rightPane === 'organize' && <div className="p-4"><p className="text-xs mb-4">Reorder, rotate, delete, and extract pages.</p><button className="workspace-save-as" onClick={() => useUIStore.getState().setActiveModal('organizePages')}>Organize pages</button></div>}
       {rightPane === 'ocr' && <DetectionPanel />}
       {rightPane === 'forms' && <FormPanel />}

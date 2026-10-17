@@ -2,6 +2,7 @@ import { TextLayer } from 'pdfjs-dist'
 import { installPdfDragSelection } from '../lib/pdfDragSelection'
 import {installPdfGestures} from '../lib/pdfGestures'
 import { pageText, outputScale, renderPage } from '../lib/rendering'
+import { fitZoom } from '../lib/fitZoom'
 import { Icon, BrandLogo } from './Icon'
 import { ExistingTextLayer } from './ExistingTextLayer'
 import { type PdfTextRun } from '../lib/pdfText'
@@ -88,8 +89,10 @@ function PageCanvas({
     if (!Number.isFinite(scale) || scale < 0.1) scale = 1
     if (scale > 10) scale = 10
 
-    const viewport = page.getViewport({ scale, rotation: (page.rotate + rotation) % 360 })
-    onSize(viewport.width / scale, viewport.height / scale)
+    const pageRotation = (page.rotate + rotation) % 360
+    const viewport = page.getViewport({ scale, rotation: pageRotation })
+    const unscaled = page.getViewport({ scale: 1, rotation: pageRotation })
+    onSize(unscaled.width, unscaled.height)
     setPageTransform(viewport.transform)
     setViewportSize({ w: viewport.width, h: viewport.height })
     const dpr = outputScale(viewport.width, viewport.height, window.devicePixelRatio)
@@ -574,9 +577,13 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
   useEffect(() => {
     const element = containerRef.current
     if (!element) return
-    const observer = new ResizeObserver(([entry]) =>
-      setContainerSize({ width: entry.contentRect.width, height: entry.contentRect.height })
-    )
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect
+      setContainerSize(previous =>
+        Math.abs(previous.width - width) < 0.1 && Math.abs(previous.height - height) < 0.1
+          ? previous : { width, height }
+      )
+    })
     observer.observe(element)
     return () => observer.disconnect()
   }, [])
@@ -619,27 +626,38 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
     }
   }, [pdfDoc])
 
+  const fitAnchorPage = useRef(1)
+  useEffect(() => {
+    fitAnchorPage.current = usePdfStore.getState().currentPage
+  }, [pdfDoc, fitMode, rotation, displayMode])
+  // In continuous view, scrolling updates the page indicator, not the zoom.
+  // Keep the page used when fitting was requested until the mode/document changes.
+  const singleFitPage = displayMode === 'single' ? currentPage : 0
   useEffect(() => {
     if (!pdfDoc || fitMode === 'none') return
     let cancelled = false
     const run = async (): Promise<void> => {
       try {
         if (containerRef.current?.querySelector('[data-selecting="true"]')) return
-        const page = await pdfDoc.getPage(Math.max(1, Math.min(currentPage, pdfDoc.numPages)))
+        const page = await pdfDoc.getPage(
+          Math.max(1, Math.min(singleFitPage || fitAnchorPage.current, pdfDoc.numPages))
+        )
         const base = page.getViewport({ scale: 1, rotation: (page.rotate + rotation) % 360 })
         const containerW =
           containerSize.width ||
           containerRef.current?.clientWidth ||
           Math.max(400, window.innerWidth - 560)
-        const fitScaleW = (containerW - 32) / base.width
-        let fitScale = fitScaleW
-        if (fitMode === 'page') {
-          const containerH = containerSize.height || Math.max(400, window.innerHeight - 160)
-          const fitScaleH = (containerH - 32) / base.height
-          fitScale = Math.min(fitScaleW, fitScaleH)
-        }
-        if (!cancelled && fitScale > 0.1 && fitScale < 10) {
-          usePdfStore.setState({ zoom: +fitScale.toFixed(2) })
+        const containerH = containerSize.height || containerRef.current?.clientHeight ||
+          Math.max(400, window.innerHeight - 160)
+        const stack = containerRef.current?.querySelector<HTMLElement>('[data-pdf-pages]')
+        const style = stack ? getComputedStyle(stack) : null
+        const padding = style ? {
+          width: parseFloat(style.paddingLeft) + parseFloat(style.paddingRight),
+          height: parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
+        } : undefined
+        const scale = fitZoom(base, { width: containerW, height: containerH }, fitMode, padding)
+        if (!cancelled && scale !== null && Math.abs(usePdfStore.getState().zoom - scale) > 0.00001) {
+          usePdfStore.setState({ zoom: scale })
         }
       } catch {}
     }
@@ -647,7 +665,7 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
     return () => {
       cancelled = true
     }
-  }, [pdfDoc, fitMode, rotation, currentPage, containerSize])
+  }, [pdfDoc, fitMode, rotation, singleFitPage, displayMode, containerSize])
 
   // Scroll tracking for current page
   useEffect(() => {
@@ -797,6 +815,8 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
       className="flex-1 overflow-auto relative"
       style={{
         background: isFullScreen ? fullScreenBg : 'var(--acrobat-canvas)',
+        overflowY: 'scroll',
+        scrollbarGutter: 'stable',
         cursor: cursorStyle,
         userSelect: isHandMode ? 'none' : undefined
       }}
@@ -814,6 +834,7 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
       onMouseLeave={onMouseUp}
     >
       <div
+        data-pdf-pages
         className="flex flex-col items-center gap-4 p-4 pb-20"
         style={{ minWidth: Math.max(baseSize.w * zoom + 32, containerSize.width) }}
       >

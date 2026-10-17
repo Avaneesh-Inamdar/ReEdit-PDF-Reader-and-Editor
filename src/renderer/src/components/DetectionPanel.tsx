@@ -11,6 +11,7 @@ import { saveDocument } from '../lib/documentActions'
 import { parsePageRange } from '../lib/pageRange'
 import { openTool } from '../lib/toolActions'
 import { bundledFontData } from '../lib/fonts'
+import {mergeRecognizedWords} from '../lib/ocrRecognition'
 import '../assets/document-operations.css'
 
 export function DetectionPanel(): React.JSX.Element {
@@ -115,6 +116,12 @@ export function DetectionPanel(): React.JSX.Element {
           let result: import('tesseract.js').Page
           try {
             result = (await worker.recognize(processed)).data
+            if(quality==='accurate'&&layout==='auto'&&!useOcrStore.getState().isCancelled){
+              setStatus(`Checking small and isolated text on page ${number}…`)
+              await worker.setParameters({tessedit_pageseg_mode:PSM.SPARSE_TEXT})
+              try{const sparse=(await worker.recognize(canvas)).data;result.words=mergeRecognizedWords(result.words,sparse.words) as typeof result.words}
+              finally{await worker.setParameters({tessedit_pageseg_mode:PSM.AUTO})}
+            }
           } finally {
             if (processed !== canvas) processed.width = processed.height = 0
           }

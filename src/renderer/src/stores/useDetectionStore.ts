@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 
 export interface DetectionInfo {
+  permissions?: number[] | null
+  permissionsError?: boolean
   sampledPages?: number
   isScanned: boolean
   textChars: number

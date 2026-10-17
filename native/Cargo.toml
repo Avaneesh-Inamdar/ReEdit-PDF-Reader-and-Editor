@@ -1,6 +1,6 @@
 [package]
 name = "re-edit-pdf-native"
-version = "2.0.0-alpha.1"
+version = "2.0.0-alpha.2"
 edition = "2024"
 license = "AGPL-3.0-only"
 description = "Native Rust desktop PDF reader and editor"

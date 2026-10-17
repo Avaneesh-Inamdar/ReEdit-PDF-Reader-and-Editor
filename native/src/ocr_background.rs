@@ -235,6 +235,22 @@ mod tests {
     }
 
     #[test]
+    fn flattened_vector_mark_removal_restores_paper_and_keeps_neighboring_ink() {
+        let mut doc=PdfDocument::new();
+        let mut page=doc.new_page(Size::new(200.,100.)).unwrap();
+        page.insert_contents(&mut doc,b"q .94 .90 .82 rg 0 0 200 100 re f 0 0 0 RG 2 w 40 40 m 100 40 l S 130 40 m 170 40 l S Q",true).unwrap();
+        let mut bytes=Vec::new();doc.write_to_with_options(&mut bytes,PdfWriteOptions::default()).unwrap();
+        let output=remove(&bytes,&[Region{page:1,annotation_id:None,remove_image_text:None,erase_objects:Some(true),quad:None,x:Some(0.19),y:Some(0.55),w:Some(0.33),h:Some(0.10)}],false).unwrap();
+        let doc=PdfDocument::from_bytes(&output).unwrap();
+        let page=doc.load_page(0).unwrap();
+        let pix=page.to_pixmap(&Matrix::new_scale(2.,2.),&Colorspace::device_rgb(),false,true).unwrap();
+        let at=|x:usize,y:usize|(y*2)*pix.stride() as usize+x*2*3;
+        let clean=at(60,60);let neighbor=at(150,60);
+        assert!(pix.samples()[clean]>230 && pix.samples()[clean+1]>220 && pix.samples()[clean+2]<220,"Paper must remain warm, not white");
+        assert!(pix.samples()[neighbor]<40,"Neighboring vector mark must survive");
+    }
+
+    #[test]
     fn ocr_edits_remove_ink_without_white_patches_and_preserve_adjacent_content() {
         for paper in [[242, 231, 210], [214, 220, 225], [255, 255, 255]] {
             for rotation in [0, 90, 180, 270] {
@@ -243,6 +259,7 @@ mod tests {
                     page: 1,
                     annotation_id: None,
                     remove_image_text: Some(true),
+                    erase_objects: None,
                     quad: Some([40., 68., 100., 68., 40., 52., 100., 52.]),
                     x: None,
                     y: None,
@@ -307,6 +324,7 @@ mod tests {
                 page: 1,
                 annotation_id: None,
                 remove_image_text: Some(true),
+                    erase_objects: None,
                 quad: None,
                 x: Some(0.2),
                 y: Some(0.3),

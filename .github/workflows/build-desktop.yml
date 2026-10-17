@@ -92,10 +92,28 @@ jobs:
           $env:REEDIT_TEST_SUITE = 'ocr-edit'
           ./scripts/measure-desktop.ps1 -Executable target/release/Re-Edit-PDF.exe -Fixture release/native-validation/tauri/ocr-paper.pdf
           Copy-Item release/native-validation/tauri/result.json release/native-validation/tauri/ocr-edit-result.json
+          node scripts/generate-ocr-paper.mjs --image-only
+          node scripts/generate-layout-fixtures.mjs
+          foreach ($suite in @('editing-regression','updates','interactions','ocr-recognition','layout-stability')) {
+            $fixture = switch ($suite) {
+              'ocr-recognition' {'release/native-validation/tauri/ocr-image-only.pdf'}
+              'layout-stability' {'release/validation-oct17/layout/mixed-pages.pdf'}
+              default {'test-fixtures/simple-text.pdf'}
+            }
+            ./scripts/test-local-webview.ps1 -Suite $suite -Fixture $fixture -Executable target/release/Re-Edit-PDF.exe
+          }
+          $env:REEDIT_TEST_SUITE = 'smoke'
+          ./scripts/measure-desktop.ps1 -Executable target/release/Re-Edit-PDF.exe
+          Copy-Item release/native-validation/tauri/result.json release/native-validation/tauri/open-close-result.json
           ./scripts/test-native-installer.ps1
+          ./scripts/test-native-msi.ps1
       - name: Linux native WebView smoke test
         if: runner.os == 'Linux'
-        run: sh scripts/test-native-linux.sh target/release/Re-Edit-PDF ubuntu-22.04
+        run: |
+          sh scripts/test-native-linux.sh target/release/Re-Edit-PDF ubuntu-22.04
+          node scripts/generate-ocr-paper.mjs --image-only
+          node scripts/generate-layout-fixtures.mjs
+          sh scripts/test-native-linux-regressions.sh target/release/Re-Edit-PDF
       - uses: actions/upload-artifact@v4
         if: always()
         with:

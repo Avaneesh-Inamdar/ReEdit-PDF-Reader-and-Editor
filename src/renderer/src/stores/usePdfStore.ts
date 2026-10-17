@@ -1,15 +1,17 @@
 import { create } from 'zustand'
 import { useAnnotationStore } from './useAnnotationStore'
 import { useEditStore } from './useEditStore'
+import {useFormStore} from './useFormStore'
 import type { SearchMatch } from '../lib/pdfSearch'
 
 const editSnapshots = new WeakMap<ArrayBuffer, {
   annotations: ReturnType<typeof useAnnotationStore.getState>
   edits: ReturnType<typeof useEditStore.getState>
+  forms: ReturnType<typeof useFormStore.getState>
 }>()
 function snapshot(data: ArrayBuffer): ArrayBuffer {
   const copy = data.slice(0)
-  editSnapshots.set(copy, { annotations: useAnnotationStore.getState(), edits: useEditStore.getState() })
+  editSnapshots.set(copy, { annotations: useAnnotationStore.getState(), edits: useEditStore.getState(),forms:useFormStore.getState() })
   return copy
 }
 function restoreEdits(data: ArrayBuffer): void {
@@ -17,6 +19,7 @@ function restoreEdits(data: ArrayBuffer): void {
   if (edits) {
     useAnnotationStore.setState(edits.annotations)
     useEditStore.setState(edits.edits)
+    useFormStore.setState(edits.forms)
   }
 }
 

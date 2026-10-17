@@ -10,6 +10,7 @@ import type { Annotation } from '../stores/useAnnotationStore'
 import { registerPreviewFont } from '../lib/fontFaces'
 import {trackInlineMutation} from '../lib/inlineText'
 import { replacementSpacing } from '../lib/textSpacing'
+import { connectedTextLine, lineText, lineSource } from '../lib/textLine'
 
 function ReplacementText({
   annotation,
@@ -169,55 +170,10 @@ export function ExistingTextLayer({
         a.sourceText?.key === run.key ||
         a.maskTexts?.some((mask) => mask.key === run.key || mask.key.startsWith(run.key + ':'))
     )
-    let group = [run]
-    if (!run.pdfAnnotationId && Math.abs(run.angle) < 0.01) {
-      const line = runs
-        .filter(
-          (item) =>
-            !!item.invisible === !!run.invisible &&
-            !item.pdfAnnotationId &&
-            Math.abs(item.angle) < 0.01 &&
-            Math.abs(item.y - run.y) < Math.max(item.size, run.size) * 0.4 &&
-            Math.abs(item.size - run.size) < run.size * 0.15 &&
-            item.fontFamily === run.fontFamily &&
-            item.previewFont === run.previewFont &&
-            item.color === run.color &&
-            !!item.bold === !!run.bold &&
-            !!item.italic === !!run.italic
-        )
-        .sort((a, b) => a.x - b.x)
-      const index = line.indexOf(run)
-      let start = index,
-        end = index
-      while (
-        start > 0 &&
-        line[start].x -
-          line[start - 1].x -
-          line[start - 1].width * (line[start - 1].matrix?.[0] || 1) <
-          run.size * 1.5
-      )
-        start--
-      while (
-        end + 1 < line.length &&
-        line[end + 1].x - line[end].x - line[end].width * (line[end].matrix?.[0] || 1) <
-          run.size * 1.5
-      )
-        end++
-      if (index >= 0) group = line.slice(start, end + 1)
-    }
-    const original = group
-      .map(
-        (item, index) =>
-          (index && !/\s$/.test(group[index - 1].text) && !/^\s/.test(item.text) &&
-          item.x -
-            group[index - 1].x -
-            group[index - 1].width * (group[index - 1].matrix?.[0] || 1) >
-            run.size * 0.15
-            ? ' '
-            : '') + item.text
-      )
-      .join('')
-    const replacement = await requestPdfText(group[0], existing?.text ?? original, existing)
+    const group = connectedTextLine(run,runs)
+    const original = lineText(group)
+    const merged = lineSource(group)
+    const replacement = await requestPdfText(merged, existing?.text ?? original, existing)
     if (replacement === null || usePdfStore.getState().data !== data) return
     if (existing) {
       updateAnnotation(existing.id, { text: replacement.text, ...replacement.style })
@@ -242,8 +198,9 @@ export function ExistingTextLayer({
       italic: run.italic,
       opacity: 1,
       strokeWidth: 0,
-      sourceText: group[0],
-      maskTexts: group.length > 1 ? group : undefined,
+      sourceText: merged,
+      maskTexts: group,
+
       ...replacement.style
     })
     setSelected(id)
