@@ -27,7 +27,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           cache-on-failure: true
-          save-if: ${{ !cancelled() }}
       - name: Linux native build and desktop prerequisites
         if: runner.os == 'Linux'
         run: |
