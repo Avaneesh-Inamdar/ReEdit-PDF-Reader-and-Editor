@@ -42,6 +42,8 @@ The manifest's `downloads` entries include the hashes and version-bound signatur
 
 Native previews check the [preview update feed](updates/native-preview.json) without uploading PDF content. Updates require confirmation before downloading and installing; unsaved documents must be resolved first. AppImage builds support in-app updating. DEB/RPM users should download and install the matching package through their package manager.
 
+The **Publish native update feed** workflow refreshes that feed when a native GitHub release is published or edited. It checks release versions and asset URLs, requires matching signature-version metadata, and keeps older release edits from replacing a newer feed. The app verifies the downloaded package's cryptographic signature before installation.
+
 Linux native packages require a glibc desktop environment and GTK/WebKitGTK support. Alpine/musl, ARM64 and macOS are not validated.
 
 The installer registers PDF **Open With** support and a separate document icon. Choose Re-Edit PDF in Windows **Settings → Apps → Default apps**. Linux Preferences can set the PDF default through `xdg-mime`.

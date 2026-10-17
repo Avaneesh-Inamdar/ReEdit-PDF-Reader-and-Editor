@@ -1,0 +1,51 @@
+name: Publish native update feed
+on:
+  release:
+    types: [published, edited]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published native release tag
+        required: true
+permissions:
+  contents: write
+concurrency:
+  group: native-update-feed
+  cancel-in-progress: false
+jobs:
+  feed:
+    if: github.event_name == 'workflow_dispatch' || github.event.release.draft == false
+    runs-on: ubuntu-22.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.tag || github.event.release.tag_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Select native releases
+        id: channel
+        run: node -e 'require("fs").appendFileSync(process.env.GITHUB_OUTPUT,"native="+(/^v?(?:[2-9]|[1-9][0-9]+)\./.test(process.env.RELEASE_TAG))+"\n")'
+      - uses: actions/setup-node@v4
+        if: steps.channel.outputs.native == 'true'
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.channel.outputs.native == 'true'
+        run: npm ci --ignore-scripts
+      - name: Validate published update metadata
+        if: steps.channel.outputs.native == 'true'
+        run: |
+          mkdir -p release/update-feed
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > release/update-feed/release.json
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern latest.json --dir release/update-feed
+          node scripts/prepare-update-feed.mjs release/update-feed/release.json release/update-feed/latest.json updates/native-preview.json
+      - name: Commit channel metadata
+        if: steps.channel.outputs.native == 'true'
+        run: |
+          if git ls-files --error-unmatch updates/native-preview.json >/dev/null 2>&1 && git diff --quiet -- updates/native-preview.json; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add updates/native-preview.json
+          git commit -m "Update native preview feed for $RELEASE_TAG"
+          git push origin HEAD:main
