@@ -319,9 +319,16 @@
       () => document.querySelector('#page-1 [data-pdf-run]')?.textContent,
       'Reload saved PDF'
     )
-    checks.reopened_edited_text = [...document.querySelectorAll('#page-1 [data-pdf-run]')].some(
-      (span) => span.textContent.includes('edited twice')
+    await wait(
+      () =>
+        [...document.querySelectorAll('#page-1 [data-pdf-run]')]
+          .map((span) => span.textContent)
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .includes('Line one edited twice'),
+      'Saved replacement text'
     )
+    checks.reopened_edited_text = true
     const updateResult = await invoke('desktop_test_update_download')
     checks.signed_update_download = updateResult.signedDownloadVerified
     checks.tampered_update_rejected = updateResult.tamperedDownloadRejected
