@@ -19,7 +19,13 @@ describe('certificate signing',()=>{
   const signed=await signPdfWithCertificate(original,p12,'test-password','Test','Approval')
   const extracted=extractSignature(Buffer.from(signed))
   expect(extracted.ByteRange[2]+extracted.ByteRange[3]).toBe(signed.length)
-  const p7=forge.pkcs7.messageFromAsn1(forge.asn1.fromDer(extracted.signature))
+  // extractSignature strips every trailing 00 byte, including a legitimate
+  // final signature byte in about 1/256 random RSA signatures. Parse DER's
+  // own length from the padded PDF Contents instead of trimming its payload.
+  const contents=Buffer.from(Buffer.from(signed).subarray(extracted.ByteRange[1]+1,extracted.ByteRange[2]-1).toString('ascii'),'hex')
+  const cms=forge.util.createBuffer(contents.toString('binary'))
+  const p7=forge.pkcs7.messageFromAsn1(forge.asn1.fromDer(cms,{parseAllBytes:false}))
+  expect(cms.getBytes()).toMatch(/^\x00*$/)
   const raw=p7.rawCapture
   const attributesAsn1=forge.asn1.create(forge.asn1.Class.UNIVERSAL,forge.asn1.Type.SET,true,raw.authenticatedAttributes)
   const digest=forge.md.sha256.create();digest.update(forge.asn1.toDer(attributesAsn1).getBytes())

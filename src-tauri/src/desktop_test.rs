@@ -128,6 +128,7 @@ pub async fn desktop_test_input(
         "Input.dispatchMouseEvent"
             | "Input.dispatchKeyEvent"
             | "Input.synthesizePinchGesture"
+            | "Emulation.setPageScaleFactor"
             | "HeapProfiler.collectGarbage"
             | "Runtime.getHeapUsage"
     ) {
