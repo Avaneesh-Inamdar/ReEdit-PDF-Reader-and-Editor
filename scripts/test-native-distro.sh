@@ -34,7 +34,16 @@ timeout 12s dbus-run-session -- xvfb-run -a "$installed" "$PWD/test-fixtures/sim
 status=$?
 set -e
 test "$status" -eq 124
+# Exercise the actual AppImage runtime and bundled libraries without requiring
+# FUSE inside the container. This does not validate FUSE/AppArmor on a desktop.
+appimage=$(realpath release/downloaded/native-packages/*.AppImage)
+chmod +x "$appimage"
+set +e
+APPIMAGE_EXTRACT_AND_RUN=1 timeout 20s dbus-run-session -- xvfb-run -a "$appimage" "$PWD/test-fixtures/simple-text.pdf" > "$output/appimage-launch.log" 2>&1
+appimage_status=$?
+set -e
+if [ "$appimage_status" -ne 124 ]; then cat "$output/appimage-launch.log"; exit 1; fi
 python3 - "$output/package-result.json" "$label" <<'PY'
 import json,sys
-json.dump({'distribution':sys.argv[2],'installedPackageLaunched':True,'environment':'container/Xvfb; real desktop gestures and printers not tested'},open(sys.argv[1],'w'),indent=2)
+json.dump({'distribution':sys.argv[2],'installedPackageLaunched':True,'appImageExtractAndRunLaunched':True,'environment':'container/Xvfb; FUSE, real desktop gestures and printers not tested'},open(sys.argv[1],'w'),indent=2)
 PY
