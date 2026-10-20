@@ -1,0 +1,1465 @@
+{
+  "uiChecks": {
+    "linux": 42,
+    "windows": 88
+  },
+  "reports": {
+    "linux": {
+      "distros/ubuntu-22.04/result.json": {
+        "checks": {
+          "centered_dialog": true,
+          "dialog_cancel": true,
+          "find_opens": true,
+          "font_discovery": true,
+          "landscape_preview": true,
+          "pdf_transport": true,
+          "print_preview": true,
+          "print_session_released": true,
+          "reader_rendered": true
+        },
+        "errors": [],
+        "userAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15"
+      },
+      "regressions/editing-regression/result.json": {
+        "checks": {
+          "convert_surface": true,
+          "font_faces_bounded": true,
+          "font_fallback_visible": true,
+          "no_font_error": true,
+          "removal_controls": true,
+          "replacement_keeps_following_words": true,
+          "selection_keeps_sentence": true,
+          "tool_button_labels_fit": true
+        },
+        "errors": []
+      },
+      "regressions/layout-stability/result.json": {
+        "checks": {
+          "continuous_scroll_keeps_zoom": true,
+          "fit_width_has_no_horizontal_overflow": true,
+          "landscape_geometry_stable": true
+        },
+        "errors": [],
+        "samples": {
+          "viewport_0": [
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            }
+          ],
+          "viewport_1": [
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            }
+          ],
+          "viewport_2": [
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 688.9375,
+              "w": 974.9375,
+              "x": 352.03125,
+              "y": 107
+            }
+          ],
+          "viewport_3": [
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            },
+            {
+              "h": 684,
+              "w": 967.953125,
+              "x": 352.015625,
+              "y": 107
+            }
+          ]
+        }
+      },
+      "regressions/ocr-recognition/result.json": {
+        "checks": {
+          "all_words_have_selection_geometry": true,
+          "body_recognized": true,
+          "no_text_before": true,
+          "small_footer_recognized": true
+        },
+        "errors": []
+      },
+      "regressions/selection/result.json": {
+        "checks": {
+          "all_pages_once_in_order": true,
+          "document_only": true,
+          "edit_menu_select_all": true,
+          "editor_owns_select_all": true,
+          "escape_clears_selection": true,
+          "find_owns_select_all": true,
+          "home_does_not_select_chrome": true,
+          "modal_blocks_document_save": true,
+          "modal_does_not_select_document": true,
+          "offscreen_pages_copied": true,
+          "replacements_copied_once": true,
+          "single_page_scope": true
+        },
+        "errors": []
+      },
+      "regressions/updates/result.json": {
+        "checks": {
+          "button_labels_fit": true,
+          "download_details": true,
+          "prompt_does_not_repeat": true,
+          "release_download_available": true,
+          "startup_prompt": true,
+          "theme_surface": true
+        },
+        "errors": []
+      }
+    },
+    "windows": {
+      "regressions/editing-regression/result.json": {
+        "checks": {
+          "convert_surface": true,
+          "font_faces_bounded": true,
+          "font_fallback_visible": true,
+          "no_font_error": true,
+          "removal_controls": true,
+          "replacement_keeps_following_words": true,
+          "selection_keeps_sentence": true,
+          "tool_button_labels_fit": true
+        },
+        "errors": []
+      },
+      "regressions/interactions/result.json": {
+        "checks": {
+          "convert_menu_opaque": true,
+          "double_click_word": true,
+          "drag_ten_lines": true,
+          "edit_outline_cleared": true,
+          "header_brand_removed": true,
+          "inline_edit": true,
+          "inline_reedit": true,
+          "landscape_preview": true,
+          "native_page_scale_translation": true,
+          "no_installer_run": true,
+          "page_dimensions_label": true,
+          "paper_preview": true,
+          "print_sessions_released": true,
+          "printer_connected": true,
+          "printer_disconnected_pdf": true,
+          "printer_reconnected": true,
+          "reopened_edited_text": true,
+          "repeated_open_close": true,
+          "save_theme_matches": true,
+          "saved_pdf": true,
+          "scale_preview": true,
+          "signed_update_download": true,
+          "tampered_update_rejected": true,
+          "triple_click_line": true,
+          "trusted_mouse_input": true,
+          "trusted_wheel_zoom": true,
+          "trusted_wheel_zoom_out": true,
+          "workspace_wheel_zoom": true
+        },
+        "errors": [],
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36 Edg/154.0.0.0"
+      },
+      "regressions/layout-stability/result.json": {
+        "checks": {
+          "continuous_scroll_keeps_zoom": true,
+          "fit_width_has_no_horizontal_overflow": true,
+          "landscape_geometry_stable": true
+        },
+        "errors": [],
+        "samples": {
+          "viewport_0": [
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            }
+          ],
+          "viewport_1": [
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            }
+          ],
+          "viewport_2": [
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 681.859375,
+              "w": 964.921875,
+              "x": 352.03125,
+              "y": 107
+            }
+          ],
+          "viewport_3": [
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            },
+            {
+              "h": 676.921875,
+              "w": 957.9375,
+              "x": 352.03125,
+              "y": 107
+            }
+          ]
+        }
+      },
+      "regressions/ocr-recognition/result.json": {
+        "checks": {
+          "all_words_have_selection_geometry": true,
+          "body_recognized": true,
+          "no_text_before": true,
+          "small_footer_recognized": true
+        },
+        "errors": []
+      },
+      "regressions/selection/result.json": {
+        "checks": {
+          "all_pages_once_in_order": true,
+          "document_only": true,
+          "edit_menu_select_all": true,
+          "editor_owns_select_all": true,
+          "escape_clears_selection": true,
+          "find_owns_select_all": true,
+          "home_does_not_select_chrome": true,
+          "modal_blocks_document_save": true,
+          "modal_does_not_select_document": true,
+          "offscreen_pages_copied": true,
+          "replacements_copied_once": true,
+          "single_page_scope": true
+        },
+        "errors": []
+      },
+      "regressions/updates/result.json": {
+        "checks": {
+          "button_labels_fit": true,
+          "download_details": true,
+          "prompt_does_not_repeat": true,
+          "release_download_available": true,
+          "startup_prompt": true,
+          "theme_surface": true
+        },
+        "errors": []
+      },
+      "tauri/fonts-dialog-result.json": {
+        "checks": {
+          "alternative_labels": true,
+          "answer_cancel": true,
+          "answer_discard": true,
+          "answer_save": true,
+          "centered_cancel": true,
+          "centered_discard": true,
+          "centered_save": true,
+          "editor_cleanup": true,
+          "font_assets_load": true,
+          "new_font_families": true,
+          "replacement_spacing_reset": true
+        },
+        "errors": [],
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36 Edg/154.0.0.0"
+      },
+      "tauri/ocr-edit-result.json": {
+        "checks": {
+          "can_reedit": true,
+          "invisible_ocr_source": true,
+          "saved_pdf": true
+        },
+        "errors": []
+      },
+      "tauri/open-close-result.json": {
+        "checks": {
+          "binary_font_transport": true,
+          "binary_pdf_transport": true,
+          "layout": true,
+          "pinch_event": true,
+          "print_dialog": true,
+          "print_escape": true,
+          "reader": true,
+          "rendered": true,
+          "repeated_open_close": true,
+          "search": true,
+          "search_close_clears_highlights": true,
+          "sidebar": true,
+          "webview_page_zoom_unchanged": true
+        },
+        "cycles": [
+          {
+            "index": 1,
+            "jsHeap": 16580551,
+            "milliseconds": 1009
+          },
+          {
+            "index": 2,
+            "jsHeap": 16247688,
+            "milliseconds": 1008
+          },
+          {
+            "index": 3,
+            "jsHeap": 15574657,
+            "milliseconds": 1012
+          },
+          {
+            "index": 4,
+            "jsHeap": 15617987,
+            "milliseconds": 1008
+          },
+          {
+            "index": 5,
+            "jsHeap": 15443271,
+            "milliseconds": 1011
+          },
+          {
+            "index": 6,
+            "jsHeap": 13924401,
+            "milliseconds": 1016
+          },
+          {
+            "index": 7,
+            "jsHeap": 12851172,
+            "milliseconds": 1009
+          },
+          {
+            "index": 8,
+            "jsHeap": 15634135,
+            "milliseconds": 1021
+          },
+          {
+            "index": 9,
+            "jsHeap": 14083335,
+            "milliseconds": 1014
+          },
+          {
+            "index": 10,
+            "jsHeap": 12489119,
+            "milliseconds": 1018
+          },
+          {
+            "index": 11,
+            "jsHeap": 15171928,
+            "milliseconds": 1018
+          },
+          {
+            "index": 12,
+            "jsHeap": 14088892,
+            "milliseconds": 1028
+          }
+        ],
+        "errors": [],
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36 Edg/154.0.0.0"
+      }
+    }
+  },
+  "windowsInstallers": {
+    "windows-installer-validation-1/startup-close/result.json": [
+      {
+        "delayMs": 0,
+        "closedNormally": true,
+        "closeSeconds": 0.112688
+      },
+      {
+        "delayMs": 100,
+        "closedNormally": true,
+        "closeSeconds": 0.0969052
+      },
+      {
+        "delayMs": 500,
+        "closedNormally": true,
+        "closeSeconds": 0.0919658
+      }
+    ],
+    "windows-installer-validation-1/tauri/windows-installer-result.json": {
+      "passed": true,
+      "version": "2.0.0",
+      "checks": [
+        "assisted wizard reaches Finish",
+        "Finish dismisses promptly",
+        "Finish launches installed app",
+        "app shows its window",
+        "test app closes",
+        "test uninstall exits successfully"
+      ],
+      "finishDismissSeconds": 0.2447808
+    },
+    "windows-installer-validation-1/tauri/windows-msi-result.json": {
+      "version": "2.0.0",
+      "passed": true,
+      "checks": [
+        "MSI installs",
+        "runtime DLLs present",
+        "installed app opens",
+        "installed app closes",
+        "MSI uninstalls"
+      ]
+    },
+    "windows-installer-validation-2/startup-close/result.json": [
+      {
+        "delayMs": 0,
+        "closedNormally": true,
+        "closeSeconds": 0.1127147
+      },
+      {
+        "delayMs": 100,
+        "closedNormally": true,
+        "closeSeconds": 0.0834517
+      },
+      {
+        "delayMs": 500,
+        "closedNormally": true,
+        "closeSeconds": 0.0584929
+      }
+    ],
+    "windows-installer-validation-2/tauri/windows-installer-result.json": {
+      "finishDismissSeconds": 0.2306869,
+      "checks": [
+        "assisted wizard reaches Finish",
+        "Finish dismisses promptly",
+        "Finish launches installed app",
+        "app shows its window",
+        "test app closes",
+        "test uninstall exits successfully"
+      ],
+      "passed": true,
+      "version": "2.0.0"
+    },
+    "windows-installer-validation-2/tauri/windows-msi-result.json": {
+      "passed": true,
+      "version": "2.0.0",
+      "checks": [
+        "MSI installs",
+        "runtime DLLs present",
+        "installed app opens",
+        "installed app closes",
+        "MSI uninstalls"
+      ]
+    }
+  },
+  "distributions": {
+    "native-distro-0/debian-12/package-result.json": {
+      "distribution": "debian-12",
+      "installedPackageLaunched": true,
+      "appImageExtractAndRunLaunched": true,
+      "environment": "container/Xvfb; FUSE, real desktop gestures and printers not tested"
+    },
+    "native-distro-0/debian-12/result.json": {
+      "checks": {
+        "centered_dialog": true,
+        "dialog_cancel": true,
+        "find_opens": true,
+        "font_discovery": true,
+        "landscape_preview": true,
+        "pdf_transport": true,
+        "print_preview": true,
+        "print_session_released": true,
+        "reader_rendered": true
+      },
+      "errors": [],
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15"
+    },
+    "native-distro-1/ubuntu-24.04/package-result.json": {
+      "distribution": "ubuntu-24.04",
+      "installedPackageLaunched": true,
+      "appImageExtractAndRunLaunched": true,
+      "environment": "container/Xvfb; FUSE, real desktop gestures and printers not tested"
+    },
+    "native-distro-1/ubuntu-24.04/result.json": {
+      "checks": {
+        "centered_dialog": true,
+        "dialog_cancel": true,
+        "find_opens": true,
+        "font_discovery": true,
+        "landscape_preview": true,
+        "pdf_transport": true,
+        "print_preview": true,
+        "print_session_released": true,
+        "reader_rendered": true
+      },
+      "errors": [],
+      "userAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15"
+    },
+    "native-distro-2/fedora-43/package-result.json": {
+      "distribution": "fedora-43",
+      "installedPackageLaunched": true,
+      "appImageExtractAndRunLaunched": true,
+      "environment": "container/Xvfb; FUSE, real desktop gestures and printers not tested"
+    },
+    "native-distro-2/fedora-43/result.json": {
+      "checks": {
+        "centered_dialog": true,
+        "dialog_cancel": true,
+        "find_opens": true,
+        "font_discovery": true,
+        "landscape_preview": true,
+        "pdf_transport": true,
+        "print_preview": true,
+        "print_session_released": true,
+        "reader_rendered": true
+      },
+      "errors": [],
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15"
+    }
+  },
+  "memorySamples": [
+    {
+      "seconds": 0.07,
+      "privateBytes": 5308416,
+      "workingBytes": 22282240,
+      "handles": 276,
+      "processes": 1
+    },
+    {
+      "seconds": 0.92,
+      "privateBytes": 142147584,
+      "workingBytes": 372269056,
+      "handles": 2708,
+      "processes": 7
+    },
+    {
+      "seconds": 1.73,
+      "privateBytes": 166825984,
+      "workingBytes": 436981760,
+      "handles": 2948,
+      "processes": 7
+    },
+    {
+      "seconds": 2.54,
+      "privateBytes": 171331584,
+      "workingBytes": 461963264,
+      "handles": 3039,
+      "processes": 7
+    },
+    {
+      "seconds": 3.35,
+      "privateBytes": 179568640,
+      "workingBytes": 483545088,
+      "handles": 3057,
+      "processes": 7
+    },
+    {
+      "seconds": 4.16,
+      "privateBytes": 185503744,
+      "workingBytes": 508157952,
+      "handles": 3213,
+      "processes": 7
+    },
+    {
+      "seconds": 4.96,
+      "privateBytes": 192454656,
+      "workingBytes": 532557824,
+      "handles": 3213,
+      "processes": 7
+    },
+    {
+      "seconds": 5.77,
+      "privateBytes": 204279808,
+      "workingBytes": 555401216,
+      "handles": 3214,
+      "processes": 7
+    },
+    {
+      "seconds": 6.57,
+      "privateBytes": 212758528,
+      "workingBytes": 575475712,
+      "handles": 3215,
+      "processes": 7
+    },
+    {
+      "seconds": 7.37,
+      "privateBytes": 220852224,
+      "workingBytes": 600543232,
+      "handles": 3218,
+      "processes": 7
+    },
+    {
+      "seconds": 8.18,
+      "privateBytes": 225034240,
+      "workingBytes": 603586560,
+      "handles": 3200,
+      "processes": 7
+    },
+    {
+      "seconds": 8.97,
+      "privateBytes": 228675584,
+      "workingBytes": 615395328,
+      "handles": 3219,
+      "processes": 7
+    },
+    {
+      "seconds": 9.77,
+      "privateBytes": 214728704,
+      "workingBytes": 550109184,
+      "handles": 3214,
+      "processes": 7
+    },
+    {
+      "seconds": 10.57,
+      "privateBytes": 207478784,
+      "workingBytes": 543633408,
+      "handles": 3212,
+      "processes": 7
+    },
+    {
+      "seconds": 11.36,
+      "privateBytes": 214097920,
+      "workingBytes": 563728384,
+      "handles": 3246,
+      "processes": 7
+    },
+    {
+      "seconds": 12.16,
+      "privateBytes": 206880768,
+      "workingBytes": 558125056,
+      "handles": 3228,
+      "processes": 7
+    },
+    {
+      "seconds": 12.95,
+      "privateBytes": 210366464,
+      "workingBytes": 543236096,
+      "handles": 3238,
+      "processes": 7
+    },
+    {
+      "seconds": 13.75,
+      "privateBytes": 213417984,
+      "workingBytes": 549879808,
+      "handles": 3236,
+      "processes": 7
+    },
+    {
+      "seconds": 14.57,
+      "privateBytes": 217014272,
+      "workingBytes": 565354496,
+      "handles": 3246,
+      "processes": 7
+    },
+    {
+      "seconds": 15.39,
+      "privateBytes": 213929984,
+      "workingBytes": 548118528,
+      "handles": 3240,
+      "processes": 7
+    },
+    {
+      "seconds": 16.24,
+      "privateBytes": 79785984,
+      "workingBytes": 241819648,
+      "handles": 2139,
+      "processes": 7
+    }
+  ]
+}

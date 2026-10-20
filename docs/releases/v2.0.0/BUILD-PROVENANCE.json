@@ -1,0 +1,51 @@
+{
+  "version": "2.0.0",
+  "applicationCommit": "6c45eb69fdf0468ac7ccdd9629fde249cbfff3d8",
+  "packageBuildRun": 39399383379,
+  "packageBuildRunConclusion": "failure at installer harness after package builds, unit tests, and all 130 Windows/Linux UI checks passed",
+  "artifactDigests": {
+    "re-edit-pdf-Linux": "sha256:308488f9d21b8f5e6ec422ce3d4e6c6d2ddafa2253f9fcb581ee1519fe7af17d",
+    "native-validation-tools-Linux": "sha256:47a79f6c08c2fcb6f721ee110be1cbf27b8864831b5b79ec864a70b44d61869b",
+    "re-edit-pdf-Windows": "sha256:e9da789b3d90d0c6ee19ebc2b48641efe295350775802def5cec79e9f6e3bcb8"
+  },
+  "installerValidation": {
+    "run": 39401879300,
+    "commit": "0e51d7f",
+    "conclusion": "success on both clean Windows workers; exact original EXE/MSI and portable package"
+  },
+  "distributionValidation": {
+    "run": 39401674613,
+    "conclusion": "success; Debian 12, Ubuntu 24.04, Fedora 43"
+  },
+  "notes": "Initial installer check reused a WebView profile and a cached main-window probe. Isolated profiles and explicit window targeting passed against the unchanged packages. Application binaries were not rebuilt for the test-harness or feed-publication changes. All five package/source signatures verified locally. Windows publisher signing is not configured.",
+  "assets": {
+    "mupdf-native-source-1.27.2.tar.gz": {
+      "bytes": 14942045,
+      "sha256": "5a8cdf183ec946ac1883cb7a114b1e22d3b704e57ae945e8caab407f621f6cd0"
+    },
+    "Re-Edit-PDF-2.0.0-linux-amd64.deb": {
+      "bytes": 43540744,
+      "sha256": "b731f02543e0623ac0b943c57a5c4396e7933ac567d7729b9e3e08930a3db1b3"
+    },
+    "Re-Edit-PDF-2.0.0-linux-x86_64.rpm": {
+      "bytes": 43540879,
+      "sha256": "00ca0d784aec4f1a6d85de17f61e871e539cb311f9693a5ff0294850590c7654"
+    },
+    "Re-Edit-PDF-2.0.0-linux-x86_64.AppImage": {
+      "bytes": 120515064,
+      "sha256": "9e36de442a262e4dfda20b2390c645bb4fe58057b777dc3a2b3d310912aedd7d"
+    },
+    "Re-Edit-PDF-2.0.0-windows-x64-setup.exe": {
+      "bytes": 40261884,
+      "sha256": "00db4eb678077e8dcc49c648bbce24c4ba03f29c249b6c144815d23c192776da"
+    },
+    "latest.json": {
+      "bytes": 6012,
+      "sha256": "b33eb28eabd99d718a4aabebac4970f76c7f8a2a296166875534dcdbd0bdb180"
+    },
+    "SHA256SUMS": {
+      "bytes": 597,
+      "sha256": "03398c1b1d30eee92985f05d98336e8a9ee0eacda6b5f27afe17e3b34cb234d5"
+    }
+  }
+}

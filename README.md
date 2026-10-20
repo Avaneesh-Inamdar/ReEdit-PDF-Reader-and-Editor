@@ -72,6 +72,8 @@ This project is independent of Adobe. It does not claim complete Acrobat Premium
 - Find and inline text fields retain their own Select All behavior. Select All is also available in the Edit menu.
 - Modal dialogs prevent background document shortcuts, and Escape, document changes and closing clear document selections.
 - Drag selection releases pointer capture when its page is rebuilt or closed.
+- Startup close works before renderer registration; unsaved changes still use the normal save/discard dialog.
+- Stable update-feed publication rejects experimental releases after promotion.
 
 ### Native workspace improvements
 
@@ -89,6 +91,7 @@ This project is independent of Adobe. It does not claim complete Acrobat Premium
 - The Windows setup launches the app from Finish, registers a distinct PDF document icon, and appears in Windows Default Apps.
 - Installer, WebView regression and Linux package checks are documented in the [validation report](docs/releases/v2.0.0-alpha.2/VALIDATION.md). Container/Xvfb checks do not replace stock desktop testing.
 - Alpha.2 validation passed 142 local frontend tests, 27 native Rust tests, 76 Windows WebView checks, Windows installer lifecycle checks, and Debian/Ubuntu/Fedora package launches. Preview font and open/close cleanup checks passed in the measured scenarios.
+- Version 2.0.0 package validation passed 88 Windows and 42 Linux app checks, 28 native tests per platform, two clean Windows installer runs, and Debian/Ubuntu/Fedora installed-package/AppImage launches. Details and measured memory limits are in the current validation report.
 
 ### Basic workflow
 
