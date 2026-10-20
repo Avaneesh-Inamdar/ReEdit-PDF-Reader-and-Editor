@@ -21,7 +21,7 @@ export function selectedRuns(range: Range): PdfTextRun[] {
   )) {
     const run = span.pdfRun
     const node = span.firstChild
-    if (!run || !node || !range.intersectsNode(node)) continue
+    if (!run || !node || span.dataset.removed === 'true' || !range.intersectsNode(node)) continue
     const start = range.startContainer === node ? range.startOffset : 0
     const end = range.endContainer === node ? range.endOffset : run.text.length
     if (end <= start) continue

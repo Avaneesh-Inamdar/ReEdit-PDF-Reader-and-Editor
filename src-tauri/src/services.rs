@@ -114,8 +114,8 @@ pub fn check_updates() -> Result<UpdateResult> {
     let json: serde_json::Value = response.body_mut().read_json()?;
     update_result(&json, env!("CARGO_PKG_VERSION"))
 }
-// This preview channel is shared with the signature-verifying Tauri updater.
-// Stable Electron releases stay on their existing stable channel.
+// This native channel is shared with the signature-verifying Tauri updater.
+// Keep the original filename so alpha.2 installations receive stable upgrades.
 const UPDATE_FEED: &str = "https://raw.githubusercontent.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/main/updates/native-preview.json";
 fn update_result(json: &serde_json::Value, current: &str) -> Result<UpdateResult> {
     let tag = json["version"].as_str().context("Update feed has no version")?
@@ -130,7 +130,7 @@ fn update_result(json: &serde_json::Value, current: &str) -> Result<UpdateResult
         message: if available {
             format!("Re-Edit PDF {tag} is available")
         } else {
-            format!("You are up to date on the native preview channel. Current version: {current}")
+            format!("You are up to date on the native update channel. Current version: {current}")
         },
     })
 }

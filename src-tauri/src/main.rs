@@ -7,7 +7,6 @@ mod input;
 mod printing_session;
 mod services;
 mod state;
-use std::sync::atomic::Ordering;
 use tauri::{Emitter, Manager};
 fn main() {
     let builder = tauri::Builder::default().plugin(tauri_plugin_updater::Builder::new().build());
@@ -42,7 +41,9 @@ fn main() {
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 let state = window.state::<state::DesktopState>();
-                if !state.allow_close.load(Ordering::Acquire) {
+                #[cfg(feature = "desktop-test")]
+                eprintln!("close_request_confirm={}", state.should_confirm_close());
+                if state.should_confirm_close() {
                     api.prevent_close();
                     let _ = window.emit("window:closeRequested", ());
                 }
@@ -168,6 +169,15 @@ fn main() {
         context
     };
     builder
-        .run(context)
-        .expect("Unable to launch Re-Edit PDF");
+        .build(context)
+        .expect("Unable to launch Re-Edit PDF")
+        .run(|app, event| {
+            // Do not expose window controls while the native host is still
+            // constructing the webview and cannot handle close messages.
+            if matches!(event, tauri::RunEvent::Ready) {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                }
+            }
+        });
 }

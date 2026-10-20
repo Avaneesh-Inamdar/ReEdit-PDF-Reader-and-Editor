@@ -202,6 +202,11 @@ export function installPdfDragSelection(container: HTMLElement): () => void {
   container.addEventListener('pointercancel', up)
   container.addEventListener('dblclick', doubleClick)
   return () => {
+    if (pointer !== null && container.hasPointerCapture(pointer)) container.releasePointerCapture(pointer)
+    pointer = null
+    anchor = null
+    unitEnd = null
+    boxes = []
     container.removeEventListener('pointerdown', down)
     container.removeEventListener('pointermove', move)
     container.removeEventListener('pointerup', up)

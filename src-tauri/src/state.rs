@@ -30,6 +30,9 @@ pub struct DesktopState {
     pub allow_close: AtomicBool,
 }
 impl DesktopState {
+    pub fn should_confirm_close(&self) -> bool {
+        self.ready.load(Ordering::Acquire) && !self.allow_close.load(Ordering::Acquire)
+    }
     pub fn load(path: PathBuf) -> Self {
         let p: Preferences = std::fs::read(&path)
             .ok()
@@ -106,8 +109,10 @@ impl DesktopState {
         if let Some(window) = app.get_webview_window("main") {
             let _ = window.unminimize();
             let _ = window.maximize();
-            let _ = window.show();
-            let _ = window.set_focus();
+            if self.ready.load(Ordering::Acquire) {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
         }
         Ok(())
     }
@@ -149,6 +154,16 @@ pub fn paths(args: &[String], cwd: &str) -> Vec<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn startup_close_does_not_wait_for_an_unregistered_renderer_listener() {
+        let directory = tempfile::tempdir().unwrap();
+        let state = DesktopState::load(directory.path().join("preferences.json"));
+        assert!(!state.should_confirm_close());
+        state.ready.store(true, Ordering::Release);
+        assert!(state.should_confirm_close());
+        state.allow_close.store(true, Ordering::Release);
+        assert!(!state.should_confirm_close());
+    }
     #[test]
     fn only_explicitly_selected_or_recent_files_are_readable() {
         let dir = tempfile::tempdir().unwrap();

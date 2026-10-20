@@ -1,6 +1,7 @@
 import { TextLayer } from 'pdfjs-dist'
 import { installPdfDragSelection } from '../lib/pdfDragSelection'
 import {installPdfGestures} from '../lib/pdfGestures'
+import { installPdfSelectAll } from '../lib/pdfSelectAll'
 import { pageText, outputScale, renderPage } from '../lib/rendering'
 import { fitZoom } from '../lib/fitZoom'
 import { Icon, BrandLogo } from './Icon'
@@ -473,6 +474,10 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
   const { tool, deleteAnnotation, selectedId } = useAnnotationStore()
   const { pointerMode, spaceHeld, displayMode, isFullScreen, fullScreenBg } = useUIStore()
   const containerRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (containerRef.current && pdfDoc) return installPdfSelectAll(containerRef.current, pdfDoc)
+    return undefined
+  }, [pdfDoc])
   const zoomAnchor = useRef<{
     page: HTMLElement
     x: number
@@ -547,6 +552,7 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
     }
     document.addEventListener('selectionchange', checkSelection)
     const copy = (event: ClipboardEvent): void => {
+      if (event.defaultPrevented) return
       const selection = getCurrentTextSelection()
       if (!selection?.annotationId || !event.clipboardData) return
       event.clipboardData.setData('text/plain', selection.text)
@@ -701,6 +707,8 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
   // Keyboard shortcuts for viewer
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
+      if (e.defaultPrevented || e.isComposing || useUIStore.getState().activeModal !== 'none' ||
+        document.querySelector('[aria-modal="true"], .app-dialog, .file-dialog')) return
       const target = e.target as HTMLElement
       if (
         target instanceof HTMLElement &&

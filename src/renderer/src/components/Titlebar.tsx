@@ -105,6 +105,7 @@ export function Titlebar(): React.JSX.Element {
       { label: 'Undo', shortcut: 'Ctrl+Z', action: () => window.dispatchEvent(new CustomEvent('acrobat:undo')), disabled: !canPerformUndo() },
       { label: 'Redo', shortcut: 'Ctrl+Y', action: () => window.dispatchEvent(new CustomEvent('acrobat:redo')), disabled: !canPerformRedo() },
       { separator: true, label: '' },
+      { label: 'Select All', shortcut: 'Ctrl+A', action: () => window.dispatchEvent(new CustomEvent('acrobat:selectAll')), disabled: !hasDoc || useUIStore.getState().activeView !== 'document' },
       { label: 'Find…', shortcut: 'Ctrl+F', action: () => window.dispatchEvent(new CustomEvent('acrobat:find')) },
       { separator: true, label: '' },
       { label: 'Preferences…', shortcut: 'Ctrl+K', action: () => setActiveModal('preferences') }

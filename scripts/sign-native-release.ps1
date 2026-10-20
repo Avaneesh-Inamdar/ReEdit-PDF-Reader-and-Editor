@@ -1,4 +1,4 @@
-param([string]$Directory='release/github-packages',[string]$Notes='Native preview: stable certificate sizing, automatic font matching, connected-line editing, improved OCR, existing-object removal and startup update notifications.')
+param([string]$Directory='release/github-packages',[string]$Notes='Re-Edit PDF: document-scoped Select All, native desktop integration, text editing, OCR and signed update notifications.')
 $ErrorActionPreference='Stop'
 $assetDirectory=(Resolve-Path -LiteralPath $Directory).Path
 $version=(Get-Content -Raw -LiteralPath package.json | ConvertFrom-Json).version

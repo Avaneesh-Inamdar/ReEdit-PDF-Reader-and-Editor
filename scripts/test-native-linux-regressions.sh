@@ -4,10 +4,12 @@ binary=$(realpath "$1")
 root=$(pwd)
 export LIBGL_ALWAYS_SOFTWARE=1 WEBKIT_DISABLE_DMABUF_RENDERER=1
 if [ "$(id -u)" = 0 ]; then export WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1; fi
-for suite in editing-regression ocr-recognition layout-stability updates; do
+node scripts/generate-selection-fixture.mjs
+for suite in editing-regression ocr-recognition layout-stability updates selection; do
   export REEDIT_TEST_SUITE="$suite"
   export REEDIT_TEST_OUTPUT="$root/release/native-validation/regressions/$suite"
   case "$suite" in
+    selection) fixture=release/native-validation/selection.pdf ;;
     ocr-recognition) fixture=release/native-validation/tauri/ocr-image-only.pdf ;;
     layout-stability) fixture=release/validation-oct17/layout/mixed-pages.pdf ;;
     *) fixture=test-fixtures/simple-text.pdf ;;

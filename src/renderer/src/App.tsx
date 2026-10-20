@@ -1,6 +1,7 @@
 import { editSelection } from './lib/editSelection'
 import { version as appVersion } from '../../../package.json'
 import { getCurrentTextSelection } from './lib/textSelection'
+import { isTextInput } from './lib/pdfSelectAll'
 import { placeImage } from './lib/imagePlacement'
 import { openTool } from './lib/toolActions'
 import { CombineFilesModal } from './components/CombineFilesModal'
@@ -232,6 +233,7 @@ function App(): React.JSX.Element {
       else if (action === 'combineFiles') setActiveModal('combineFiles')
       else if (['edit','sign','organize','ocr','forms'].includes(action)) void openTool(action as 'edit' | 'sign' | 'organize' | 'ocr' | 'forms')
       else if (action === 'editSelectedText') { const selection = getCurrentTextSelection(); if (selection) void editSelection(selection) }
+      else if (action === 'selectAll') window.dispatchEvent(new CustomEvent('acrobat:selectAll'))
       else if (action === 'docProps') setActiveModal('docProperties')
       else if (action === 'undo') { const element = document.activeElement; if (element instanceof HTMLElement && (element.matches('input, textarea') || element.isContentEditable)) document.execCommand('undo'); else performUndo() }
       else if (action === 'redo') { const element = document.activeElement; if (element instanceof HTMLElement && (element.matches('input, textarea') || element.isContentEditable)) document.execCommand('redo'); else performRedo() }
@@ -246,12 +248,24 @@ function App(): React.JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Keyboard shortcuts — full Adobe Acrobat keybindings
+  // Desktop shortcuts. Editing controls and modal dialogs own their local keys.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.altKey && e.key === 'F4') { e.preventDefault(); void window.api.close(); return }
+      if (e.defaultPrevented || e.isComposing) return
       const active = document.activeElement as HTMLElement | null
-      const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable)
+      const isInput = isTextInput(active)
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'a') {
+        if (!isInput) {
+          e.preventDefault()
+          window.dispatchEvent(new CustomEvent('acrobat:selectAll'))
+        }
+        return
+      }
+      if (activeModal !== 'none' || document.querySelector('[aria-modal="true"], .app-dialog, .file-dialog')) {
+        if (e.key === 'Escape' && activeModal !== 'none') setActiveModal('none')
+        return
+      }
 
       // Spacebar hold for hand tool
       if (e.key === ' ' && !isInput && !e.repeat) {

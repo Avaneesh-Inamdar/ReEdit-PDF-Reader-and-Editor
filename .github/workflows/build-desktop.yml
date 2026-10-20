@@ -94,8 +94,10 @@ jobs:
           Copy-Item release/native-validation/tauri/result.json release/native-validation/tauri/ocr-edit-result.json
           node scripts/generate-ocr-paper.mjs --image-only
           node scripts/generate-layout-fixtures.mjs
-          foreach ($suite in @('editing-regression','updates','interactions','ocr-recognition','layout-stability')) {
+          node scripts/generate-selection-fixture.mjs
+          foreach ($suite in @('editing-regression','updates','interactions','ocr-recognition','layout-stability','selection')) {
             $fixture = switch ($suite) {
+              'selection' {'release/native-validation/selection.pdf'}
               'ocr-recognition' {'release/native-validation/tauri/ocr-image-only.pdf'}
               'layout-stability' {'release/validation-oct17/layout/mixed-pages.pdf'}
               default {'test-fixtures/simple-text.pdf'}
@@ -107,6 +109,7 @@ jobs:
           Copy-Item release/native-validation/tauri/result.json release/native-validation/tauri/open-close-result.json
           ./scripts/test-native-installer.ps1
           ./scripts/test-native-msi.ps1
+          ./scripts/test-startup-close.ps1 -Executable target/release/Re-Edit-PDF.exe
       - name: Linux native WebView smoke test
         if: runner.os == 'Linux'
         run: |

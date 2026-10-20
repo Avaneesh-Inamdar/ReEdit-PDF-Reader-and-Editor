@@ -47,5 +47,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add updates/native-preview.json
-          git commit -m "Update native preview feed for $RELEASE_TAG"
+          git commit -m "Update native feed for $RELEASE_TAG"
           git push origin HEAD:main

@@ -55,7 +55,11 @@ prototype, not the UI the user requested to retain. Native decorations are
 requested by configuration; physical titlebar and keyboard behavior still need
 desktop validation.
 
-## Not yet passed / stable promotion remains blocked
+## Historical migration gaps
+
+This section records the early migration state. The user requested stable
+publication on 2026-10-20. Current automated package coverage and outstanding
+hardware limitations are recorded in [v2.0.0 validation](../docs/releases/v2.0.0/VALIDATION.md).
 
 - Full native feature parity, including Office import, signing-dialog behavior, WOFF2
   font import, encrypted-PDF handling, and complete form/annotation workflows.
@@ -94,6 +98,6 @@ the saved warm-paper PDF had zero white pixels in the edited area, preserved
 the next line and contained searchable replacement text without the old OCR
 text. Native core/desktop test total is now 25.
 
-Alpha package publication is authorized. Full production and distribution
-validation is recorded by the build workflow; stable promotion remains gated
-by the outstanding checks above.
+Full production and distribution results are recorded by the build workflow
+and the versioned release reports. The historical list above is not a claim
+that every hardware or feature-parity check has since passed.

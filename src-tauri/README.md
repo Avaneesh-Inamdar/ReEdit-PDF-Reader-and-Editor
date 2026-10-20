@@ -1,4 +1,4 @@
-# Re-Edit PDF desktop migration
+# Re-Edit PDF native desktop
 
 The Tauri build retains the existing React UI and runs desktop services
 in Rust. Electron remains in the repository as the released regression
@@ -22,8 +22,9 @@ On Windows, launch a standalone local executable using:
 ```
 
 Build locally with `npm run build:desktop`. Packages are generated for the
-host platform; Linux DEB, RPM and AppImage builds require Linux. Packaging is
-still under validation. These commands do not publish anything.
+host platform; Linux DEB, RPM and AppImage builds require Linux. These commands
+do not publish anything. See the [stable release validation](../docs/releases/v2.0.0/VALIDATION.md)
+for package coverage and remaining hardware limitations.
 
 ## Validation
 
@@ -47,5 +48,6 @@ UI checks and process-tree memory samples go to
 builds. Process samples cover the tested fixture and do not prove that every
 PDF or driver is free of memory leaks.
 
-See [the migration gates](../native/MIGRATION.md) and
-[local validation](../native/LOCAL-VALIDATION.md) before publishing packages.
+The [migration notes](../native/MIGRATION.md) and
+[early local validation](../native/LOCAL-VALIDATION.md) preserve the development
+history. Current release results are recorded in the versioned validation report.

@@ -1,5 +1,9 @@
 # Native Rust migration
 
+Historical migration plan: the user requested a stable release on 2026-10-20.
+See [v2.0.0 validation](../docs/releases/v2.0.0/VALIDATION.md) for current results
+and limitations; physical-device coverage remains distinct from CI coverage.
+
 The native application is a separate local build during migration. The released
 Electron application remains available for regression comparisons. The user
 authorized committing and building the alpha packages on 2026-10-14 after the

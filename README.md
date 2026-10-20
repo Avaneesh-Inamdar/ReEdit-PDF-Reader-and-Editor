@@ -21,9 +21,9 @@
 
 ## Download
 
-Download the [Rust/Tauri preview, v2.0.0-alpha.2](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/tag/v2.0.0-alpha.2). It uses a Rust desktop backend and the existing React workspace in the system webview, without the Electron runtime.
+Download [Re-Edit PDF v2.0.0](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest) for Windows or Linux. It uses a Rust desktop backend and the existing React workspace in the system webview, without the Electron runtime.
 
-The [1.4.4 Electron release](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest) remains the stable download while native desktop validation continues. Starting with alpha.2, native previews check their own update channel shortly after launch and show an update notification. **Help → Check for Updates** also offers verified download and installation when supported. The Electron stable channel remains separate; older previews need a manual upgrade.
+Version 2.0.0 is the stable Rust/Tauri release. It checks for updates shortly after launch and shows a notification when a newer version is available. **Help → Check for Updates** offers verified download and installation when supported. Native alpha.2 users receive this release through the same update feed; earlier previews and Electron users should install it manually.
 
 The download badge counts release-asset downloads across all versions. Repeat downloads and supporting files count separately; it is not a count of unique users.
 
@@ -36,11 +36,11 @@ The download badge counts release-asset downloads across all versions. Repeat do
 
 The setup EXE installs WebView2 when needed. Windows publisher signing is not configured; Windows may show a publisher warning. Updater signatures authenticate downloads; they are separate from Windows publisher signing.
 
-Release assets contain these four app packages, `SHA256SUMS`, the updater manifest (`latest.json`, with embedded package signatures), and the corresponding native MuPDF source archive. Build logs, screenshots and test reports stay in Actions or [release documentation](docs/releases/v2.0.0-alpha.2/VALIDATION.md), rather than appearing as extra downloads.
+Release assets contain these four app packages, `SHA256SUMS`, the updater manifest (`latest.json`, with embedded package signatures), and the corresponding native MuPDF source archive. Build logs, screenshots and test reports stay in Actions or [release documentation](docs/releases/v2.0.0/VALIDATION.md), rather than appearing as extra downloads.
 
 The manifest's `downloads` entries include the hashes and version-bound signatures for all four packages and the MuPDF source archive. The app uses its configured public key to verify supported automatic updates.
 
-Native previews check the [preview update feed](updates/native-preview.json) without uploading PDF content. Updates require confirmation before downloading and installing; unsaved documents must be resolved first. AppImage builds support in-app updating. DEB/RPM users should download and install the matching package through their package manager.
+Native builds check the [native update feed](updates/native-preview.json) without uploading PDF content. Its original filename is retained so alpha.2 installations can upgrade. Updates require confirmation before downloading and installing; unsaved documents must be resolved first. AppImage builds support in-app updating. DEB/RPM users should download and install the matching package through their package manager.
 
 The **Publish native update feed** workflow refreshes that feed when a native GitHub release is published or edited. It checks release versions and asset URLs, requires matching signature-version metadata, and keeps older release edits from replacing a newer feed. The app verifies the downloaded package's cryptographic signature before installation.
 
@@ -52,7 +52,7 @@ The installer registers PDF **Open With** support and a separate document icon. 
 
 - **Document workspace:** tabs, thumbnails, bookmarks, attachments, page navigation, fit/zoom controls, light/dark themes and a compact tool layout.
 - **Text editing:** select text and use Edit, Ctrl+E or the context menu. Supported embedded fonts retain size, color and transforms. Fragmented text is grouped into compatible lines. Editing a selected word keeps its connected line together so following words move with it; replacements can be edited again.
-- **Fonts:** the native preview includes 68 offline faces in seventeen families, including Adobe's Source Sans 3, Source Serif 4 and Source Code Pro. Full Source Sans/Serif fonts supplement the bundled subsets. Open-source alternatives include Arimo (Arial), Tinos (Times New Roman), Cousine (Courier New), Carlito (Calibri) and Caladea (Cambria). Installed TTF/OTF fonts and supported font imports are available. Unavailable or incomplete original fonts are matched to installed or bundled alternatives, with a substitution notice. Missing glyphs are checked before applying or saving edits.
+- **Fonts:** the native build includes 68 offline faces in seventeen families, including Adobe's Source Sans 3, Source Serif 4 and Source Code Pro. Full Source Sans/Serif fonts supplement the bundled subsets. Open-source alternatives include Arimo (Arial), Tinos (Times New Roman), Cousine (Courier New), Carlito (Calibri) and Caladea (Cambria). Installed TTF/OTF fonts and supported font imports are available. Unavailable or incomplete original fonts are matched to installed or bundled alternatives, with a substitution notice. Missing glyphs are checked before applying or saving edits.
 - **Annotations:** highlight, underline, strikeout, text, shapes, drawing, images and signatures, with selection, removal and undo/redo. Existing annotation/field objects can be removed; a region eraser also handles flattened marks, with limited background reconstruction for scans.
 - **OCR:** offline English recognition with accurate and fast models, automatic/column/block layouts, page ranges, searchable output and explicit save-copy/overwrite actions. Accurate automatic recognition uses adaptive thresholding and a second pass for sparse text.
 - **Find:** result list, matching text excerpts, case/whole-word filters, F3 navigation and searchable edited/placed text.
@@ -66,7 +66,14 @@ This project is independent of Adobe. It does not claim complete Acrobat Premium
 
 ## Getting started
 
-### Changes in alpha.2
+### Changes in 2.0.0
+
+- Ctrl+A selects PDF text, with the current page in single-page mode and every page in continuous mode. Copy includes pages outside the render window and uses edited text instead of removed originals.
+- Find and inline text fields retain their own Select All behavior. Select All is also available in the Edit menu.
+- Modal dialogs prevent background document shortcuts, and Escape, document changes and closing clear document selections.
+- Drag selection releases pointer capture when its page is rebuilt or closed.
+
+### Native workspace improvements
 
 - Stable Fit Width sizing for landscape certificates and mixed-size PDFs; scrolling no longer repeatedly changes zoom.
 - Automatic font matching and connected-line editing, improved faint/sparse OCR text detection, and an opaque Convert menu.
@@ -96,6 +103,7 @@ This project is independent of Adobe. It does not claim complete Acrobat Premium
 | Ctrl+O / Ctrl+S / Ctrl+Shift+S | Open / Save / Save as                  |
 | Ctrl+F / F3 / Shift+F3         | Find / Next match / Previous match     |
 | Ctrl+E                         | Edit selected text                     |
+| Ctrl+A / Ctrl+C                 | Select PDF text / Copy                 |
 | Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z | Undo / Redo                            |
 | Ctrl+P                         | Print dialog                           |
 | Ctrl+Tab / Ctrl+Shift+Tab      | Next / Previous document tab           |
@@ -149,14 +157,14 @@ workflow artifacts; publication and signing are separate steps.
 Build Linux packages on Linux. See [native development](src-tauri/README.md)
 and [.github/workflows](.github/workflows) for prerequisites and commands.
 The `package:win` and `build:linux` npm scripts still target the legacy
-Electron reference; use the native workflow for this preview.
+Electron reference; use the native workflow for native packages.
 
 ## Limitations
 
-The [Tauri/Rust preview](src-tauri/README.md) retains this app's React UI in the
+The [Tauri/Rust build](src-tauri/README.md) retains this app's React UI in the
 system webview. Physical printer/trackpad, stock desktop/Wayland and broader
 large-document checks remain outstanding. Native WOFF2 import is not supported
-yet. Very early close requests can arrive before the WebView close handler is ready; immediate startup shutdown responsiveness still needs investigation. [Release validation](docs/releases/v2.0.0-alpha.2/VALIDATION.md) and [stable promotion gates](native/LOCAL-VALIDATION.md) are
+yet. [Release validation](docs/releases/v2.0.0/VALIDATION.md) and [migration history](native/LOCAL-VALIDATION.md) are
 documented separately. Container/Xvfb results are not stock-desktop validation.
 
 - Text editing currently reflows a compatible connected line, not arbitrary paragraphs across text boxes or pages.

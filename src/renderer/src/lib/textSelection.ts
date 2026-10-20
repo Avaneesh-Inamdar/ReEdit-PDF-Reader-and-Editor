@@ -25,6 +25,8 @@ export function getCurrentTextSelection(): TextSelectionInfo | null {
   if (!text) return null
 
   const range = sel.getRangeAt(0)
+  // Select All can span unmounted pages; it is a copy selection, not one edit box.
+  if (document.querySelector('[data-pdf-viewer][data-select-all]')) return null
   const startEl = range.startContainer instanceof Element ? range.startContainer : range.startContainer.parentElement
   const pageEl = startEl?.closest('[id^="page-"]') as HTMLElement | null
   if (!pageEl) return null
