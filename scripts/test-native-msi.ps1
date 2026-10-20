@@ -1,5 +1,6 @@
 $ErrorActionPreference='Stop'
 if ($env:CI -ne 'true') { throw 'Run MSI validation on the isolated CI runner.' }
+$env:WEBVIEW2_USER_DATA_FOLDER=Join-Path $env:TEMP ('ReEditPDF-MSI-WebView-'+[guid]::NewGuid().ToString('N'))
 $version=(Get-Content -Raw package.json | ConvertFrom-Json).version
 $msi=(Get-Item -LiteralPath "release/native-packages/Re-Edit-PDF-$version-windows-x64.msi").FullName
 $folder=Join-Path $env:TEMP ('ReEditPDF-MSI-Test-'+[guid]::NewGuid().ToString('N'))

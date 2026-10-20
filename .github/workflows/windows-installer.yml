@@ -37,6 +37,11 @@ jobs:
         run: ./scripts/test-native-installer.ps1
       - name: Install launch and uninstall MSI
         run: ./scripts/test-native-msi.ps1
+      - name: Production startup close
+        run: |
+          $version=(Get-Content -Raw package.json | ConvertFrom-Json).version
+          Expand-Archive -LiteralPath "release/native-packages/Re-Edit-PDF-$version-windows-x64-portable.zip" -DestinationPath release/startup-package
+          ./scripts/test-startup-close.ps1 -Executable "release/startup-package/Re-Edit-PDF-$version/Re-Edit-PDF.exe"
       - name: Installer diagnostics
         if: always()
         run: |
@@ -49,3 +54,4 @@ jobs:
           path: |
             release/native-validation/tauri/windows-installer-result.json
             release/native-validation/tauri/windows-msi-result.json
+            release/native-validation/startup-close/result.json

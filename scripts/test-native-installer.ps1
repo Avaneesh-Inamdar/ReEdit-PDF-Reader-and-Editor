@@ -1,5 +1,6 @@
 $ErrorActionPreference = "Stop"
 if ($env:CI -ne "true") { throw "Run installer validation on the isolated CI runner." }
+$env:WEBVIEW2_USER_DATA_FOLDER=Join-Path $env:TEMP ('ReEditPDF-Installer-WebView-'+[guid]::NewGuid().ToString('N'))
 $version = (Get-Content -Raw -LiteralPath "package.json" | ConvertFrom-Json).version
 $installer = Get-Item -LiteralPath "release/native-packages/Re-Edit-PDF-$version-windows-x64-setup.exe"
 $installPath = Join-Path $env:TEMP ("ReEditPDF-Native-Installer-Test-" + [guid]::NewGuid().ToString("N"))
@@ -27,6 +28,7 @@ public static class InstallerWizardTest {
   public static IntPtr Button(IntPtr parent,string label) { IntPtr found=IntPtr.Zero;EnumChildWindows(parent,(h,d)=>{if(Text(h).Replace("&","").Trim()==label && IsWindowEnabled(h) && IsWindowVisible(h))found=h;return true;},IntPtr.Zero);return found; }
   public static void Click(IntPtr hwnd) { var wizard=GetAncestor(hwnd,2);SetForegroundWindow(wizard);if(!PostMessage(hwnd,0x00F5,IntPtr.Zero,IntPtr.Zero))throw new Exception("Installer click could not be queued"); }
   public static void Finish(IntPtr hwnd) { if(!PostMessage(GetParent(hwnd),0x111,new IntPtr(GetDlgCtrlID(hwnd)),hwnd))throw new Exception("Finish notification could not be queued"); }
+  public static void Close(IntPtr hwnd) { if(hwnd==IntPtr.Zero || !PostMessage(hwnd,0x0010,IntPtr.Zero,IntPtr.Zero))throw new Exception("Application close could not be queued"); }
   public static string Dump(IntPtr parent) { var output=new StringBuilder();EnumChildWindows(parent,(h,d)=>{output.AppendLine(Text(h)+" visible="+IsWindowVisible(h)+" enabled="+IsWindowEnabled(h));return true;},IntPtr.Zero);return output.ToString(); }
 }
 '@
@@ -86,11 +88,16 @@ while ((Get-Date) -lt $deadline) {
 if (!$started) { Get-CimInstance Win32_Process -Filter "Name = 'Re-Edit-PDF.exe'" | Select-Object ProcessId,ExecutablePath,CommandLine | Format-List | Out-String | Write-Output; throw 'Finish did not launch the installed app' }
 $application = Get-Process -Id $started.ProcessId
 $deadline = (Get-Date).AddSeconds(30)
-while (!$application.MainWindowHandle -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 200; $application.Refresh() }
-if (!$application.MainWindowHandle) { throw 'Launched app did not show its window' }
+do {
+  $application.Refresh()
+  $appWindow=[InstallerWizardTest]::Window($application.Id)
+  if ($appWindow -ne [IntPtr]::Zero -and [InstallerWizardTest]::IsWindowVisible($appWindow)) { break }
+  Start-Sleep -Milliseconds 100
+} while ((Get-Date) -lt $deadline -and !$application.HasExited)
+if ($appWindow -eq [IntPtr]::Zero -or ![InstallerWizardTest]::IsWindowVisible($appWindow)) { throw 'Launched app did not show its window' }
 $application.WaitForInputIdle(15000) | Out-Null
 Start-Sleep -Seconds 5
-$application.CloseMainWindow() | Out-Null
+[InstallerWizardTest]::Close([InstallerWizardTest]::Window($application.Id))
 if (!$application.WaitForExit(10000)) { throw 'Test app did not close' }
 $uninstaller = @(Get-ChildItem -LiteralPath $installedDirectory -Filter '*Uninstall*.exe' -File)
 if ($uninstaller.Count -ne 1) { throw 'Expected one test uninstaller' }
