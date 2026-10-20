@@ -10,6 +10,10 @@ export function validatedFeed(release, manifest, current = null) {
     throw Error('Release version mismatch')
   if (semver.major(version) < 2) return null
   if (current && semver.valid(current.version) && semver.lt(version, current.version)) return null
+  // Once promoted, keep this channel stable. The original feed URL is retained
+  // for alpha.2 clients, but later experimental tags must not replace it.
+  if (current && semver.valid(current.version) && !semver.prerelease(current.version) &&
+      (release.prerelease || semver.prerelease(version))) return null
   const assets = new Map(release.assets.map((asset) => [asset.browser_download_url, asset.name]))
   const verify = (entry) => {
     if (!entry || typeof entry.url !== 'string' || !assets.has(entry.url))

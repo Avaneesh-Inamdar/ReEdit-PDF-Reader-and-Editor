@@ -18,6 +18,12 @@ describe('native release feed publication', () => {
   it('does not replace a newer channel with an older edited release', () => {
     expect(validatedFeed(release, manifest, { version: '100.0.0' })).toBeNull()
   })
+  it('keeps stable clients off experimental releases while allowing stable upgrades', () => {
+    expect(validatedFeed({ ...release, prerelease: true }, manifest, { version: '2.0.0' })).toBeNull()
+    expect(validatedFeed({ ...release, tag_name: 'v99.0.0-alpha.1' },
+      { ...manifest, version: '99.0.0-alpha.1' }, { version: '2.0.0' })).toBeNull()
+    expect(validatedFeed(release, manifest, { version: '2.0.0' })).toEqual(manifest)
+  })
   it('rejects drafts, mismatched versions, unsigned payloads and unrelated assets', () => {
     expect(() => validatedFeed({ ...release, draft: true }, manifest)).toThrow()
     expect(() => validatedFeed(release, { ...manifest, version: '99.0.1' })).toThrow()
