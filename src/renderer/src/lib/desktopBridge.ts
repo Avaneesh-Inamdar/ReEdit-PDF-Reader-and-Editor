@@ -71,10 +71,10 @@ export function installDesktopBridge(): void {
       return await opened(await invoke<string>('open_chosen_pdf',{path:paths[0]}))
     }catch(error){appNotice(String(error));return null}
   }
-  const save=async(input:Uint8Array,defaultName?:string,filePath?:string,saveAs=false):Promise<string|null>=>{
+  const save=async(input:Uint8Array,defaultName?:string,filePath?:string,saveAs=false,authenticationId?:string):Promise<string|null>=>{
     let chosenPath:string|undefined
     if(saveAs||!filePath||!/[\\/]/.test(filePath)){const paths=await fileDialog({title:'Save PDF',save:true,name:defaultName||'document.pdf',extensions:['pdf']});if(!paths)return null;chosenPath=paths[0]}
-    return invoke('save_pdf',input,{headers:{'x-reedit-options':encodeURIComponent(JSON.stringify({defaultName,filePath,saveAs,chosenPath}))}})
+    return invoke('save_pdf',input,{headers:{'x-reedit-options':encodeURIComponent(JSON.stringify({defaultName,filePath,saveAs,chosenPath,authenticationId}))}})
   }
   const attachment=async(input:Uint8Array,name:string):Promise<string|null>=>{const paths=await fileDialog({title:'Save file',save:true,name});if(!paths)return null;return invoke('save_attachment',input,{headers:{'x-reedit-options':encodeURIComponent(JSON.stringify({name,chosenPath:paths[0]}))}})}
   on<string>('desktop:error', reportError)
@@ -107,8 +107,8 @@ export function installDesktopBridge(): void {
     checkForUpdates: () => invoke('check_updates'),
     openReleases: () => invoke('open_releases'),
     openFile: pickPdf,
-    saveFile: (input,name,path)=>save(input,name,path),
-    saveFileAs: (input,name)=>save(input,name,undefined,true),
+    saveFile: (input,name,path,authenticationId)=>save(input,name,path,false,authenticationId),
+    saveFileAs: (input,name,authenticationId)=>save(input,name,undefined,true,authenticationId),
     getRecentFiles: () => invoke('recent_files'),
     removeRecentFile: (path) => invoke('remove_recent', { path }),
     readPdf: (filePath) => invoke('read_pdf', { filePath }),

@@ -95,9 +95,10 @@ jobs:
           node scripts/generate-ocr-paper.mjs --image-only
           node scripts/generate-layout-fixtures.mjs
           node scripts/generate-selection-fixture.mjs
-          foreach ($suite in @('editing-regression','updates','interactions','ocr-recognition','layout-stability','selection')) {
+          foreach ($suite in @('editing-regression','updates','interactions','ocr-recognition','layout-stability','selection','acrobat-parity','password-regression')) {
             $fixture = switch ($suite) {
               'selection' {'release/native-validation/selection.pdf'}
+              'acrobat-parity' {'release/native-validation/selection.pdf'}
               'ocr-recognition' {'release/native-validation/tauri/ocr-image-only.pdf'}
               'layout-stability' {'release/validation-oct17/layout/mixed-pages.pdf'}
               default {'test-fixtures/simple-text.pdf'}

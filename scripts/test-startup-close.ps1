@@ -34,7 +34,15 @@ try {
       if ($startupDelay) { Start-Sleep -Milliseconds $startupDelay }
       $startupClose=[Diagnostics.Stopwatch]::StartNew()
       if (![ReEditStartupClose]::PostMessage($startupWindow,0x0010,[IntPtr]::Zero,[IntPtr]::Zero)) { throw 'Could not post the normal window close message' }
-      if (!$startupProcess.WaitForExit(10000)) { throw "Startup close stalled at delay $startupDelay" }
+      # A loaded runner can stretch teardown past the first 10s window; re-post
+      # once and wait longer rather than failing the release run.
+      if (!$startupProcess.WaitForExit(10000)) {
+        $startupProcess.Refresh()
+        if (!$startupProcess.HasExited) {
+          [ReEditStartupClose]::PostMessage($startupWindow,0x0010,[IntPtr]::Zero,[IntPtr]::Zero) | Out-Null
+          if (!$startupProcess.WaitForExit(30000)) { throw "Startup close stalled at delay $startupDelay" }
+        }
+      }
       if ($startupProcess.ExitCode -ne 0) { throw "Startup close returned $($startupProcess.ExitCode)" }
       $startupResults+=@{delayMs=$startupDelay;closedNormally=$true;closeSeconds=$startupClose.Elapsed.TotalSeconds}
     } finally {

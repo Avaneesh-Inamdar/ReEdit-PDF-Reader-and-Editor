@@ -11,7 +11,7 @@ import '../assets/document-operations.css'
 import { connectedPrinter, PDF_DESTINATION } from '../lib/printerDestination'
 
 export function PrintModal({ onClose }: { onClose: () => void }): React.JSX.Element {
-  const { currentPage, numPages, fileName } = usePdfStore()
+  const { currentPage, numPages, fileName, authenticationId } = usePdfStore()
   const [printers, setPrinters] = useState<PrinterOption[]>([])
   const [options, setOptions] = useState<PrintOptions>({
     deviceName: PDF_DESTINATION,
@@ -26,6 +26,10 @@ export function PrintModal({ onClose }: { onClose: () => void }): React.JSX.Elem
     handling: 'size',
     columns: 2,
     rows: 2,
+    pageOrder: 'horizontal',
+    printPageBorder: false,
+    bookletBinding: 'left',
+    bookletSubset: 'both',
     tileScale: 100,
     overlap: 0,
     autoRotate: true,
@@ -345,6 +349,7 @@ export function PrintModal({ onClose }: { onClose: () => void }): React.JSX.Elem
                   Two-sided printing
                   <select
                     value={options.duplex}
+                    disabled={handling === 'booklet' && options.bookletSubset !== 'both'}
                     onChange={(e) => set('duplex', e.target.value as PrintOptions['duplex'])}
                   >
                     <option value="simplex">One-sided</option>
@@ -420,7 +425,13 @@ export function PrintModal({ onClose }: { onClose: () => void }): React.JSX.Elem
                               paper:
                                 value !== 'size' && old.paper === 'original' ? 'A4' : old.paper,
                               ...(value === 'booklet'
-                                ? { landscape: true, duplex: 'shortEdge' as const }
+                                ? {
+                                    landscape: true,
+                                    duplex:
+                                      old.bookletSubset === 'both'
+                                        ? ('shortEdge' as const)
+                                        : ('simplex' as const)
+                                  }
                                 : {})
                             }))
                           }
@@ -543,9 +554,28 @@ export function PrintModal({ onClose }: { onClose: () => void }): React.JSX.Elem
                         />
                       </label>
                     </div>
-                    <p className="operation-caption">
-                      Pages fit each cell, ordered left to right, then top to bottom.
-                    </p>
+                    <label>
+                      Page order
+                      <select
+                        value={options.pageOrder}
+                        onChange={(e) =>
+                          set('pageOrder', e.target.value as PrintOptions['pageOrder'])
+                        }
+                      >
+                        <option value="horizontal">Horizontal</option>
+                        <option value="horizontalReversed">Horizontal reversed</option>
+                        <option value="vertical">Vertical</option>
+                        <option value="verticalReversed">Vertical reversed</option>
+                      </select>
+                    </label>
+                    <label className="operation-check">
+                      <input
+                        type="checkbox"
+                        checked={options.printPageBorder}
+                        onChange={(e) => set('printPageBorder', e.target.checked)}
+                      />
+                      Print page border
+                    </label>
                   </>
                 )}
                 {handling === 'poster' && (
@@ -573,10 +603,49 @@ export function PrintModal({ onClose }: { onClose: () => void }): React.JSX.Elem
                   </div>
                 )}
                 {handling === 'booklet' && (
-                  <p className="operation-caption">
-                    Left binding, both sides. Blank pages are added to complete each group of four.
-                    Use two-sided, short-edge printing for landscape sheets.
-                  </p>
+                  <>
+                    <div className="operation-field-row">
+                      <label>
+                        Booklet subset
+                        <select
+                          value={options.bookletSubset}
+                          onChange={(e) =>
+                            setOptions((old) => ({
+                              ...old,
+                              bookletSubset: e.target.value as PrintOptions['bookletSubset'],
+                              duplex:
+                                e.target.value === 'both'
+                                  ? old.landscape
+                                    ? 'shortEdge'
+                                    : 'longEdge'
+                                  : 'simplex'
+                            }))
+                          }
+                        >
+                          <option value="both">Both sides</option>
+                          <option value="front">Front side only</option>
+                          <option value="back">Back side only</option>
+                        </select>
+                      </label>
+                      <label>
+                        Binding
+                        <select
+                          value={options.bookletBinding}
+                          onChange={(e) =>
+                            set('bookletBinding', e.target.value as PrintOptions['bookletBinding'])
+                          }
+                        >
+                          <option value="left">Left</option>
+                          <option value="right">Right</option>
+                        </select>
+                      </label>
+                    </div>
+                    <p className="operation-caption">
+                      Blank pages complete each group of four. For manual two-sided printing, print
+                      front sides, reinsert the sheets following your printer&apos;s instructions,
+                      then print back sides.
+                    </p>
+                  </>
                 )}
                 {nativeLayout && handling !== 'poster' && (
                   <label className="operation-check">
@@ -638,7 +707,11 @@ export function PrintModal({ onClose }: { onClose: () => void }): React.JSX.Elem
           <span role="status">
             {progress ||
               error ||
-              (options.deviceName === PDF_DESTINATION ? 'Save a PDF of this print layout.' : '')}
+              (options.deviceName === PDF_DESTINATION
+                ? authenticationId
+                  ? 'Save an unencrypted copy of this print layout.'
+                  : 'Save a PDF of this print layout.'
+                : '')}
           </span>
           <button className="operation-secondary" disabled={!!progress} onClick={onClose}>
             Cancel

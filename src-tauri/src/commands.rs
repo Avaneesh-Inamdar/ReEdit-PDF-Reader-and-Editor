@@ -73,6 +73,52 @@ pub async fn read_pdf(app: AppHandle, file_path: String) -> Result<Response, Str
         .map_err(|e| e.to_string())?;
     blocking(move || Ok(Response::new(std::fs::read(path)?))).await
 }
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PdfSecurity {
+    encrypted: bool,
+    password_required: bool,
+    permissions: Vec<u32>,
+}
+#[tauri::command]
+pub async fn pdf_security(request: Request<'_>) -> Result<PdfSecurity, String> {
+    let bytes = raw(&request).map_err(|e| e.to_string())?;
+    blocking(move || {
+        let (encrypted, password_required) = re_edit_pdf_native::authentication::security(&bytes)?;
+        let permissions = re_edit_pdf_native::authentication::source_permissions(&bytes)?;
+        Ok(PdfSecurity { encrypted, password_required, permissions })
+    }).await
+}
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UnlockOptions {
+    authentication_id: String,
+    password: Option<String>,
+}
+#[tauri::command]
+pub async fn unlock_pdf(app: AppHandle, request: Request<'_>) -> Result<Response, String> {
+    let options: UnlockOptions = metadata(&request).map_err(|_| "Invalid authentication options".to_string())?;
+    let bytes = raw(&request).map_err(|e| e.to_string())?;
+    blocking(move || {
+        ensure!(!options.authentication_id.is_empty() && options.authentication_id.len() <= 128 && options.authentication_id.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-'), "Invalid authentication session");
+        let (protection, working) = re_edit_pdf_native::authentication::Protection::unlock(bytes, options.password.as_deref())?;
+        let state = app.state::<DesktopState>();
+        let mut sessions = state.authentication.lock().unwrap();
+        ensure!(sessions.len() < 100, "Close another protected document first");
+        ensure!(!sessions.contains_key(&options.authentication_id), "Authentication session already exists");
+        sessions.insert(options.authentication_id, protection);
+        Ok(Response::new(working))
+    }).await
+}
+#[tauri::command]
+pub fn close_pdf_authentication(state: State<'_, DesktopState>, authentication_id: String) {
+    state.authentication.lock().unwrap().remove(&authentication_id);
+}
+#[cfg(feature = "desktop-test")]
+#[tauri::command]
+pub fn pdf_authentication_count(state: State<'_, DesktopState>) -> usize {
+    state.authentication.lock().unwrap().len()
+}
 #[derive(Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SaveOptions {
@@ -80,6 +126,43 @@ struct SaveOptions {
     file_path: Option<String>,
     save_as: Option<bool>,
     chosen_path: Option<String>,
+    authentication_id: Option<String>,
+}
+fn ensure_unprotected_export_destination(path: &Path) -> Result<()> {
+    if path.is_file() && path.extension().is_some_and(|extension| extension.eq_ignore_ascii_case("pdf")) {
+        let existing = std::fs::read(path)?;
+        if let Ok((encrypted, _)) = re_edit_pdf_native::authentication::security(&existing) {
+            ensure!(!encrypted, "This destination is a protected PDF. Choose another name for the exported copy.");
+        }
+    }
+    Ok(())
+}
+#[cfg(test)]
+mod authentication_tests {
+    use super::*;
+    use re_edit_pdf_native::mupdf::{Size, pdf::{Encryption, PdfDocument, PdfWriteOptions}};
+
+    #[test]
+    fn unprotected_exports_cannot_overwrite_a_password_protected_destination() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("protected.pdf");
+        let mut doc = PdfDocument::new();
+        doc.new_page(Size::A4).unwrap();
+        let mut options = PdfWriteOptions::default();
+        options.set_encryption(Encryption::Aes256).set_user_password("open-secret").set_owner_password("owner-secret");
+        doc.save_with_options(path.to_str().unwrap(), options).unwrap();
+        let original = std::fs::read(&path).unwrap();
+        assert!(ensure_unprotected_export_destination(&path).is_err());
+        assert_eq!(std::fs::read(&path).unwrap(), original);
+        let plain = directory.path().join("plain.pdf");
+        let mut unprotected = PdfDocument::new();
+        unprotected.new_page(Size::A4).unwrap();
+        let mut options = PdfWriteOptions::default();
+        options.set_encryption(Encryption::None);
+        unprotected.save_with_options(plain.to_str().unwrap(), options).unwrap();
+        assert!(ensure_unprotected_export_destination(&plain).is_ok());
+        assert!(ensure_unprotected_export_destination(&directory.path().join("new.pdf")).is_ok());
+    }
 }
 #[tauri::command]
 pub async fn save_pdf(app: AppHandle, request: Request<'_>) -> Result<Option<String>, String> {
@@ -98,6 +181,7 @@ pub async fn save_pdf(app: AppHandle, request: Request<'_>) -> Result<Option<Str
         existing.and_then(|p| app.state::<DesktopState>().readable(Path::new(&p)).ok())
     };
     let name = options.default_name.unwrap_or("document.pdf".into());
+    let handle = app.clone();
     let result = blocking(move || {
         let path = existing.or_else(|| {
             rfd::FileDialog::new()
@@ -106,7 +190,15 @@ pub async fn save_pdf(app: AppHandle, request: Request<'_>) -> Result<Option<Str
                 .save_file()
         });
         if let Some(path) = &path {
-            atomic_write(path, &bytes)?;
+            let protected = if let Some(id) = options.authentication_id {
+                let state = handle.state::<DesktopState>();
+                let sessions = state.authentication.lock().unwrap();
+                Some(sessions.get(&id).context("The document password session has expired; reopen the PDF")?.protect(&bytes)?)
+            } else {
+                ensure_unprotected_export_destination(path)?;
+                None
+            };
+            atomic_write(path, protected.as_deref().unwrap_or(&bytes))?;
         }
         Ok(path)
     })
@@ -143,6 +235,7 @@ pub async fn save_attachment(
             .to_string_lossy();
         let path = chosen.or_else(|| rfd::FileDialog::new().set_file_name(name).save_file());
         if let Some(path) = &path {
+            ensure_unprotected_export_destination(path)?;
             atomic_write(path, &bytes)?;
             handle.state::<DesktopState>().authorize(path)?;
         }
@@ -384,6 +477,7 @@ pub async fn import_office(app: AppHandle) -> Result<Option<String>, String> {
             .set_file_name(name)
             .save_file();
         if let Some(target) = &target {
+            ensure_unprotected_export_destination(target)?;
             atomic_write(target, &bytes)?;
         }
         Ok(target)
@@ -415,6 +509,7 @@ pub async fn export_word(
             .set_file_name(filename)
             .save_file();
         if let Some(path) = &path {
+            ensure_unprotected_export_destination(path)?;
             atomic_write(path, &bytes)?;
         }
         Ok(path.map(|p| p.to_string_lossy().into_owned()))
@@ -475,6 +570,7 @@ pub async fn sign_certificate(
                 .save_file()
         });
         if let Some(path) = &path {
+            ensure_unprotected_export_destination(path)?;
             atomic_write(path, &signed)?;
         }
         Ok(path.map(|p| p.to_string_lossy().into_owned()))
@@ -545,18 +641,34 @@ pub struct LegacyPrintOptions {
     tile_scale: Option<f32>,
     overlap: Option<f32>,
     auto_rotate: Option<bool>,
+    page_order: Option<String>,
+    print_page_border: Option<bool>,
+    booklet_binding: Option<String>,
+    booklet_subset: Option<String>,
 }
 fn print_options(o: &LegacyPrintOptions) -> re_edit_pdf_native::printing::PrintOptions {
-    use re_edit_pdf_native::printing::{Duplex, Handling, PrintOptions, Scale};
+    use re_edit_pdf_native::printing::{
+        Binding, BookletSubset, Duplex, Handling, PageOrder, PrintOptions, Scale,
+    };
+    let booklet_subset = match o.booklet_subset.as_deref() {
+        Some("front") => BookletSubset::Front,
+        Some("back") => BookletSubset::Back,
+        _ => BookletSubset::Both,
+    };
     PrintOptions {
         printer: o.device_name.clone(),
         copies: o.copies,
         collate: o.collate.unwrap_or(true),
         color: o.color,
-        duplex: match o.duplex.as_str() {
-            "longEdge" => Duplex::LongEdge,
-            "shortEdge" => Duplex::ShortEdge,
-            _ => Duplex::Off,
+        duplex: if o.handling.as_deref() == Some("booklet") && booklet_subset != BookletSubset::Both
+        {
+            Duplex::Off // Manual booklet passes each contain only one side of each sheet.
+        } else {
+            match o.duplex.as_str() {
+                "longEdge" => Duplex::LongEdge,
+                "shortEdge" => Duplex::ShortEdge,
+                _ => Duplex::Off,
+            }
         },
         paper: if o.paper == "Letter" {
             [612., 792.]
@@ -583,6 +695,19 @@ fn print_options(o: &LegacyPrintOptions) -> re_edit_pdf_native::printing::PrintO
             _ => Handling::Size,
         },
         auto_rotate: o.auto_rotate.unwrap_or(true),
+        page_order: match o.page_order.as_deref() {
+            Some("horizontalReversed") => PageOrder::HorizontalReversed,
+            Some("vertical") => PageOrder::Vertical,
+            Some("verticalReversed") => PageOrder::VerticalReversed,
+            _ => PageOrder::Horizontal,
+        },
+        print_page_border: o.print_page_border.unwrap_or(false),
+        booklet_binding: if o.booklet_binding.as_deref() == Some("right") {
+            Binding::Right
+        } else {
+            Binding::Left
+        },
+        booklet_subset,
         original_paper: o.paper == "original",
         range: o
             .pages
@@ -697,6 +822,39 @@ mod print_request_tests {
             json!({"handling": "poster", "tileScale": 100, "overlap": 999}),
         ] {
             assert!(plan(&print_options(&request(extra)), &[[612., 792.]; 3]).is_err());
+        }
+    }
+
+    #[test]
+    fn renderer_page_order_borders_and_manual_booklet_settings_reach_output() {
+        let multiple = print_options(&request(
+            json!({ "handling": "multiple", "columns": 2, "rows": 2,
+            "pageOrder": "verticalReversed", "printPageBorder": true }),
+        ));
+        assert!(multiple.print_page_border);
+        let sheets = plan(&multiple, &[[100., 200.]; 3]).unwrap();
+        let a = &sheets[0].placements[0].clip;
+        let b = &sheets[0].placements[1].clip;
+        let c = &sheets[0].placements[2].clip;
+        assert_eq!(a.x, b.x);
+        assert!(a.x > c.x && a.y < b.y);
+        for subset in ["front", "back"] {
+            let o = print_options(&request(
+                json!({ "handling": "booklet", "bookletBinding": "right",
+                "bookletSubset": subset, "duplex": "shortEdge" }),
+            ));
+            assert_eq!(o.duplex, re_edit_pdf_native::printing::Duplex::Off);
+            let sheets = plan(&o, &[[100., 200.]; 3]).unwrap();
+            assert_eq!(sheets.len(), 1);
+            let pages: Vec<_> = sheets[0].placements.iter().map(|p| p.page).collect();
+            assert_eq!(
+                pages,
+                if subset == "front" {
+                    vec![2]
+                } else {
+                    vec![1, 0]
+                }
+            );
         }
     }
 }

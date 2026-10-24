@@ -36,8 +36,8 @@ export interface PdfApi {
   }>
   openReleases: () => Promise<void>
   openFile: () => Promise<PdfOpenResult | null>
-  saveFile: (bytes: Uint8Array, defaultName?: string, filePath?: string) => Promise<string | null>
-  saveFileAs: (bytes: Uint8Array, defaultName?: string) => Promise<string | null>
+  saveFile: (bytes: Uint8Array, defaultName?: string, filePath?: string, authenticationId?: string) => Promise<string | null>
+  saveFileAs: (bytes: Uint8Array, defaultName?: string, authenticationId?: string) => Promise<string | null>
   getRecentFiles: () => Promise<{ path: string; name: string }[]>
   removeRecentFile: (path: string) => Promise<void>
   readPdf: (filePath: string) => Promise<ArrayBuffer>

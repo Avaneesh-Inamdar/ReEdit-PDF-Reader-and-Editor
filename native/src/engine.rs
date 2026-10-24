@@ -238,20 +238,28 @@ pub struct Engine {
     pub dirty: bool,
     undo: VecDeque<Vec<u8>>,
     redo: VecDeque<Vec<u8>>,
+    protection: Option<crate::authentication::Protection>,
 }
 impl Engine {
     pub fn open(path: &Path) -> Result<Self> {
-        let doc = PdfDocument::from_bytes(&std::fs::read(path)?)?;
-        ensure!(
-            !doc.needs_password()?,
-            "This PDF needs a password; encrypted-file UI is not migrated yet"
-        );
+        Self::open_with_password(path, None)
+    }
+    pub fn open_with_password(path: &Path, password: Option<&str>) -> Result<Self> {
+        let bytes = std::fs::read(path)?;
+        let (protection, bytes) = if crate::authentication::security(&bytes)?.0 {
+            let (protection, working) = crate::authentication::Protection::unlock(bytes, password)?;
+            (Some(protection), working)
+        } else {
+            (None, bytes)
+        };
+        let doc = PdfDocument::from_bytes(&bytes)?;
         Ok(Self {
             doc,
             path: path.into(),
             dirty: false,
             undo: VecDeque::new(),
             redo: VecDeque::new(),
+            protection,
         })
     }
     pub fn info(&self) -> Result<Info> {
@@ -298,7 +306,11 @@ impl Engine {
         Ok(out)
     }
     pub fn save(&mut self, path: &Path) -> Result<()> {
-        let data = self.bytes()?;
+        let working = self.bytes()?;
+        let data = match &self.protection {
+            Some(protection) => protection.protect(&working)?,
+            None => working,
+        };
         atomic_write(path, &data)?;
         self.path = path.into();
         self.dirty = false;
@@ -600,6 +612,21 @@ impl Engine {
                     p.run(&device, &m)?
                 } else {
                     p.run_contents(&device, &m)?
+                }
+                if options.print_page_border
+                    && matches!(options.handling, crate::printing::Handling::Multiple { .. })
+                {
+                    let mut border = DrawPath::new()?;
+                    border.rect(t.x, t.y, t.x + t.w, t.y + t.h)?;
+                    device.stroke_path(
+                        &border,
+                        &mupdf::StrokeState::default(),
+                        &Matrix::IDENTITY,
+                        &Colorspace::device_gray(),
+                        &[0.],
+                        1.,
+                        Default::default(),
+                    )?;
                 }
                 device.pop_clip()?;
             }
@@ -1068,6 +1095,34 @@ mod tests {
         (dir, path)
     }
     #[test]
+    fn password_protected_edits_undo_redo_and_save_reopen_without_dropping_encryption() {
+        let (dir, path) = fixture();
+        let original = Engine::open(&path).unwrap();
+        let mut options = PdfWriteOptions::default();
+        options.set_encryption(mupdf::pdf::Encryption::Aes256).set_user_password("open-secret").set_owner_password("owner-secret");
+        original.doc.save_with_options(path.to_str().unwrap(), options).unwrap();
+        assert!(Engine::open(&path).is_err());
+        assert!(Engine::open_with_password(&path, Some("incorrect")).is_err());
+        let mut engine = Engine::open_with_password(&path, Some("open-secret")).unwrap();
+        let (text, _) = engine.text(0).unwrap();
+        engine.edit(0, 0, text.glyphs.len() - 1, "Saved protected replacement").unwrap();
+        engine.history(true).unwrap();
+        let (text, _) = engine.text(0).unwrap();
+        assert!(text.selected_text(0, text.glyphs.len() - 1).contains("Original text"));
+        engine.history(false).unwrap();
+        let saved = dir.path().join("saved.pdf");
+        engine.save(&saved).unwrap();
+        assert!(!engine.dirty);
+        assert!(Engine::open(&saved).is_err());
+        for password in ["open-secret", "owner-secret"] {
+            let reopened = Engine::open_with_password(&saved, Some(password)).unwrap();
+            let (text, _) = reopened.text(0).unwrap();
+            let text = text.selected_text(0, text.glyphs.len() - 1);
+            assert!(text.contains("Saved protected replacement"));
+            assert!(!text.contains("Original text"));
+        }
+    }
+    #[test]
     fn edits_remove_old_text_retain_style_and_can_be_edited_again() {
         let (_dir, path) = fixture();
         let mut e = Engine::open(&path).unwrap();
@@ -1195,6 +1250,63 @@ mod tests {
                 .unwrap();
             assert!(text.contains("Original"), "{handling:?}: {text}");
             assert!(doc.render(0, 0.4).unwrap().rgb.iter().any(|p| *p < 200));
+        }
+    }
+    #[test]
+    fn print_multiple_page_borders_survive_pdf_export_and_render() {
+        let dir = tempfile::tempdir().unwrap();
+        let source = dir.path().join("blank.pdf");
+        let mut doc = PdfDocument::new();
+        doc.new_page((100., 100.)).unwrap();
+        doc.save(source.to_str().unwrap()).unwrap();
+        let engine = Engine::open(&source).unwrap();
+        let mut options = PrintOptions {
+            handling: crate::printing::Handling::Multiple { columns: 2, rows: 1 },
+            ..Default::default()
+        };
+        let output = dir.path().join("multiple.pdf");
+        let mut ink = Vec::new();
+        for border in [false, true] {
+            options.print_page_border = border;
+            engine.print_pdf(&options, &output).unwrap();
+            let raster = Engine::open(&output).unwrap().render(0, 2.).unwrap();
+            ink.push(
+                raster.rgb.chunks_exact(3)
+                    .filter(|p| p.iter().any(|v| *v < 128)).count(),
+            );
+        }
+        assert_eq!(ink[0], 0);
+        assert!(
+            ink[1] > 500,
+            "Expected a visible page outline, got {} dark pixels", ink[1]
+        );
+    }
+    #[test]
+    fn print_booklet_manual_pass_exports_keep_the_expected_searchable_pages() {
+        let (dir, path) = fixture();
+        let e = Engine::open(&path).unwrap();
+        let output = dir.path().join("manual-booklet.pdf");
+        for (subset, expected, absent) in [
+            (crate::printing::BookletSubset::Front, [1, 4], [2, 3]),
+            (crate::printing::BookletSubset::Back, [2, 3], [1, 4]),
+        ] {
+            let options = PrintOptions {
+                handling: crate::printing::Handling::Booklet,
+                booklet_binding: crate::printing::Binding::Right,
+                booklet_subset: subset,
+                landscape: true,
+                ..Default::default()
+            };
+            e.print_pdf(&options, &output).unwrap();
+            let printed = Engine::open(&output).unwrap();
+            assert_eq!(printed.doc.page_count().unwrap(), 1);
+            let text = printed.doc.load_page(0).unwrap().text(Default::default()).unwrap();
+            for page in expected {
+                assert!(text.contains(&format!("Original text page {page}")), "{text}");
+            }
+            for page in absent {
+                assert!(!text.contains(&format!("Original text page {page}")), "{text}");
+            }
         }
     }
     #[test]

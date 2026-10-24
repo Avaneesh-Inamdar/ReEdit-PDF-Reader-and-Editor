@@ -1,7 +1,7 @@
 use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
     sync::{
         Mutex,
@@ -20,6 +20,7 @@ pub struct Preferences {
     pub recent: Vec<Recent>,
 }
 pub struct DesktopState {
+    pub authentication: Mutex<HashMap<String, re_edit_pdf_native::authentication::Protection>>,
     pub preferences: Mutex<Preferences>,
     pub file: PathBuf,
     pub current: Mutex<Option<String>>,
@@ -44,6 +45,7 @@ impl DesktopState {
             .filter_map(|r| std::fs::canonicalize(&r.path).ok())
             .collect();
         Self {
+            authentication: Mutex::new(HashMap::new()),
             preferences: Mutex::new(p),
             file: path,
             current: Mutex::new(None),

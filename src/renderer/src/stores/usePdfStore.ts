@@ -27,6 +27,8 @@ export interface PdfState {
   filePath: string | null
   fileName: string | null
   data: ArrayBuffer | null
+  authenticationId: string | null
+  sourcePermissions: number[] | null
   numPages: number
   currentPage: number
   zoom: number
@@ -71,6 +73,8 @@ export const usePdfStore = create<PdfState>((set, get) => ({
   filePath: null,
   fileName: null,
   data: null,
+  authenticationId: null,
+  sourcePermissions: null,
   numPages: 0,
   currentPage: 1,
   zoom: 1.25,
@@ -94,6 +98,8 @@ export const usePdfStore = create<PdfState>((set, get) => ({
       author: null,
       fileName: filePath.split(/[\\/]/).pop() || filePath,
       data,
+      authenticationId: null,
+      sourcePermissions: null,
       numPages: 0,
       currentPage: 1,
       error: null,
@@ -113,6 +119,8 @@ export const usePdfStore = create<PdfState>((set, get) => ({
       filePath: null,
       fileName: null,
       data: null,
+      authenticationId: null,
+      sourcePermissions: null,
       numPages: 0,
       currentPage: 1,
       error: null,

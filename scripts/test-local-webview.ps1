@@ -1,5 +1,5 @@
 param(
-  [Parameter(Mandatory)][ValidateSet('updates','smoke','interactions','selection','acrobat-parity','layout-stability','editing-regression','ocr-recognition','fonts-dialog','ocr-edit')][string]$Suite,
+  [Parameter(Mandatory)][ValidateSet('updates','smoke','interactions','selection','acrobat-parity','password-regression','layout-stability','editing-regression','ocr-recognition','fonts-dialog','ocr-edit')][string]$Suite,
   [string]$Fixture='test-fixtures/simple-text.pdf',
   [string]$Executable='target/debug/Re-Edit-PDF.exe',
   [string]$OutputRoot='release/native-validation/regressions'

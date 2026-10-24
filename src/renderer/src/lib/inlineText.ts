@@ -6,12 +6,19 @@ import { useAnnotationStore } from '../stores/useAnnotationStore'
 import { replacementSpacing } from './textSpacing'
 import { previewSpaceAdjustment } from './fonts'
 import { retainPreviewFont } from './fontFaces'
+import {
+  adjustableTextBox,
+  adjustTextBox,
+  textBoxPointerDelta,
+  type TextBoxHandle
+} from './textBoxGeometry'
 
 type Options = {
   fonts: { id: string; name: string }[]
   onFontChange: (id: string) => void
   validate: (text: string, id: string) => Promise<string | null>
   selectedRange?: { start: number; end: number }
+  onGeometryChange?: (source: PdfTextRun | undefined) => void
   preview?: (text: string, id: string) => Promise<{ fontFamily: string; notice: string }>
 }
 let active: { apply: () => Promise<boolean> } | undefined
@@ -56,6 +63,11 @@ export async function requestInlineText(
   return new Promise((resolve) => {
     const { page, matrix } = placement
     const [a, b, c, d, e, f] = matrix
+    let geometry = source
+    const geometryChanged = (): boolean =>
+      geometry.x !== source.x ||
+      geometry.y !== source.y ||
+      geometry.textBox?.width !== source.textBox?.width
     const size = annotation?.fontSize || source.size
     const initialDirty = usePdfStore.getState().isDirty,
       initialData = usePdfStore.getState().data,
@@ -86,7 +98,7 @@ export async function requestInlineText(
         ? {
             whiteSpace: 'pre-wrap',
             overflowWrap: 'anywhere',
-            resize: 'vertical',
+            resize: 'none',
             boxSizing: 'content-box',
             minWidth: '0',
             maxWidth: 'none'
@@ -103,9 +115,12 @@ export async function requestInlineText(
     input.style.wordSpacing = `${spacing.word + (annotation ? previewSpaceAdjustment(annotation) : 0)}px`
     const measuring = document.createElement('canvas').getContext('2d')
     const grow = (): void => {
+      const dx = geometry.x - source.x,
+        dy = source.y - geometry.y
+      editor.style.transform = `matrix(${a},${b},${c},${d},${e + a * dx + c * (top + dy)},${f + b * dx + d * (top + dy)})`
       if (measuring)
         measuring.font = `${input.style.fontStyle} ${input.style.fontWeight} ${size}px ${input.style.fontFamily}`
-      input.style.width = `${source.textBox?.width ?? Math.max(source.width + 8, 80, ...input.value.split('\n').map((line) => (measuring?.measureText(line).width || line.length * size * 0.6) + line.length * spacing.character + (line.match(/ /g)?.length || 0) * spacing.word + 8))}px`
+      input.style.width = `${geometry.textBox?.width ?? Math.max(source.width + 8, 80, ...input.value.split('\n').map((line) => (measuring?.measureText(line).width || line.length * size * 0.6) + line.length * spacing.character + (line.match(/ /g)?.length || 0) * spacing.word + 8))}px`
       input.style.height = '0px'
       input.style.height = `${Math.max(size * 1.3 + 4, input.scrollHeight + 4)}px`
       if (editor.isConnected) {
@@ -189,7 +204,8 @@ export async function requestInlineText(
       releasePreview?.()
       previewVersion++
       if (
-        (value === null || (value === initial && font.value === 'original')) &&
+        (value === null ||
+          (value === initial && font.value === 'original' && !geometryChanged())) &&
         !initialDirty &&
         initialData === usePdfStore.getState().data &&
         initialAnnotations === useAnnotationStore.getState().annotations
@@ -209,6 +225,7 @@ export async function requestInlineText(
       done.disabled = true
       busy = (async () => {
         try {
+          options.onGeometryChange?.(geometryChanged() ? geometry : undefined)
           const message = await options.validate(input.value, font.value)
           if (message) {
             error.textContent = message
@@ -259,6 +276,88 @@ export async function requestInlineText(
       }
     }
     editor.append(input)
+    if (adjustableTextBox(source)) {
+      const handles: { kind: TextBoxHandle; label: string; style: Partial<CSSStyleDeclaration> }[] =
+        [
+          {
+            kind: 'move',
+            label: 'Move text box',
+            style: { top: '-20px', left: '0', height: '20px', width: '66px', cursor: 'move' }
+          },
+          {
+            kind: 'left',
+            label: 'Resize text box from left',
+            style: { top: '50%', left: '-6px', height: '16px', width: '10px', cursor: 'ew-resize' }
+          },
+          {
+            kind: 'right',
+            label: 'Resize text box from right',
+            style: { top: '50%', right: '-6px', height: '16px', width: '10px', cursor: 'ew-resize' }
+          }
+        ]
+      for (const { kind, label, style } of handles) {
+        const handle = document.createElement('button')
+        handle.type = 'button'
+        handle.setAttribute('aria-label', label)
+        handle.title = `${label}. Drag or use arrow keys; Shift moves 10 points.`
+        handle.textContent = kind === 'move' ? 'Move' : ''
+        Object.assign(handle.style, {
+          position: 'absolute',
+          padding: '0',
+          border: '1px solid #1473e6',
+          borderRadius: '2px',
+          background: '#fff',
+          color: '#1473e6',
+          fontSize: '11px',
+          touchAction: 'none',
+          ...style
+        })
+        let drag: { id: number; x: number; y: number; source: PdfTextRun } | undefined
+        const change = (next: PdfTextRun): void => {
+          geometry = next
+          grow()
+          usePdfStore.getState().setDirty(true)
+        }
+        handle.onpointerdown = (event) => {
+          if (event.button !== 0) return
+          event.preventDefault()
+          event.stopPropagation()
+          handle.focus()
+          drag = { id: event.pointerId, x: event.clientX, y: event.clientY, source: geometry }
+          handle.setPointerCapture(event.pointerId)
+        }
+        handle.onpointermove = (event) => {
+          if (!drag || drag.id !== event.pointerId) return
+          const delta = textBoxPointerDelta(matrix, event.clientX - drag.x, event.clientY - drag.y)
+          change(adjustTextBox(drag.source, kind, delta.x, delta.y))
+        }
+        handle.onpointerup = (event) => {
+          if (drag?.id !== event.pointerId) return
+          drag = undefined
+          handle.releasePointerCapture(event.pointerId)
+        }
+        handle.onpointercancel = () => {
+          if (drag) change(drag.source)
+          drag = undefined
+        }
+        handle.onkeydown = (event) => {
+          if (event.key === 'Escape') {
+            event.preventDefault()
+            event.stopPropagation()
+            cleanup(null)
+            return
+          }
+          if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return
+          event.preventDefault()
+          event.stopPropagation()
+          const step = event.shiftKey ? 10 : 1
+          const dx = event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0
+          const dy = event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0
+          if (kind === 'move' || dx) change(adjustTextBox(geometry, kind, dx, dy))
+        }
+        editor.append(handle)
+      }
+    }
     bar.append(font, done, cancel, notice, error)
     page.append(editor, bar)
     document.addEventListener('pointerdown', outside, true)

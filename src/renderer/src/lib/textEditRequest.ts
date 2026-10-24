@@ -22,6 +22,7 @@ export async function requestPdfText(
   let selection = 'original',
     selectedBytes: Uint8Array | undefined
   let resolvedStyle: Partial<Annotation> = {}
+  let geometryStyle: Partial<Annotation> = {}
   const bold = annotation?.bold ?? source?.bold,
     italic = annotation?.italic ?? source?.italic
   const fits = (bytes: Uint8Array, value: string, original = false): boolean => {
@@ -115,6 +116,16 @@ export async function requestPdfText(
     ...system.map((font) => ({ id: 'system:' + font.id, name: font.name + ' · installed' }))
   ]
   const options = {
+    onGeometryChange: (changed: PdfTextRun | undefined) => {
+      if (!changed) {
+        geometryStyle = {}
+        return
+      }
+      geometryStyle = {
+        sourceText: changed,
+        ...(annotation && !annotation.maskTexts && source ? { maskTexts: [source] } : {})
+      }
+    },
     fonts: choices,
     selectedRange,
     onFontChange: (id: string) => {
@@ -122,7 +133,7 @@ export async function requestPdfText(
     },
     validate: async (value: string, id: string) => {
       resolvedStyle = {}
-      if (id === 'original' && value === initial) return null
+      if (id === 'original' && value === initial && !geometryStyle.sourceText) return null
       if (!value.trim()) return null
       let bytes: Uint8Array | undefined
       if (id.startsWith('bundled:'))
@@ -239,7 +250,7 @@ export async function requestPdfText(
       ? await requestInlineText(source, initial, options, annotation, placement)
       : await requestText('Edit PDF text', initial, options)
   if (text === null) return null
-  if (selection === 'original') return { text, style: resolvedStyle }
+  if (selection === 'original') return { text, style: { ...resolvedStyle, ...geometryStyle } }
   const installed = system.find((font) => 'system:' + font.id === selection)
   const family = installed?.name || selection.slice(8)
   const preview = selectedBytes
@@ -252,6 +263,7 @@ export async function requestPdfText(
   return {
     text,
     style: {
+      ...geometryStyle,
       fontFamily: family,
       fontData: preview?.data,
       previewFont: preview?.name,

@@ -295,6 +295,7 @@ pub fn start(window: &tauri::Webview) {
             Ok("interactions") => include_str!("../../scripts/tauri-interactions.js"),
             Ok("selection") => include_str!("../../scripts/tauri-selection.js"),
             Ok("acrobat-parity") => include_str!("../../scripts/tauri-acrobat-parity.js"),
+            Ok("password-regression") => include_str!("../../scripts/tauri-password-regression.js"),
             Ok("fonts-dialog") => include_str!("../../scripts/tauri-fonts-dialog.js"),
             Ok("ocr-edit") => include_str!("../../scripts/tauri-ocr-edit.js"),
             Ok("linux-smoke") => include_str!("../../scripts/tauri-linux-smoke.js"),

@@ -3,6 +3,7 @@ import { create } from 'zustand'
 import { captureSession, restoreSession, restoringSession, type DocumentSession } from '../lib/documentSession'
 import { usePdfStore } from './usePdfStore'
 import { useOcrStore } from './useOcrStore'
+import { releasePdfAuthentication } from '../lib/pdfAuthentication'
 
 export interface DocTab {
   id: string
@@ -75,6 +76,11 @@ export const useTabStore = create<TabState>((set, get) => ({
 
   closeTab: (id) => {
     const { tabs, activeTabId } = get()
+    const closing = tabs.find((tab) => tab.id === id)
+    const authenticationId = activeTabId === id
+      ? usePdfStore.getState().authenticationId
+      : closing?.session?.pdf.authenticationId
+    if (authenticationId) void releasePdfAuthentication(authenticationId).catch(() => {})
     const idx = tabs.findIndex((t) => t.id === id)
     const filtered = tabs.filter((t) => t.id !== id)
     let newActive = activeTabId

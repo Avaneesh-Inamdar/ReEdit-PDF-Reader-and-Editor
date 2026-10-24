@@ -98,7 +98,14 @@ if ($appWindow -eq [IntPtr]::Zero -or ![InstallerWizardTest]::IsWindowVisible($a
 $application.WaitForInputIdle(15000) | Out-Null
 Start-Sleep -Seconds 5
 [InstallerWizardTest]::Close([InstallerWizardTest]::Window($application.Id))
-if (!$application.WaitForExit(10000)) { throw 'Test app did not close' }
+# A loaded runner can delay webview teardown beyond a single 10s window.
+if (!$application.WaitForExit(10000)) {
+  $application.Refresh()
+  if (!$application.HasExited) {
+    [InstallerWizardTest]::Close([InstallerWizardTest]::Window($application.Id))
+    if (!$application.WaitForExit(30000)) { throw 'Test app did not close' }
+  }
+}
 $uninstaller = @(Get-ChildItem -LiteralPath $installedDirectory -Filter '*Uninstall*.exe' -File)
 if ($uninstaller.Count -ne 1) { throw 'Expected one test uninstaller' }
 $cleanup = Start-Process -FilePath $uninstaller[0].FullName -ArgumentList '/S' -WindowStyle Hidden -PassThru -Wait

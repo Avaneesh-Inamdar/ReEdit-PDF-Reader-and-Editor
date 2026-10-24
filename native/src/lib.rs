@@ -1,3 +1,4 @@
+pub mod authentication;
 pub mod content_removal;
 pub mod engine;
 pub mod fonts;

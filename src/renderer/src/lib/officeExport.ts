@@ -1,8 +1,10 @@
 import { pdfjsLib, pdfAssetOptions } from './pdfjs'
 import { prepareDocument } from './documentActions'
 import { usePdfStore } from '../stores/usePdfStore'
+import { appChoice } from './appDialogs'
 
 export async function exportWord(): Promise<void> {
+  if (usePdfStore.getState().authenticationId && await appChoice('Export protected PDF', 'The Word document will be an unprotected copy. Choose a new file name to keep the protected source.', [{value:'cancel',label:'Cancel'},{value:'continue',label:'Export copy',primary:true}]) !== 'continue') return
   let doc: import('pdfjs-dist').PDFDocumentProxy | undefined
   try {
     doc=await pdfjsLib.getDocument({data:await prepareDocument(true),...pdfAssetOptions}).promise

@@ -21,6 +21,10 @@ async function simpleText() {
     for (let i = 0; i < 20; i++) {
       page.drawText(`Line ${i+1} — The quick brown fox jumps over the lazy dog. Lorem ipsum dolor sit amet. `, { x: 50, y: 700 - i*22, size: 10, font, color: rgb(0.2,0.2,0.2) })
     }
+    if (p === 0) {
+      const paragraph = ['Editable paragraph begins with words', 'Following paragraph text keeps its size', 'Final paragraph line ends here.']
+      paragraph.forEach((text, index) => page.drawText(text, { x: 50, y: 220 - index * 15, size: 12, font, color: rgb(0.2,0.2,0.2) }))
+    }
   }
   const bytes = await pdf.save()
   fs.writeFileSync(path.join(outDir, 'simple-text.pdf'), bytes)
@@ -138,9 +142,11 @@ async function encryptedSample() {
 }
 
 await simpleText()
+if (!process.argv.includes('--simple-text')) {
 await imageAndText()
 await scannedImageOnly()
 await acroform()
 await xfaStub()
 await encryptedSample()
+}
 console.log('All fixtures generated in', outDir)

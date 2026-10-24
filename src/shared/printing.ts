@@ -11,6 +11,10 @@ export interface PrintOptions {
   handling?: 'size' | 'multiple' | 'booklet' | 'poster'
   columns?: number
   rows?: number
+  pageOrder?: 'horizontal' | 'horizontalReversed' | 'vertical' | 'verticalReversed'
+  printPageBorder?: boolean
+  bookletBinding?: 'left' | 'right'
+  bookletSubset?: 'both' | 'front' | 'back'
   tileScale?: number
   /** Overlap in PDF points (72 points per inch). */
   overlap?: number

@@ -840,7 +840,7 @@ impl PdfDocument {
 
     pub fn permissions(&self) -> Permission {
         let bits = unsafe { pdf_document_permissions(context(), self.inner) };
-        Permission::from_bits(bits as u32).unwrap_or_else(Permission::all)
+        Permission::from_bits_retain(bits as u32)
     }
 
     pub fn save(&self, filename: &str) -> Result<(), Error> {

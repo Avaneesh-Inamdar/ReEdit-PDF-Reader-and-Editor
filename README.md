@@ -21,9 +21,9 @@
 
 ## Download
 
-Download [Re-Edit PDF v2.0.0](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest) for Windows or Linux. It uses a Rust desktop backend and the existing React workspace in the system webview, without the Electron runtime.
+Download [Re-Edit PDF v2.1.0](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest) for Windows or Linux. It uses a Rust desktop backend and the existing React workspace in the system webview, without the Electron runtime.
 
-Version 2.0.0 is the stable Rust/Tauri release. It checks for updates shortly after launch and shows a notification when a newer version is available. **Help → Check for Updates** offers verified download and installation when supported. Native alpha.2 users receive this release through the same update feed; earlier previews and Electron users should install it manually.
+Version 2.1.0 continues the stable Rust/Tauri series. It checks for updates shortly after launch and shows a notification when a newer version is available. **Help → Check for Updates** offers verified download and installation when supported. Native 2.0.0 and alpha.2 users receive this release through the same update feed; earlier previews and Electron users should install it manually.
 
 The download badge counts release-asset downloads across all versions. Repeat downloads and supporting files count separately; it is not a count of unique users.
 
@@ -65,12 +65,26 @@ The installer registers PDF **Open With** support and a separate document icon. 
 This project is independent of Adobe. It does not claim complete Acrobat Premium compatibility.
 
 The [Acrobat workflow comparison](docs/ACROBAT-PARITY.md) records the remaining
-feature gaps, the official-package evidence and local checks. Current unreleased
-source changes add conservative paragraph wrapping, Size/Multiple/Poster/Booklet
-print layouts and improved menu, pane and page keyboard navigation. These changes
-are not included in the published v2.0.0 packages.
+feature gaps, the official-package evidence and checks. Version 2.1.0 adds
+conservative paragraph wrapping, Size/Multiple/Poster/Booklet print layouts and
+improved menu, pane and page keyboard navigation. It is not a complete Acrobat
+replacement; the comparison explains the limits of each workflow.
 
 ## Getting started
+
+### Changes in 2.1.0
+
+- Compatible horizontal paragraphs wrap within their text box. Moving or resizing
+  a box in the inline editor keeps its font size, and replacements remain editable
+  after saving and reopening. Complex mixed-format layouts retain line editing.
+- Print Size, Multiple, Poster and Booklet layouts share their preview and output
+  plan. Multiple supports four page orders and borders; Booklet supports left/right
+  binding and front/back passes for manual duplex printing.
+- Menus support F10 and arrow keys, F6 cycles visible panes, Ctrl+Shift+N focuses
+  Go to Page, and document page/screen shortcuts respect focused controls. Space
+  activates buttons, and internal links/bookmarks correctly resolve page zero.
+- Package and regression validation is recorded in the
+  [2.1.0 validation report](docs/releases/v2.1.0/VALIDATION.md).
 
 ### Changes in 2.0.0
 

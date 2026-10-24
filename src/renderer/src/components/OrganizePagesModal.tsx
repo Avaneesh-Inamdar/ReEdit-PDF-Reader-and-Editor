@@ -180,7 +180,9 @@ export function OrganizePagesModal(): React.JSX.Element {
       setBusy(true)
       const bytes = await splitPdf((await prepareDocument()).slice().buffer as ArrayBuffer, idxs)
       const name = `extract-pages-${idxs.map(i=>i+1).join('_')}.pdf`
-      await window.api.saveFileAs(new Uint8Array(bytes), name)
+      const authenticationId = usePdfStore.getState().authenticationId
+      if (authenticationId) await window.api.saveFileAs(new Uint8Array(bytes), name, authenticationId)
+      else await window.api.saveFileAs(new Uint8Array(bytes), name)
     } catch (e) { alert(String(e)) } finally { setBusy(false) }
   }
 

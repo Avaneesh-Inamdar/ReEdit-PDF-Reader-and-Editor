@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { prepareDocument } from '../lib/documentActions'
 import { useUIStore } from '../stores/useUIStore'
+import { usePdfStore } from '../stores/usePdfStore'
 
 export default function CertificateModal(): React.JSX.Element {
   const close = useUIStore((s) => s.setActiveModal)
@@ -45,6 +46,7 @@ export default function CertificateModal(): React.JSX.Element {
           Choose your P12/PFX certificate after clicking Sign. This saves a separate signed copy.
           Later edits invalidate its signature. Certificate trust depends on the recipient’s trust
           store; timestamping and additional signatures are not supported.
+          {usePdfStore.getState().authenticationId && ' The signed copy will be unprotected. Choose a new file name; the protected source cannot be overwritten.'}
         </p>
         <label className="block text-xs mt-3">
           Signer name

@@ -11,7 +11,34 @@
       await pause(60)
     }
   }
+  const nativeKeys = navigator.userAgent.includes('Windows')
   const key = async (key, code, vk, modifiers = 0, text) => {
+    if (!nativeKeys) {
+      // WebKitGTK has no CDP input bridge. Dispatch app shortcuts and explicitly
+      // emulate the browser defaults below; trusted input is tested on Windows.
+      const target = document.activeElement || document.body
+      const event = new KeyboardEvent('keydown', {
+        key,
+        code,
+        ctrlKey: !!(modifiers & 2),
+        shiftKey: !!(modifiers & 8),
+        altKey: !!(modifiers & 1),
+        bubbles: true,
+        cancelable: true
+      })
+      target.dispatchEvent(event)
+      if (!event.defaultPrevented && target instanceof HTMLButtonElement && key === ' ')
+        target.click()
+      if (!event.defaultPrevented && text && target instanceof HTMLInputElement) {
+        const start = target.selectionStart ?? target.value.length
+        const end = target.selectionEnd ?? start
+        const value = target.value.slice(0, start) + text + target.value.slice(end)
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(target, value)
+        target.dispatchEvent(new Event('input', { bubbles: true }))
+      }
+      target.dispatchEvent(new KeyboardEvent('keyup', { key, code, bubbles: true }))
+      return
+    }
     for (const type of ['keyDown', 'keyUp'])
       await invoke('desktop_test_input', {
         method: 'Input.dispatchKeyEvent',
@@ -86,8 +113,33 @@
     handling('Multiple')
     await wait(() => sheetCount(8), 'Multiple preview pages')
     checks.multiple_preview = true
+    const printCanvas = document.querySelector('.print-preview canvas')
+    const choosePrint = (text, value) => {
+      const select = [...document.querySelectorAll('.print-settings label')]
+        .find((label) => label.textContent.trim().startsWith(text))
+        .querySelector('select')
+      select.value = value
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+      return select
+    }
+    // Every page in this fixture carries a distinct page number, so page order
+    // changes must reach the native preview rather than only changing a label.
+    await pause(250)
+    for (const order of ['horizontalReversed', 'vertical', 'verticalReversed', 'horizontal']) {
+      const previous = printCanvas.toDataURL()
+      choosePrint('Page order', order)
+      await wait(() => printCanvas.toDataURL() !== previous, 'Multiple order ' + order)
+    }
+    checks.multiple_orders_preview = true
+    const withoutBorder = printCanvas.toDataURL()
+    const border = [...document.querySelectorAll('.print-settings label')]
+      .find((label) => label.textContent.includes('Print page border'))
+      .querySelector('input')
+    border.click()
+    await wait(() => printCanvas.toDataURL() !== withoutBorder, 'Multiple page borders')
+    checks.multiple_borders_preview = true
     document.querySelector('.print-handling').scrollIntoView({ block: 'nearest' })
-    await invoke('desktop_test_snapshot', { name: 'print' })
+    if (nativeKeys) await invoke('desktop_test_snapshot', { name: 'print' })
     handling('Booklet')
     await wait(() => sheetCount(16), 'Booklet preview sides')
     const canvas = document.querySelector('.print-preview canvas')
@@ -96,6 +148,24 @@
       'Booklet landscape'
     )
     checks.booklet_preview = true
+    const leftBinding = canvas.toDataURL()
+    choosePrint('Binding', 'right')
+    await wait(() => canvas.toDataURL() !== leftBinding, 'Right-bound booklet')
+    checks.booklet_binding_preview = true
+    choosePrint('Booklet subset', 'front')
+    await wait(() => sheetCount(8), 'Booklet front-side count')
+    const duplex = [...document.querySelectorAll('.print-settings label')]
+      .find((label) => label.textContent.includes('Two-sided printing'))
+      .querySelector('select')
+    checks.booklet_manual_pass_simplex = duplex.disabled && duplex.value === 'simplex'
+    await pause(250)
+    const frontSide = canvas.toDataURL()
+    choosePrint('Booklet subset', 'back')
+    await wait(() => canvas.toDataURL() !== frontSide, 'Booklet back-side preview')
+    checks.booklet_manual_pass_preview = sheetCount(8)
+    choosePrint('Booklet subset', 'both')
+    await wait(() => sheetCount(16), 'Booklet both-side count')
+    checks.booklet_both_sides_restored = !duplex.disabled && duplex.value === 'shortEdge'
     handling('Poster')
     await wait(
       () =>

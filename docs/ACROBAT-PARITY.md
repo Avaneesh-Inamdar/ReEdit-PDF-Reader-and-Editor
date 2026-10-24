@@ -1,11 +1,34 @@
 # Acrobat workflow comparison
 
-Reviewed on 24 October 2026. This is an engineering gap assessment, not a claim
-of complete compatibility or a pixel-identical reproduction. The changes below
-are **unreleased local source changes after v2.0.0**. The published v2.0.0
-packages do not contain them.
+Updated on 25 October 2026. This is an engineering gap assessment, not a claim
+of complete compatibility or a pixel-identical reproduction. It covers the
+2.1.0 changes following v2.0.0. Package validation and publication status are
+recorded in [the 2.1.0 release report](releases/v2.1.0/VALIDATION.md).
 
-## What changed in this pass
+## Additional 2.1.0 work
+
+The October 25 implementation uses Adobe's public documentation as its workflow
+reference. Acrobat is not currently available for live comparison; the earlier
+REA package inventory below remains static evidence, not a runtime comparison.
+
+- Active inline text boxes have move and left/right resize handles. Resizing
+  rewraps compatible text without changing its font size. Done applies geometry
+  and text together; Cancel discards them. The original removal geometry is
+  retained separately so moving text does not erase its destination.
+- Multiple printing supports horizontal, horizontal reversed, vertical and
+  vertical reversed ordering, plus exported vector page borders. Booklet printing
+  supports left/right binding and both/front/back passes. Manual passes force
+  simplex output; returning to both sides restores duplex.
+- Password-protected editing uses an in-memory native authentication session.
+  Saving retains the source encryption, passwords and permission flags. A
+  restricted document requires its owner permissions password for editing.
+  Passwords are not stored in renderer state or persistent preferences.
+
+See Adobe's [text box guidance](https://helpx.adobe.com/acrobat/desktop/edit-documents/edit-text-in-pdfs/adjust-text-boxes.html),
+[multiple-page ordering](https://helpx.adobe.com/acrobat/desktop/print-documents/set-up-and-print-pdfs/multiple-pages.html)
+and [manual booklet passes](https://helpx.adobe.com/uk/acrobat/kb/print-booklets-acrobat-reader.html).
+
+## October 24 implementation
 
 - Editing compatible horizontal text now detects a uniform paragraph, wraps
   replacements inside its width and preserves explicit paragraph breaks. A
@@ -28,8 +51,8 @@ packages do not contain them.
   including page zero, as well as named destinations and indirect references.
 
 Paragraph grouping deliberately excludes mixed styling, rotation, shearing and
-ambiguous geometry. Those cases retain line editing. It does not provide box
-resize handles, mixed-font runs or reflow into another page or independent box.
+ambiguous geometry. Those cases retain line editing. Mixed-font runs and reflow
+into another page or independent box are not supported.
 Browser preview font metrics can differ slightly from exported font metrics.
 
 ## Reference evidence and limits
@@ -75,15 +98,15 @@ it is not an exhaustive inventory of every Acrobat edition or cloud service.
 | Area                               | Current state                                              | Work still required                                                                                                                                                                                       |
 | ---------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Existing text                      | Partial; compatible paragraphs now wrap                    | Mixed-font runs, complex/RTL/vertical scripts, reliable geometric grouping across arbitrary PDFs and visual save/reopen fidelity corpus.                                                                  |
-| Text formatting                    | Font/size/color and basic styles                           | Paragraph alignment, lists, character/horizontal scaling controls, super/subscript, advanced spacing and box move/resize/rotate.                                                                          |
+| Text formatting                    | Font/size/color and basic styles                           | Paragraph alignment, lists, character/horizontal scaling, super/subscript, advanced spacing, rotation and mixed-format box geometry. Uniform horizontal boxes support movement and width resizing.                                                                          |
 | Fonts                              | Embedded, installed and bundled alternatives               | Reliable shaping and fallback across more scripts; incomplete subset fonts cannot supply glyphs they never contained. Proprietary Adobe fonts are not bundled.                                            |
 | Original images/objects            | Adding images and selecting app annotations                | Selecting, replacing, moving, cropping and removing arbitrary existing page-content objects while preserving clipping and backgrounds.                                                                    |
 | OCR                                | Offline English, two models and layout choices             | Language selection/models, deskew/rotation, difficult scans, tables, recognition correction and quantitative accuracy/selection tests. The native pipeline currently requests `eng`.                      |
 | Flattened mark removal             | Region removal with background reconstruction              | General image reconstruction cannot guarantee clean recovery of content obscured by a mark; more scanned and textured-background cases need coverage.                                                     |
-| Printing                           | Native layout previews and basic printer settings          | Multiple-page ordering/borders, booklet binding and side subsets, poster labels/cut marks, comment/form print selection, driver properties, advanced color/production options and physical-printer tests. |
+| Printing                           | Native layout previews and basic printer settings          | Tall booklet binding and sheet intervals, poster labels/cut marks, comment/form print selection, driver properties, advanced color/production options and physical-printer tests. |
 | Page organization                  | Combine, insert blank, reorder, rotate, extract, delete    | Crop-box workflow, headers/footers, page numbering, backgrounds, watermarks and Bates numbering.                                                                                                          |
 | Forms                              | Supported AcroForm filling                                 | Field authoring/detection, calculations, validation, tab ordering, broader appearance handling and XFA compatibility.                                                                                     |
-| Passwords/security                 | Permission inspection and existing password-clearing route | Complete authenticated open/edit/protect workflow. Native editing explicitly rejects PDFs that still require a password. Permissions are not certificate trust validation.                                |
+| Passwords/security                 | Authenticated editing and encryption-preserving saves | New protection/password-setting UI and read-only restricted viewing. Restricted edits require the owner permissions password. Permissions are not certificate trust validation.                                |
 | Redaction/sanitization             | Genuine content removal                                    | A separately audited whole-document sanitation workflow covering hidden metadata, attachments, layers and active content, plus adversarial redaction tests.                                               |
 | Certificate signatures             | P12/PFX signing route                                      | Timestamping, multiple signatures, chain/revocation validation, trust UI, long-term validation and a representative signed-document corpus.                                                               |
 | Conversion                         | Text-oriented Word export; optional LibreOffice import     | High-fidelity layout conversion to Word, Excel and PowerPoint; broader export/import formats and conformance conversions.                                                                                 |

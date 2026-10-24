@@ -4,6 +4,11 @@
 .app-dialog h2,.app-dialog p { margin: 20px 24px; }
 .app-dialog h2,.file-dialog h2 { font-size: 19px; font-weight: 600; }
 .app-dialog p { white-space: pre-wrap; line-height: 1.5; font-size: 13px; }
+.pdf-password-dialog label { display: block; margin: 20px 24px 8px; font-size: 13px; font-weight: 600; }
+.pdf-password-dialog input { display: block; box-sizing: border-box; width: calc(100% - 48px); height: 36px; margin: 0 24px 24px; padding: 0 10px; border: 1px solid var(--acrobat-input-border); border-radius: 4px; background: var(--acrobat-input-bg); color: var(--acrobat-text); font-size: 14px; }
+.pdf-password-dialog input:focus { outline: 2px solid var(--acrobat-accent); outline-offset: 1px; }
+.pdf-password-dialog input[aria-invalid=true] { border-color: var(--acrobat-red); }
+.pdf-password-dialog .operation-error { margin-top: 0; color: var(--acrobat-red); }
 .file-dialog { width: min(850px,94vw); max-height: 90vh; }
 .file-dialog[open] { display: flex; flex-direction: column; }
 .file-dialog header { padding: 18px 24px; border-bottom: 1px solid var(--acrobat-border); }

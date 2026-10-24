@@ -71,10 +71,15 @@ export async function saveDocument(
         (flatten ? '-flat.pdf' : '.pdf')
     const path = before.pdf.filePath
     const hasDiskPath = !!path && /^(?:[a-z]:[\\/]|\\\\|\/)/i.test(path)
+    const authenticationId = before.pdf.authenticationId || undefined
     const saved =
       saveAs || flatten || !hasDiskPath
-        ? await window.api.saveFileAs(bytes, name)
-        : await window.api.saveFile(bytes, name, path!)
+        ? authenticationId
+          ? await window.api.saveFileAs(bytes, name, authenticationId)
+          : await window.api.saveFileAs(bytes, name)
+        : authenticationId
+          ? await window.api.saveFile(bytes, name, path!, authenticationId)
+          : await window.api.saveFile(bytes, name, path!)
     if (!saved) return false
     // Flatten is an export. Keep the original editable document and its dirty state.
     if (flatten) return true

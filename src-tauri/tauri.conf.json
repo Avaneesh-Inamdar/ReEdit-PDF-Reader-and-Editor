@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Re-Edit PDF",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "identifier": "com.avaneeshinamdar.readitpdf",
   "build": {
     "beforeDevCommand": "npm run dev:ui",
@@ -63,7 +63,7 @@
       },
       "webviewInstallMode": { "type": "embedBootstrapper", "silent": true },
       "wix": {
-        "version": "2.0.0.3",
+        "version": "2.1.0.0",
         "fragmentPaths": ["windows/document-icon.wxs"],
         "componentRefs": ["PdfDocumentCapabilities"]
       }

@@ -12,7 +12,7 @@ import { securityPermissions } from '../lib/securityProperties'
 type Tab = 'description' | 'security' | 'fonts'
 
 export function DocumentPropertiesModal(): React.JSX.Element {
-  const { fileName, filePath, numPages, title, author, data } = usePdfStore()
+  const { fileName, filePath, numPages, title, author, data, authenticationId } = usePdfStore()
   const det = useDetectionStore()
   const form = useFormStore()
   const { setActiveModal } = useUIStore()
@@ -70,6 +70,7 @@ export function DocumentPropertiesModal(): React.JSX.Element {
           {tab === 'security' && (
             <>
               <Row label="Encryption" value={det.isEncrypted ? 'Yes — Password Protected' : 'None'} />
+              {authenticationId && <p className="text-xs" style={{color:'var(--acrobat-text-muted)'}}>The source document is protected. Its original encryption and permissions are retained when saving.</p>}
               <Row label="AcroForm" value={form.hasAcroForm ? `Yes — ${form.fields.length} fields` : 'No'} />
               <Row label="XFA Forms" value={form.hasXfa ? 'Detected — Unsupported' : 'None'} />
               <div className="security-permissions" aria-label="Document permissions">

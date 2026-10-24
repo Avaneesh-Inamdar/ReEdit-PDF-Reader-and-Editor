@@ -42,6 +42,7 @@ import { clearTextStyleCache } from './lib/pdfTextStyle'
 import { closeDocument, saveDocument } from './lib/documentActions'
 import { analyzeDocument } from './lib/detection'
 import { inspectForms } from './lib/forms'
+import { authenticatePdf, releasePdfAuthentication } from './lib/pdfAuthentication'
 import { performUndo, performRedo } from './lib/undoManager'
 
 function App(): React.JSX.Element {
@@ -103,11 +104,29 @@ function App(): React.JSX.Element {
       return
     }
     let cancelled = false
+    const authentication = new AbortController()
     let loadedDoc: PDFDocumentProxy | null = null
     let loadingTask: import('pdfjs-dist').PDFDocumentLoadingTask | undefined
     const load = async (): Promise<void> => {
       try {
         setLoading(true)
+        const opened = await authenticatePdf(data, usePdfStore.getState().fileName || 'document.pdf', authentication.signal)
+        if (cancelled) {
+          if (opened?.authenticationId) void releasePdfAuthentication(opened.authenticationId).catch(() => {})
+          return
+        }
+        if (!opened) {
+          const tabs = useTabStore.getState()
+          if (tabs.activeTabId) tabs.closeTab(tabs.activeTabId)
+          if (!useTabStore.getState().activeTabId) useUIStore.getState().setActiveView('home')
+          return
+        }
+        if (opened.data !== data) {
+          const oldAuthenticationId = usePdfStore.getState().authenticationId
+          if (oldAuthenticationId) void releasePdfAuthentication(oldAuthenticationId).catch(() => {})
+          usePdfStore.setState({ data: opened.data, authenticationId: opened.authenticationId || null, sourcePermissions: opened.sourcePermissions || null })
+          return
+        }
         let doc: PDFDocumentProxy
         try {
           loadingTask=pdfjsLib.getDocument({ ...pdfAssetOptions(), data: data.slice(0) })
@@ -129,13 +148,22 @@ function App(): React.JSX.Element {
           if (!cancelled) setMetadata(info?.Title || null, info?.Author || null)
         } catch {}
         // detection & forms in parallel (with their own fallback)
-        analyzeDocument(data, doc).then(r=>{ if(!cancelled) useDetectionStore.getState().setDetection(r) }).catch(()=>{})
-        doc.getFieldObjects().then(objects => objects && Object.keys(objects).length ? inspectForms(data) : { fields: [], hasXfa: !!doc.isPureXfa, hasAcroForm: false, isEncrypted: false }).then(r=>{ if(!cancelled && useFormStore.getState().fields.length === 0) { useFormStore.getState().setFields(r.fields); useFormStore.getState().setFlags({ hasXfa: r.hasXfa, hasAcroForm: r.hasAcroForm, isEncrypted: r.isEncrypted }) } }).catch(()=>{})
+        analyzeDocument(data, doc).then(r=>{ if(!cancelled) {
+          const source = usePdfStore.getState()
+          if(source.authenticationId) { r.isEncrypted = true; r.permissions = source.sourcePermissions || undefined; r.permissionsError = !source.sourcePermissions }
+          useDetectionStore.getState().setDetection(r)
+        } }).catch(()=>{})
+        doc.getFieldObjects().then(objects => objects && Object.keys(objects).length ? inspectForms(data) : { fields: [], hasXfa: !!doc.isPureXfa, hasAcroForm: false, isEncrypted: false }).then(r=>{ if(!cancelled && useFormStore.getState().fields.length === 0) { useFormStore.getState().setFields(r.fields); useFormStore.getState().setFlags({ hasXfa: r.hasXfa, hasAcroForm: r.hasAcroForm, isEncrypted: r.isEncrypted || !!usePdfStore.getState().authenticationId }) } }).catch(()=>{})
       } catch (e) {
         if (cancelled) return
         const msg = e instanceof Error ? e.message : String(e)
         console.error('Failed to load PDF', msg)
-        setError(msg)
+        const failed = usePdfStore.getState()
+        if (failed.data === data && failed.authenticationId) {
+          const tabs = useTabStore.getState()
+          if (tabs.activeTabId) tabs.closeTab(tabs.activeTabId)
+          if (!useTabStore.getState().activeTabId) useUIStore.getState().setActiveView('home')
+        } else setError(msg)
         // Ensure user sees error, not black screen
         alert('Failed to open PDF: ' + msg + '\n\nTry File → Open again or check file is not corrupted.')
       } finally {
@@ -143,7 +171,7 @@ function App(): React.JSX.Element {
       }
     }
     load()
-    return () => { cancelled = true; if(loadedDoc)clearTextStyleCache(loadedDoc);void loadingTask?.destroy() }
+    return () => { cancelled = true; authentication.abort(); if(loadedDoc)clearTextStyleCache(loadedDoc);void loadingTask?.destroy() }
   }, [data, setLoading, setNumPages, setMetadata, setError])
 
   // Full-screen handling (Adobe Guide p10)

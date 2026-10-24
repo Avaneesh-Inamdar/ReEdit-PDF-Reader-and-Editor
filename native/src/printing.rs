@@ -24,6 +24,27 @@ pub enum Handling {
     Booklet,
     Poster { percent: f32, overlap: f32 },
 }
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum PageOrder {
+    #[default]
+    Horizontal,
+    HorizontalReversed,
+    Vertical,
+    VerticalReversed,
+}
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum Binding {
+    #[default]
+    Left,
+    Right,
+}
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum BookletSubset {
+    #[default]
+    Both,
+    Front,
+    Back,
+}
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Duplex {
     Off,
@@ -49,6 +70,14 @@ pub struct PrintOptions {
     pub landscape: bool,
     pub scale: Scale,
     pub handling: Handling,
+    #[serde(default)]
+    pub page_order: PageOrder,
+    #[serde(default)]
+    pub print_page_border: bool,
+    #[serde(default)]
+    pub booklet_binding: Binding,
+    #[serde(default)]
+    pub booklet_subset: BookletSubset,
     pub range: String,
     pub parity: Parity,
     pub reverse: bool,
@@ -69,6 +98,10 @@ impl Default for PrintOptions {
             landscape: false,
             scale: Scale::Fit,
             handling: Handling::Size,
+            page_order: PageOrder::Horizontal,
+            print_page_border: false,
+            booklet_binding: Binding::Left,
+            booklet_subset: BookletSubset::Both,
             range: String::new(),
             parity: Parity::All,
             reverse: false,
@@ -233,7 +266,7 @@ pub fn plan(options: &PrintOptions, sizes: &[[f32; 2]]) -> Result<Vec<Sheet>> {
         }
         Handling::Multiple { columns, rows } => {
             ensure!(
-                columns > 0 && rows > 0 && columns * rows <= 64,
+                columns > 0 && rows > 0 && columns <= 64 / rows,
                 "Choose 1–64 pages per sheet"
             );
             let mut fit = options.clone();
@@ -243,12 +276,20 @@ pub fn plan(options: &PrintOptions, sizes: &[[f32; 2]]) -> Result<Vec<Sheet>> {
                     .iter()
                     .enumerate()
                     .map(|(i, p)| {
+                        let (column, row) = match options.page_order {
+                            PageOrder::Horizontal => (i % columns, i / columns),
+                            PageOrder::HorizontalReversed => {
+                                (columns - 1 - i % columns, i / columns)
+                            }
+                            PageOrder::Vertical => (i / rows, i % rows),
+                            PageOrder::VerticalReversed => (columns - 1 - i / rows, i % rows),
+                        };
                         placement(
                             *p,
                             sizes[*p],
                             Box2 {
-                                x: cell.x + (i % columns) as f32 * cell.w / columns as f32,
-                                y: cell.y + (i / columns) as f32 * cell.h / rows as f32,
+                                x: cell.x + column as f32 * cell.w / columns as f32,
+                                y: cell.y + row as f32 * cell.h / rows as f32,
                                 w: cell.w / columns as f32,
                                 h: cell.h / rows as f32,
                             },
@@ -264,10 +305,21 @@ pub fn plan(options: &PrintOptions, sizes: &[[f32; 2]]) -> Result<Vec<Sheet>> {
             let mut fit = options.clone();
             fit.scale = Scale::Fit;
             for sheet in 0..padded / 4 {
-                for pair in [
+                for (side, mut pair) in [
                     [padded - 1 - 2 * sheet, 2 * sheet],
                     [2 * sheet + 1, padded - 2 - 2 * sheet],
-                ] {
+                ]
+                .into_iter()
+                .enumerate()
+                {
+                    if (options.booklet_subset == BookletSubset::Front && side == 1)
+                        || (options.booklet_subset == BookletSubset::Back && side == 0)
+                    {
+                        continue;
+                    }
+                    if options.booklet_binding == Binding::Right {
+                        pair.reverse();
+                    }
                     let placements = pair
                         .into_iter()
                         .enumerate()
@@ -336,6 +388,92 @@ pub fn plan(options: &PrintOptions, sizes: &[[f32; 2]]) -> Result<Vec<Sheet>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn multiple_orders_fill_the_expected_grid_slots_and_keep_partial_sheets() {
+        for (order, slots) in [
+            (PageOrder::Horizontal, vec![0, 1, 2, 3, 4, 5]),
+            (PageOrder::HorizontalReversed, vec![1, 0, 3, 2, 5, 4]),
+            (PageOrder::Vertical, vec![0, 2, 4, 1, 3, 5]),
+            (PageOrder::VerticalReversed, vec![1, 3, 5, 0, 2, 4]),
+        ] {
+            let o = PrintOptions {
+                handling: Handling::Multiple {
+                    columns: 2,
+                    rows: 3,
+                },
+                page_order: order,
+                ..Default::default()
+            };
+            let sheets = plan(&o, &[[100., 200.]; 7]).unwrap();
+            assert_eq!(sheets.len(), 2);
+            let positions: Vec<_> = sheets[0]
+                .placements
+                .iter()
+                .map(|p| {
+                    let column = ((p.clip.x - o.margin) / p.clip.w).round() as usize;
+                    let row = ((p.clip.y - o.margin) / p.clip.h).round() as usize;
+                    row * 2 + column
+                })
+                .collect();
+            assert_eq!(positions, slots, "{order:?}");
+            assert_eq!(sheets[1].placements.len(), 1);
+            assert_eq!(sheets[1].placements[0].page, 6);
+            assert_eq!(
+                sheets[1].placements[0].clip.x,
+                sheets[0].placements[0].clip.x
+            );
+        }
+        let o = PrintOptions {
+            handling: Handling::Multiple {
+                columns: usize::MAX,
+                rows: usize::MAX,
+            },
+            ..Default::default()
+        };
+        assert!(plan(&o, &[[100., 200.]]).is_err());
+    }
+
+    #[test]
+    fn booklet_binding_and_manual_passes_preserve_imposition_and_padding() {
+        for count in 1..18 {
+            for binding in [Binding::Left, Binding::Right] {
+                let mut o = PrintOptions {
+                    handling: Handling::Booklet,
+                    booklet_binding: binding,
+                    ..Default::default()
+                };
+                let all = plan(&o, &vec![[595., 842.]; count]).unwrap();
+                let mut seen = Vec::new();
+                for (subset, side) in [(BookletSubset::Front, 0), (BookletSubset::Back, 1)] {
+                    o.booklet_subset = subset;
+                    let pass = plan(&o, &vec![[595., 842.]; count]).unwrap();
+                    assert_eq!(pass.len(), count.div_ceil(4));
+                    for (index, sheet) in pass.iter().enumerate() {
+                        assert_eq!(
+                            serde_json::to_value(sheet).unwrap(),
+                            serde_json::to_value(&all[index * 2 + side]).unwrap()
+                        );
+                        seen.extend(sheet.placements.iter().map(|p| p.page));
+                    }
+                }
+                seen.sort();
+                assert_eq!(seen, (0..count).collect::<Vec<_>>());
+            }
+        }
+        let o = PrintOptions {
+            handling: Handling::Booklet,
+            booklet_binding: Binding::Right,
+            ..Default::default()
+        };
+        let sheets = plan(&o, &[[595., 842.]; 8]).unwrap();
+        assert_eq!(
+            sheets
+                .iter()
+                .map(|s| s.placements.iter().map(|p| p.page + 1).collect::<Vec<_>>())
+                .collect::<Vec<_>>(),
+            vec![vec![1, 8], vec![7, 2], vec![3, 6], vec![5, 4]]
+        );
+    }
     #[test]
     fn ranges_validate_and_preserve_order() {
         assert_eq!(page_range("3-1,5,3", 5).unwrap(), vec![2, 1, 0, 4]);
