@@ -66,6 +66,10 @@
       'Cancel protected open'
     )
     await wait(async () => (await sessionCount()) === 0, 'Cancelled authentication cleanup')
+    await wait(
+      () => document.querySelector('#page-1 [data-pdf-run]'),
+      'Previous document restores after cancel'
+    )
     checks.cancel_keeps_previous_document = !!document.querySelector('#page-1 [data-pdf-run]')
     checks.cancel_releases_session = true
 
@@ -90,14 +94,24 @@
     checks.password_field_removed = !document.querySelector('#pdf-document-password')
 
     document.querySelector('[title="Edit PDF"]').click()
+    await wait(
+      () =>
+        document.querySelector('.document-objects') &&
+        document.querySelector('#page-1 [data-pdf-text]'),
+      'Edit mode'
+    )
+    await pause(150)
     const run = [...document.querySelectorAll('#page-1 [data-pdf-run]')].find((item) =>
       item.textContent.includes('Original protected text')
     )
-    window.dispatchEvent(new CustomEvent('pdf:editRun', { detail: { page: 1, run: run.pdfRun } }))
-    await wait(
-      () => document.querySelector('[aria-label="Edit text on page"]'),
-      'Edit protected text'
-    )
+    await wait(async () => {
+      if (document.querySelector('[aria-label="Edit text on page"]')) return true
+      window.dispatchEvent(
+        new CustomEvent('pdf:editRun', { detail: { page: 1, run: run.pdfRun } })
+      )
+      await pause(150)
+      return !!document.querySelector('[aria-label="Edit text on page"]')
+    }, 'Edit protected text')
     const editor = document.querySelector('[aria-label="Edit text on page"]')
     editor.value = 'Updated protected text'
     editor.dispatchEvent(new Event('input', { bubbles: true }))
