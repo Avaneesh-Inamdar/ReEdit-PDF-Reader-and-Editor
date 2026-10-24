@@ -2,6 +2,7 @@ import { TextLayer } from 'pdfjs-dist'
 import { installPdfDragSelection } from '../lib/pdfDragSelection'
 import {installPdfGestures} from '../lib/pdfGestures'
 import { installPdfSelectAll } from '../lib/pdfSelectAll'
+import { destinationPage } from '../lib/pdfDestination'
 import { pageText, outputScale, renderPage } from '../lib/rendering'
 import { fitZoom } from '../lib/fitZoom'
 import { Icon, BrandLogo } from './Icon'
@@ -203,18 +204,8 @@ function PageCanvas({
             a.addEventListener('click', async (e) => {
               e.preventDefault()
               try {
-                const dest = anno.dest as string | unknown[]
-                let destArr: unknown[] | null = null
-                if (typeof dest === 'string')
-                  destArr = await (
-                    pdfDoc as unknown as { getDestination: (d: string) => Promise<unknown[]> }
-                  ).getDestination(dest)
-                else destArr = dest as unknown[]
-                if (destArr && destArr[0]) {
-                  const idx = await (
-                    pdfDoc as unknown as { getPageIndex: (r: unknown) => Promise<number> }
-                  ).getPageIndex(destArr[0])
-                  const pg = idx + 1
+                const pg = await destinationPage(pdfDoc, anno.dest)
+                if (pg) {
                   usePdfStore.getState().setCurrentPage(pg)
                   document.getElementById(`page-${pg}`)?.scrollIntoView({ behavior: 'smooth' })
                   useUIStore.getState().pushNavHistory(pg, zoom)
@@ -829,11 +820,16 @@ export function PdfViewer({ pdfDoc }: { pdfDoc: PDFDocumentProxy | null }): Reac
         userSelect: isHandMode ? 'none' : undefined
       }}
       data-pdf-viewer
+      tabIndex={0}
+      aria-label="PDF document"
       onDragStart={(e) => {
         e.preventDefault()
         e.stopPropagation()
       }}
-      onMouseDownCapture={onMouseDown}
+      onMouseDownCapture={(event) => {
+        if (event.target instanceof Element && !event.target.closest('input, textarea, select, button, a, [contenteditable="true"]')) containerRef.current?.focus({ preventScroll: true })
+        onMouseDown(event)
+      }}
       onMouseMove={(e) => {
         onMouseMove(e)
         onMouseMoveHud()

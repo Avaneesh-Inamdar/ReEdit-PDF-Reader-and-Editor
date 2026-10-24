@@ -11,6 +11,97 @@ pub struct Printer {
     pub virtual_printer: bool,
 }
 
+// Windows expands copies itself. Keep front/back pairs together when copying
+// duplex sheets, and pad odd documents so the next copy starts on a new sheet.
+#[cfg(any(windows, test))]
+fn copy_order(count: usize, copies: usize, collate: bool, duplex: Duplex) -> Vec<Option<usize>> {
+    let sides = if duplex == Duplex::Off { 1 } else { 2 };
+    let sheet_count = count.div_ceil(sides);
+    let mut order = Vec::new();
+    let mut append_sheet = |sheet: usize| {
+        for side in 0..sides {
+            let page = sheet * sides + side;
+            order.push((page < count).then_some(page));
+        }
+    };
+    if collate {
+        for _ in 0..copies {
+            for sheet in 0..sheet_count {
+                append_sheet(sheet);
+            }
+        }
+    } else {
+        for sheet in 0..sheet_count {
+            for _ in 0..copies {
+                append_sheet(sheet);
+            }
+        }
+    }
+    order
+}
+
+#[cfg(test)]
+mod copy_tests {
+    use super::*;
+
+    #[test]
+    fn simplex_copies_collate_by_document_or_page() {
+        assert_eq!(
+            copy_order(3, 2, true, Duplex::Off),
+            vec![Some(0), Some(1), Some(2), Some(0), Some(1), Some(2)]
+        );
+        assert_eq!(
+            copy_order(3, 2, false, Duplex::Off),
+            vec![Some(0), Some(0), Some(1), Some(1), Some(2), Some(2)]
+        );
+    }
+
+    #[test]
+    fn duplex_copies_keep_fronts_and_backs_paired() {
+        for duplex in [Duplex::LongEdge, Duplex::ShortEdge] {
+            assert_eq!(
+                copy_order(3, 2, true, duplex),
+                vec![
+                    Some(0),
+                    Some(1),
+                    Some(2),
+                    None,
+                    Some(0),
+                    Some(1),
+                    Some(2),
+                    None
+                ]
+            );
+            assert_eq!(
+                copy_order(3, 2, false, duplex),
+                vec![
+                    Some(0),
+                    Some(1),
+                    Some(0),
+                    Some(1),
+                    Some(2),
+                    None,
+                    Some(2),
+                    None
+                ]
+            );
+            assert_eq!(
+                copy_order(4, 2, false, duplex),
+                vec![
+                    Some(0),
+                    Some(1),
+                    Some(0),
+                    Some(1),
+                    Some(2),
+                    Some(3),
+                    Some(2),
+                    Some(3)
+                ]
+            );
+        }
+    }
+}
+
 #[cfg(target_os = "linux")]
 pub fn printers() -> Result<Vec<Printer>> {
     let output = std::process::Command::new("lpstat")
@@ -281,15 +372,14 @@ mod win {
                 let document = crate::engine::Engine::open(path)?;
                 let sizes = document.info()?.sizes;
                 let count = document.doc.page_count()? as usize;
-                let order: Vec<_> = if o.collate {
-                    (0..o.copies).flat_map(|_| 0..count).collect()
-                } else {
-                    (0..count)
-                        .flat_map(|p| std::iter::repeat_n(p, o.copies))
-                        .collect()
-                };
+                let order = super::copy_order(count, o.copies, o.collate, o.duplex);
                 let dpi = GetDeviceCaps(Some(dc), LOGPIXELSX).max(72) as f32;
                 for page in order {
+                    let Some(page) = page else {
+                        ensure!(StartPage(dc) > 0, "Cannot start blank reverse side");
+                        ensure!(EndPage(dc) > 0, "Cannot finish blank reverse side");
+                        continue;
+                    };
                     if o.original_paper {
                         let size = sizes[page];
                         let landscape = size[0] > size[1];

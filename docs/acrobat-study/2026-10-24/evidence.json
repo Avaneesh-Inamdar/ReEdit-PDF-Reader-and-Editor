@@ -1,0 +1,82 @@
+{
+  "reviewedOn": "2026-10-24",
+  "reaVersion": "6.4.0",
+  "acquisition": {
+    "sourcePage": "https://helpx.adobe.com/acrobat/kb/download-64-bit-installer.html",
+    "url": "https://trials.adobe.com/AdobeProducts/APRO/Acrobat_HelpX/win32/Acrobat_DC_Web_x64_WWMUI.zip",
+    "bytes": 1699354397,
+    "lastModified": "Wed, 14 Oct 2026 11:57:11 GMT",
+    "sha256": "8fd2b12cf31fb28974a9755c56c79c11600f712324ff42c41ab89dee8b57d1c9",
+    "adobeContentMd5": "4wEY6hltWkLD+aLNSWYr2g==",
+    "acquiredAt": "2026-10-24T17:32:14.031Z"
+  },
+  "setupSignature": {
+    "status": "Valid",
+    "signerSubject": "CN=Adobe Inc., OU=Acrobat DC, O=Adobe Inc., L=San Jose, S=ca, C=US, SERIALNUMBER=2748129, OID.2.5.4.15=Private Organization, OID.1.3.6.1.4.1.311.60.2.1.2=Delaware, OID.1.3.6.1.4.1.311.60.2.1.3=US"
+  },
+  "packageInventory": {
+    "evidenceId": "ev_7adb61ecfc93425851f792c5188e96bad8e2335fc11726ca895c51cce3405b7f",
+    "manifestId": "agm_26afda59df5da13ab4750303c3908634675c35fc165aae9b7f444b62443e7314",
+    "inventoryEvidenceId": "ev_4b76f82ada431d9aba205e8bd6b918fc93c0b2c26ba5ecd346cc25f5fb55641d",
+    "nodes": 40,
+    "occurrences": 40,
+    "edges": 39
+  },
+  "resources": [
+    {
+      "artifact": "Acrobat.dll",
+      "sha256": "3bf578309f94507582a54fce0a58c8bc9924bde688241ad71dbef79d5b3466c0",
+      "bytes": 45278376,
+      "operation": "inspect_pe_resources",
+      "provider": "rea-pe-resources",
+      "evidenceId": "ev_bbc07b6e15373d81157456f6532d3eac471b6d0a152de81f14b1aca80a118426",
+      "coverage": {
+        "status": "complete",
+        "examined_entries": 12,
+        "resources": 4
+      },
+      "limitation": "Static resource inventory; opaque payloads do not establish runtime behavior."
+    },
+    {
+      "artifact": "acrobatres.dll",
+      "sha256": "950758e8376a1c1aa445f82bb7efc0433360bd53a249a2c773951c8ca15ecb6b",
+      "bytes": 14565544,
+      "operation": "inspect_pe_resources",
+      "provider": "rea-pe-resources",
+      "evidenceId": "ev_c33db5ba8455b46fc2fdd8cbb1f794b67937af9d3fb090a492e7fca71d4f992b",
+      "coverage": {
+        "status": "complete",
+        "examined_entries": 2331,
+        "resources": 1152
+      },
+      "limitation": "Static resource inventory; opaque payloads do not establish runtime behavior."
+    },
+    {
+      "artifact": "AcroForm.api",
+      "sha256": "6d3a35e6c21678da13d88a49a03c337f254558804ce96d6282e86fb0509019f8",
+      "bytes": 17850024,
+      "operation": "inspect_pe_resources",
+      "provider": "rea-pe-resources",
+      "evidenceId": "ev_ccf881b8cb3420816c7363b323ed234f7371b715f360b28255b1642cfdf54f2b",
+      "coverage": {
+        "status": "complete",
+        "examined_entries": 483,
+        "resources": 235
+      },
+      "limitation": "Static resource inventory; opaque payloads do not establish runtime behavior."
+    }
+  ],
+  "declaredToolManifests": 41,
+  "declaredCommandCount": 170.0,
+  "baseFileVersion": "21.1.20135.421056",
+  "unappliedPatch": "AcrobatDCx64Upd2600222031.msp",
+  "observedRuntime": false,
+  "decompilationPerformed": false,
+  "limitations": [
+    "Base Core.cab files are version 21.1.20135.421056, not the patched current UI.",
+    "Adobe Setup was not executed. No paid Pro runtime was observed.",
+    "No configured native decompiler; no private implementation recovered.",
+    "Tool declarations and resources do not prove licensed or current behavior.",
+    "No Adobe binaries, icons or code redistributed with this report."
+  ]
+}

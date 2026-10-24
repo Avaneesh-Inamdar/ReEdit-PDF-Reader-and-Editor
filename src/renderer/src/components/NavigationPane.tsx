@@ -1,4 +1,5 @@
 import { useThumbnails } from '../lib/useThumbnails'
+import { destinationPage } from '../lib/pdfDestination'
 import { Icon } from './Icon'
 import { useEffect, useRef } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
@@ -130,17 +131,7 @@ export function NavigationPane({
             let pageNumber = 0
             try {
               if (it.dest) {
-                const dest = Array.isArray(it.dest)
-                  ? it.dest
-                  : await (
-                      pdfDoc as unknown as { getDestination: (d: unknown) => Promise<unknown[]> }
-                    ).getDestination(it.dest)
-                if (dest && dest[0]) {
-                  const pgIdx = await (
-                    pdfDoc as unknown as { getPageIndex: (r: unknown) => Promise<number> }
-                  ).getPageIndex(dest[0])
-                  pageNumber = pgIdx + 1
-                }
+                pageNumber = await destinationPage(pdfDoc, it.dest) || 0
               }
             } catch {}
             const children = it.items ? await convertItems(it.items) : []

@@ -17,7 +17,17 @@ export function TabBar(): React.JSX.Element {
   const handleNewTab = async (): Promise<void> => { await window.api.openFile() }
 
   return (
-    <div className="acrobat-workspace-tabs" role="tablist" aria-label="Documents">
+    <div className="acrobat-workspace-tabs" role="tablist" aria-label="Documents"
+      onKeyDown={(event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key) ||
+          !(event.target instanceof Element) || event.target.getAttribute('role') !== 'tab') return
+        event.preventDefault(); event.stopPropagation()
+        const tabs = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')]
+        const current = tabs.indexOf(event.target as HTMLButtonElement)
+        const index = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1
+          : (current + (event.key === 'ArrowLeft' ? -1 : 1) + tabs.length) % tabs.length
+        tabs[index]?.click(); tabs[index]?.focus()
+      }}>
       <button
         className={`acrobat-tab workspace-home-tab ${activeView === 'home' ? 'active' : ''}`}
         role="tab"

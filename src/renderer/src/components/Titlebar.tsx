@@ -63,6 +63,73 @@ export function Titlebar(): React.JSX.Element {
 
   const closeMenu = useCallback(() => setOpenMenu(null), [setOpenMenu])
   const menuRef = useRef<HTMLDivElement>(null)
+  const focusMenu = useRef(false)
+  const openAndFocus = useCallback((name: string): void => {
+    if (useUIStore.getState().openMenu === name) {
+      menuRef.current?.querySelector<HTMLButtonElement>(name === 'Menu'
+        ? '.workspace-menu-root > .workspace-menu-group > button'
+        : '.workspace-menu-flyout button:not(:disabled)')?.focus()
+    } else {
+      focusMenu.current = true
+      setOpenMenu(name)
+    }
+  }, [setOpenMenu])
+  useEffect(() => {
+    if (!openMenu || !focusMenu.current) return
+    focusMenu.current = false
+    menuRef.current?.querySelector<HTMLButtonElement>(openMenu === 'Menu'
+      ? '.workspace-menu-root > .workspace-menu-group > button'
+      : '.workspace-menu-flyout button:not(:disabled)')?.focus()
+  }, [openMenu])
+
+  const menuKey = (event: React.KeyboardEvent): void => {
+    const target = event.target as HTMLElement
+    const menu = target.closest<HTMLElement>('[role="menu"]')
+    if (!menu) return
+    const flyout = menu.classList.contains('workspace-menu-flyout')
+    if (event.key === 'Tab') {
+      closeMenu()
+      menuRef.current?.querySelector<HTMLButtonElement>('.workspace-menu-trigger')?.focus()
+      return
+    }
+    if (event.key === 'Escape' || (event.key === 'ArrowLeft' && flyout)) {
+      event.preventDefault(); event.stopPropagation()
+      if (flyout) {
+        const parent = menu.parentElement?.querySelector<HTMLButtonElement>(':scope > button')
+        setOpenMenu('Menu'); parent?.focus()
+      } else {
+        closeMenu()
+        menuRef.current?.querySelector<HTMLButtonElement>('.workspace-menu-trigger')?.focus()
+      }
+      return
+    }
+    const keys = ['ArrowDown', 'ArrowUp', 'Home', 'End']
+    if (keys.includes(event.key)) {
+      event.preventDefault(); event.stopPropagation()
+      const buttons = [...menu.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')]
+        .filter(button => !button.disabled && button.closest('[role="menu"]') === menu)
+      const current = buttons.indexOf(target.closest('button')!)
+      const index = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1
+        : (current + (event.key === 'ArrowUp' ? -1 : 1) + buttons.length) % buttons.length
+      if (!flyout) setOpenMenu('Menu')
+      buttons[index]?.focus()
+    }
+    if (event.key === 'ArrowRight' && !flyout) {
+      event.preventDefault(); event.stopPropagation()
+      openAndFocus(target.closest<HTMLButtonElement>('[data-menu-group]')?.dataset.menuGroup || 'Menu')
+    }
+  }
+
+  useEffect(() => {
+    const key = (event: KeyboardEvent): void => {
+      if (event.key !== 'F10' || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey ||
+          useUIStore.getState().activeModal !== 'none' || document.querySelector('[aria-modal="true"], .app-dialog, .file-dialog')) return
+      event.preventDefault()
+      openAndFocus('Menu')
+    }
+    document.addEventListener('keydown', key)
+    return () => document.removeEventListener('keydown', key)
+  }, [openAndFocus])
 
   useEffect(() => {
     if (!openMenu) return
@@ -70,7 +137,7 @@ export function Titlebar(): React.JSX.Element {
       if (!menuRef.current?.contains(event.target as Node)) closeMenu()
     }
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && !event.defaultPrevented) {
         closeMenu()
         menuRef.current?.querySelector<HTMLButtonElement>('.workspace-menu-trigger')?.focus()
       }
@@ -159,12 +226,17 @@ export function Titlebar(): React.JSX.Element {
 
   return (
     <div className="acrobat-workspace-titlebar">
-      <div ref={menuRef} className="workspace-menu-anchor">
+      <div ref={menuRef} className="workspace-menu-anchor" onKeyDown={menuKey}>
         <button
           className={`workspace-menu-trigger ${openMenu ? 'is-open' : ''}`}
           aria-haspopup="menu"
           aria-expanded={!!openMenu}
-          onClick={() => setOpenMenu(openMenu ? null : 'Menu')}
+          onClick={() => { if (openMenu) closeMenu(); else openAndFocus('Menu') }}
+          onKeyDown={(event) => {
+            if (event.key === 'ArrowDown') {
+              event.preventDefault(); openAndFocus('Menu')
+            }
+          }}
         >
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
             <path d="M3 4.5h12M3 9h12M3 13.5h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -178,15 +250,10 @@ export function Titlebar(): React.JSX.Element {
                 <button
                   className={`acrobat-menu-item ${openMenu === name ? 'is-open' : ''}`}
                   role="menuitem"
+                  data-menu-group={name}
                   aria-haspopup="menu"
                   aria-expanded={openMenu === name}
-                  onClick={() => setOpenMenu(name)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'ArrowRight') {
-                      event.preventDefault()
-                      setOpenMenu(name)
-                    }
-                  }}
+                  onClick={() => openAndFocus(name)}
                 >
                   <span>{name}</span>
                   <Icon name="right" size={14} />

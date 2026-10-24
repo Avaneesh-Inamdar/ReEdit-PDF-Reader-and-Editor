@@ -72,7 +72,7 @@ export async function requestInlineText(
     input.setAttribute('aria-label', 'Edit text on page')
     input.value = initial
     input.spellcheck = false
-    input.wrap = 'off'
+    input.wrap = source.textBox ? 'soft' : 'off'
     const top = -source.ascent - 2
     editor.style.transform = `matrix(${a},${b},${c},${d},${e + c * top},${f + d * top})`
     Object.assign(input.style, {
@@ -81,7 +81,17 @@ export async function requestInlineText(
       color: annotation?.color || source.color || '#000000',
       fontWeight: (annotation?.bold ?? source.bold) ? '700' : '400',
       fontStyle: (annotation?.italic ?? source.italic) ? 'italic' : 'normal',
-      lineHeight: `${annotation?.lineHeight || size * 1.2}px`
+      lineHeight: `${annotation?.lineHeight || source.textBox?.lineHeight || size * 1.2}px`,
+      ...(source.textBox
+        ? {
+            whiteSpace: 'pre-wrap',
+            overflowWrap: 'anywhere',
+            resize: 'vertical',
+            boxSizing: 'content-box',
+            minWidth: '0',
+            maxWidth: 'none'
+          }
+        : {})
     })
     const spacing = annotation
       ? replacementSpacing(annotation)
@@ -95,7 +105,7 @@ export async function requestInlineText(
     const grow = (): void => {
       if (measuring)
         measuring.font = `${input.style.fontStyle} ${input.style.fontWeight} ${size}px ${input.style.fontFamily}`
-      input.style.width = `${Math.max(source.width + 8, 80, ...input.value.split('\n').map((line) => (measuring?.measureText(line).width || line.length * size * 0.6) + line.length * spacing.character + (line.match(/ /g)?.length || 0) * spacing.word + 8))}px`
+      input.style.width = `${source.textBox?.width ?? Math.max(source.width + 8, 80, ...input.value.split('\n').map((line) => (measuring?.measureText(line).width || line.length * size * 0.6) + line.length * spacing.character + (line.match(/ /g)?.length || 0) * spacing.word + 8))}px`
       input.style.height = '0px'
       input.style.height = `${Math.max(size * 1.3 + 4, input.scrollHeight + 4)}px`
       if (editor.isConnected) {
@@ -167,8 +177,11 @@ export async function requestInlineText(
     notice.className = 'pdf-inline-notice'
     notice.setAttribute('role', 'status')
     let finished = false,
-      busy: Promise<boolean> | undefined,
-      observer: MutationObserver | undefined
+      busy: Promise<boolean> | undefined
+    // A page can be closed while an editor is open. Release its subscriptions.
+    const observer = new MutationObserver(() => {
+      if (!page.isConnected) cleanup(null)
+    })
     const cleanup = (value: string | null): void => {
       if (finished) return
       finished = true
@@ -182,7 +195,7 @@ export async function requestInlineText(
         initialAnnotations === useAnnotationStore.getState().annotations
       )
         usePdfStore.getState().setDirty(false)
-      observer?.disconnect()
+      observer.disconnect()
       unsubscribe()
       document.removeEventListener('pointerdown', outside, true)
       editor.remove()
@@ -254,10 +267,6 @@ export async function requestInlineText(
     if (options.selectedRange)
       input.setSelectionRange(options.selectedRange.start, options.selectedRange.end)
     void refreshPreview()
-    // A page can be closed while an editor is open. Release its subscriptions.
-    observer = new MutationObserver(() => {
-      if (!page.isConnected) cleanup(null)
-    })
     observer.observe(document.body, { childList: true, subtree: true })
   })
 }

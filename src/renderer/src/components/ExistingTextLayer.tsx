@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useAnnotationStore } from '../stores/useAnnotationStore'
 import { useUIStore } from '../stores/useUIStore'
 import { usePdfStore } from '../stores/usePdfStore'
@@ -8,9 +8,10 @@ import { encodedPreview } from '../lib/pdfTextStyle'
 import { textMatrix, type PdfTextRun } from '../lib/pdfText'
 import type { Annotation } from '../stores/useAnnotationStore'
 import { registerPreviewFont } from '../lib/fontFaces'
-import {trackInlineMutation} from '../lib/inlineText'
+import { trackInlineMutation } from '../lib/inlineText'
 import { replacementSpacing } from '../lib/textSpacing'
-import { connectedTextLine, lineText, lineSource } from '../lib/textLine'
+import { connectedTextBox, textBoxText, textBoxSource } from '../lib/textLine'
+import { wrapTextBox } from '../lib/textBoxLayout'
 
 function ReplacementText({
   annotation,
@@ -37,13 +38,34 @@ function ReplacementText({
     return () => {
       cancelled = true
     }
-  }, [source.fontData, annotation.fontFamily, annotation.fontData])
+  }, [source.fontData, annotation])
   const size = annotation.fontSize || source.size
   const spacing = replacementSpacing(annotation)
+  const [lines, setLines] = useState((annotation.text || '').split('\n'))
   useLayoutEffect(() => {
     let cancelled = false
     const measure = (): void => {
       if (!cancelled && text.current) {
+        const canvas = document.createElement('canvas').getContext('2d')
+        if (canvas) {
+          const style = getComputedStyle(text.current)
+          canvas.font = `${style.fontStyle} ${style.fontWeight} ${size}px ${style.fontFamily}`
+          const next = wrapTextBox(annotation.text || '', source.textBox?.width, (value) => {
+            const visible = originalFontSelected(annotation)
+              ? encodedPreview(value, source.fontGlyphs)
+              : value
+            return (
+              canvas.measureText(visible).width +
+              Math.max(0, Array.from(visible).length - 1) * spacing.character +
+              (value.match(/ /g)?.length || 0) * (spacing.word + previewSpaceAdjustment(annotation))
+            )
+          })
+          setLines((previous) =>
+            previous.length === next.length && previous.every((line, index) => line === next[index])
+              ? previous
+              : next
+          )
+        }
         const box = text.current.getBBox()
         setBounds({ x: box.x, y: box.y, width: box.width, height: box.height })
       }
@@ -61,18 +83,28 @@ function ReplacementText({
     annotation.fontFamily,
     annotation.bold,
     annotation.italic,
-    restoredFont
+    restoredFont,
+    annotation.previewFont,
+    annotation,
+    source.fontGlyphs,
+    spacing.character,
+    spacing.word,
+    source.textBox?.width,
+    lines
   ])
   const select = (): void => useAnnotationStore.getState().setSelected(annotation.id)
-  const edit = (): Promise<void> => trackInlineMutation((async()=>{
-    select()
-    const data = usePdfStore.getState().data
-    const replacement = await requestPdfText(source, annotation.text || '', annotation)
-    if (replacement !== null && data === usePdfStore.getState().data)
-      useAnnotationStore
-        .getState()
-        .updateAnnotation(annotation.id, { text: replacement.text, ...replacement.style })
-  })())
+  const edit = (): Promise<void> =>
+    trackInlineMutation(
+      (async () => {
+        select()
+        const data = usePdfStore.getState().data
+        const replacement = await requestPdfText(source, annotation.text || '', annotation)
+        if (replacement !== null && data === usePdfStore.getState().data)
+          useAnnotationStore
+            .getState()
+            .updateAnnotation(annotation.id, { text: replacement.text, ...replacement.style })
+      })()
+    )
   return (
     <g
       data-edited-text={annotation.id}
@@ -100,9 +132,7 @@ function ReplacementText({
         data-replacement-text="true"
         fontSize={size}
         letterSpacing={spacing.character}
-        wordSpacing={
-          spacing.word + previewSpaceAdjustment(annotation)
-        }
+        wordSpacing={spacing.word + previewSpaceAdjustment(annotation)}
         fill={annotation.color}
         fontFamily={
           originalFontSelected(annotation) && restoredFont ? restoredFont : previewFont(annotation)
@@ -131,8 +161,12 @@ function ReplacementText({
           if (editing) void edit()
         }}
       >
-        {(annotation.text || '').split('\n').map((line, index) => (
-          <tspan key={index} x={0} y={index * (annotation.lineHeight || size * 1.2)}>
+        {lines.map((line, index) => (
+          <tspan
+            key={index}
+            x={0}
+            y={index * (annotation.lineHeight || source.textBox?.lineHeight || size * 1.2)}
+          >
             {originalFontSelected(annotation)
               ? encodedPreview(line || ' ', source.fontGlyphs)
               : line || ' '}
@@ -160,51 +194,72 @@ export function ExistingTextLayer({
     useAnnotationStore()
   const { rightPane, pointerMode, spaceHeld } = useUIStore()
   const editing = rightPane === 'edit' && pointerMode !== 'hand' && !spaceHeld
-  const edits = annotations.filter((a) => a.page === pageNumber && a.sourceText)
+  const edits = useMemo(
+    () => annotations.filter((a) => a.page === pageNumber && a.sourceText),
+    [annotations, pageNumber]
+  )
 
-  const edit = (run: PdfTextRun): Promise<void> => trackInlineMutation((async()=>{
-    if (!editing) return
-    const data = usePdfStore.getState().data
-    const existing = edits.find(
-      (a) =>
-        a.sourceText?.key === run.key ||
-        a.maskTexts?.some((mask) => mask.key === run.key || mask.key.startsWith(run.key + ':'))
-    )
-    const group = connectedTextLine(run,runs)
-    const original = lineText(group)
-    const merged = lineSource(group)
-    const replacement = await requestPdfText(merged, existing?.text ?? original, existing)
-    if (replacement === null || usePdfStore.getState().data !== data) return
-    if (existing) {
-      updateAnnotation(existing.id, { text: replacement.text, ...replacement.style })
-      setSelected(existing.id)
-      return
-    }
-    if (replacement.text === original && !Object.keys(replacement.style).length) return
-    const id = `pdf-text-${crypto.randomUUID()}`
-    addAnnotation({
-      id,
-      page: pageNumber,
-      type: 'text',
-      x: 0,
-      y: 0,
-      w: 0,
-      h: 0,
-      text: replacement.text,
-      fontSize: group[0].size,
-      fontFamily: group[0].fontFamily,
-      color: run.color || '#000000',
-      bold: run.bold,
-      italic: run.italic,
-      opacity: 1,
-      strokeWidth: 0,
-      sourceText: merged,
-      maskTexts: group,
+  const edit = useCallback(
+    (run: PdfTextRun): Promise<void> =>
+      trackInlineMutation(
+        (async () => {
+          if (!editing) return
+          const data = usePdfStore.getState().data
+          const existing = edits.find(
+            (a) =>
+              a.sourceText?.key === run.key ||
+              a.maskTexts?.some(
+                (mask) => mask.key === run.key || mask.key.startsWith(run.key + ':')
+              )
+          )
+          const available = runs.filter(
+            (item) =>
+              !edits.some((annotation) =>
+                annotation.maskTexts?.some(
+                  (mask) => mask.key === item.key || mask.key.startsWith(item.key + ':')
+                )
+              )
+          )
+          const box = connectedTextBox(run, available)
+          const group = box.flat()
+          const original = textBoxText(box)
+          const merged = existing?.sourceText || textBoxSource(box)
+          const replacement = await requestPdfText(merged, existing?.text ?? original, existing)
+          if (replacement === null || usePdfStore.getState().data !== data) return
+          if (existing) {
+            updateAnnotation(existing.id, { text: replacement.text, ...replacement.style })
+            setSelected(existing.id)
+            return
+          }
+          if (replacement.text === original && !Object.keys(replacement.style).length) return
+          const id = `pdf-text-${crypto.randomUUID()}`
+          addAnnotation({
+            id,
+            page: pageNumber,
+            type: 'text',
+            x: 0,
+            y: 0,
+            w: 0,
+            h: 0,
+            text: replacement.text,
+            fontSize: group[0].size,
+            fontFamily: group[0].fontFamily,
+            color: run.color || '#000000',
+            bold: run.bold,
+            italic: run.italic,
+            opacity: 1,
+            strokeWidth: 0,
+            sourceText: merged,
+            maskTexts: group,
+            lineHeight: merged.textBox?.lineHeight,
 
-      ...replacement.style
-    })
-    setSelected(id)
-  })())
+            ...replacement.style
+          })
+          setSelected(id)
+        })()
+      ),
+    [editing, edits, runs, pageNumber, updateAnnotation, setSelected, addAnnotation]
+  )
 
   useEffect(() => {
     const handle = (event: Event): void => {
@@ -213,7 +268,7 @@ export function ExistingTextLayer({
     }
     window.addEventListener('pdf:editRun', handle)
     return () => window.removeEventListener('pdf:editRun', handle)
-  }, [editing, edits, pageNumber])
+  }, [pageNumber, edit])
 
   return (
     <svg

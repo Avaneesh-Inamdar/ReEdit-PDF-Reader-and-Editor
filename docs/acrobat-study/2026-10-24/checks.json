@@ -1,0 +1,120 @@
+{
+  "reviewedOn": "2026-10-24",
+  "platform": "Windows x64 / WebView2, local development build",
+  "baselineCommit": "b60d2ec",
+  "releaseState": "Unreleased working-tree changes after v2.0.0",
+  "frontend": {
+    "passed": 168,
+    "skipped": 1,
+    "reason": "Optional LibreOffice test"
+  },
+  "rust": {
+    "desktopPassed": 11,
+    "nativePassed": 23
+  },
+  "webview": [
+    {
+      "name": "acrobat-parity",
+      "checks": {
+        "booklet_preview": true,
+        "escape_returns_parent": true,
+        "escape_returns_trigger": true,
+        "first_page": true,
+        "focus_cycles_panes": true,
+        "goto_page_applies": true,
+        "goto_page_shortcut": true,
+        "invalid_layout_blocked": true,
+        "last_page": true,
+        "menu_keyboard_opens": true,
+        "menu_next_group": true,
+        "menu_skips_disabled": true,
+        "multiple_preview": true,
+        "page_arrow": true,
+        "poster_controls": true,
+        "print_sessions_released": true,
+        "space_activates_button": true
+      },
+      "errors": []
+    },
+    {
+      "name": "selection",
+      "checks": {
+        "all_pages_once_in_order": true,
+        "document_only": true,
+        "edit_menu_select_all": true,
+        "editor_owns_select_all": true,
+        "escape_clears_selection": true,
+        "find_owns_select_all": true,
+        "home_does_not_select_chrome": true,
+        "modal_blocks_document_save": true,
+        "modal_does_not_select_document": true,
+        "offscreen_pages_copied": true,
+        "replacements_copied_once": true,
+        "single_page_scope": true
+      },
+      "errors": []
+    },
+    {
+      "name": "interactions",
+      "checks": {
+        "convert_menu_opaque": true,
+        "double_click_word": true,
+        "drag_ten_lines": true,
+        "edit_outline_cleared": true,
+        "header_brand_removed": true,
+        "inline_edit": true,
+        "inline_reedit": true,
+        "landscape_preview": true,
+        "native_page_scale_translation": true,
+        "no_installer_run": true,
+        "page_dimensions_label": true,
+        "paper_preview": true,
+        "print_sessions_released": true,
+        "printer_connected": true,
+        "printer_disconnected_pdf": true,
+        "printer_reconnected": true,
+        "reopened_edited_text": true,
+        "repeated_open_close": true,
+        "save_theme_matches": true,
+        "saved_pdf": true,
+        "scale_preview": true,
+        "signed_update_download": true,
+        "tampered_update_rejected": true,
+        "triple_click_line": true,
+        "trusted_mouse_input": true,
+        "trusted_wheel_zoom": true,
+        "trusted_wheel_zoom_out": true,
+        "workspace_wheel_zoom": true
+      },
+      "errors": []
+    },
+    {
+      "name": "editing-regression",
+      "checks": {
+        "convert_surface": true,
+        "font_faces_bounded": true,
+        "font_fallback_visible": true,
+        "no_font_error": true,
+        "removal_controls": true,
+        "replacement_keeps_following_words": true,
+        "selection_keeps_sentence": true,
+        "tool_button_labels_fit": true
+      },
+      "errors": []
+    },
+    {
+      "name": "layout-stability",
+      "checks": {
+        "continuous_scroll_keeps_zoom": true,
+        "fit_width_has_no_horizontal_overflow": true,
+        "landscape_geometry_stable": true
+      },
+      "errors": []
+    }
+  ],
+  "limitations": [
+    "Mocked printer inventory; no physical printer output.",
+    "No new Linux package/desktop or installer validation.",
+    "Bounded lifecycle/font checks do not prove absence of all memory leaks."
+  ]
+}

@@ -64,6 +64,12 @@ The installer registers PDF **Open With** support and a separate document icon. 
 
 This project is independent of Adobe. It does not claim complete Acrobat Premium compatibility.
 
+The [Acrobat workflow comparison](docs/ACROBAT-PARITY.md) records the remaining
+feature gaps, the official-package evidence and local checks. Current unreleased
+source changes add conservative paragraph wrapping, Size/Multiple/Poster/Booklet
+print layouts and improved menu, pane and page keyboard navigation. These changes
+are not included in the published v2.0.0 packages.
+
 ## Getting started
 
 ### Changes in 2.0.0

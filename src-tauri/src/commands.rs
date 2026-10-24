@@ -537,12 +537,21 @@ pub struct LegacyPrintOptions {
     landscape: bool,
     scale: String,
     pages: Vec<usize>,
+    collate: Option<bool>,
+    custom_scale: Option<f32>,
+    handling: Option<String>,
+    columns: Option<usize>,
+    rows: Option<usize>,
+    tile_scale: Option<f32>,
+    overlap: Option<f32>,
+    auto_rotate: Option<bool>,
 }
 fn print_options(o: &LegacyPrintOptions) -> re_edit_pdf_native::printing::PrintOptions {
-    use re_edit_pdf_native::printing::{Duplex, PrintOptions, Scale};
+    use re_edit_pdf_native::printing::{Duplex, Handling, PrintOptions, Scale};
     PrintOptions {
         printer: o.device_name.clone(),
         copies: o.copies,
+        collate: o.collate.unwrap_or(true),
         color: o.color,
         duplex: match o.duplex.as_str() {
             "longEdge" => Duplex::LongEdge,
@@ -555,11 +564,25 @@ fn print_options(o: &LegacyPrintOptions) -> re_edit_pdf_native::printing::PrintO
             [595.276, 841.89]
         },
         landscape: o.landscape,
-        scale: if o.scale == "actual" {
-            Scale::Actual
-        } else {
-            Scale::Fit
+        scale: match o.scale.as_str() {
+            "actual" => Scale::Actual,
+            "shrink" => Scale::Shrink,
+            "custom" => Scale::Custom(o.custom_scale.unwrap_or(100.)),
+            _ => Scale::Fit,
         },
+        handling: match o.handling.as_deref() {
+            Some("multiple") => Handling::Multiple {
+                columns: o.columns.unwrap_or(2),
+                rows: o.rows.unwrap_or(2),
+            },
+            Some("booklet") => Handling::Booklet,
+            Some("poster") => Handling::Poster {
+                percent: o.tile_scale.unwrap_or(100.),
+                overlap: o.overlap.unwrap_or(0.),
+            },
+            _ => Handling::Size,
+        },
+        auto_rotate: o.auto_rotate.unwrap_or(true),
         original_paper: o.paper == "original",
         range: o
             .pages
@@ -568,6 +591,113 @@ fn print_options(o: &LegacyPrintOptions) -> re_edit_pdf_native::printing::PrintO
             .collect::<Vec<_>>()
             .join(","),
         ..Default::default()
+    }
+}
+
+#[cfg(test)]
+mod print_request_tests {
+    use super::*;
+    use re_edit_pdf_native::printing::plan;
+    use serde_json::{Value, json};
+
+    fn request(extra: Value) -> LegacyPrintOptions {
+        let mut value = json!({
+            "deviceName": "Test printer", "copies": 2, "color": true,
+            "duplex": "simplex", "paper": "Letter", "landscape": false,
+            "scale": "fit", "pages": [3, 1, 2]
+        });
+        value
+            .as_object_mut()
+            .unwrap()
+            .extend(extra.as_object().unwrap().clone());
+        serde_json::from_value(value).unwrap()
+    }
+
+    #[test]
+    fn older_print_requests_keep_defaults_and_selected_order() {
+        let options = print_options(&request(json!({})));
+        assert!(options.collate && options.auto_rotate);
+        let sheets = plan(&options, &[[100., 200.]; 3]).unwrap();
+        assert_eq!(sheets.len(), 3);
+        assert_eq!(
+            sheets
+                .iter()
+                .map(|s| s.placements[0].page)
+                .collect::<Vec<_>>(),
+            vec![2, 0, 1]
+        );
+        assert_eq!(sheets[0].size, [612., 792.]);
+    }
+
+    #[test]
+    fn renderer_scale_options_change_the_printed_dimensions() {
+        for (scale, percent, expected_width) in [
+            ("actual", 75., 100.),
+            ("shrink", 75., 100.),
+            ("custom", 75., 75.),
+        ] {
+            let options = print_options(&request(json!({
+                "scale": scale, "customScale": percent, "autoRotate": false
+            })));
+            let sheets = plan(&options, &[[100., 200.]; 3]).unwrap();
+            assert_eq!(sheets[0].placements[0].target.w, expected_width);
+        }
+        let options = print_options(&request(json!({"scale": "shrink", "autoRotate": false})));
+        let sheets = plan(&options, &[[1000., 2000.]; 3]).unwrap();
+        assert!(sheets[0].placements[0].target.w < 1000.);
+    }
+
+    #[test]
+    fn renderer_handling_options_produce_imposed_sheets() {
+        let multiple = print_options(&request(json!({
+            "handling": "multiple", "columns": 2, "rows": 1,
+            "collate": false, "autoRotate": false
+        })));
+        assert!(!multiple.collate && !multiple.auto_rotate);
+        let sheets = plan(&multiple, &[[612., 792.]; 3]).unwrap();
+        assert_eq!(sheets.len(), 2);
+        assert_eq!(
+            sheets[0]
+                .placements
+                .iter()
+                .map(|p| p.page)
+                .collect::<Vec<_>>(),
+            vec![2, 0]
+        );
+        assert_eq!(sheets[1].placements[0].page, 1);
+
+        let booklet = print_options(&request(json!({
+            "handling": "booklet", "landscape": true, "duplex": "shortEdge"
+        })));
+        assert_eq!(
+            booklet.duplex,
+            re_edit_pdf_native::printing::Duplex::ShortEdge
+        );
+        let sheets = plan(&booklet, &[[612., 792.]; 3]).unwrap();
+        assert_eq!(sheets.len(), 2);
+        assert_eq!(sheets[0].size, [792., 612.]);
+        assert_eq!(sheets[0].placements[0].page, 2);
+        assert_eq!(sheets[0].placements[0].clip.x, 396.); // Blank outside cover on the left.
+
+        let poster = print_options(&request(json!({
+            "handling": "poster", "tileScale": 200., "overlap": 12., "pages": [1]
+        })));
+        let sheets = plan(&poster, &[[612., 792.]]).unwrap();
+        assert_eq!(sheets.len(), 9);
+        assert_eq!(sheets[0].placements[0].target.w, 1224.);
+        assert_eq!(sheets[1].placements[0].target.x, 18. - (576. - 12.));
+    }
+
+    #[test]
+    fn invalid_renderer_layout_parameters_are_rejected_before_output() {
+        for extra in [
+            json!({"scale": "custom", "customScale": 0}),
+            json!({"handling": "multiple", "columns": 0, "rows": 1}),
+            json!({"handling": "poster", "tileScale": 0}),
+            json!({"handling": "poster", "tileScale": 100, "overlap": 999}),
+        ] {
+            assert!(plan(&print_options(&request(extra)), &[[612., 792.]; 3]).is_err());
+        }
     }
 }
 #[tauri::command]

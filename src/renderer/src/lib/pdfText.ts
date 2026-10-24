@@ -23,6 +23,8 @@ export interface PdfTextRun {
   vertical?: boolean
   pdfAnnotationId?: string
   invisible?: boolean
+  // Local text coordinates: only set for confidently detected paragraph boxes.
+  textBox?: { width: number; lineHeight: number }
 }
 
 export function textRun(

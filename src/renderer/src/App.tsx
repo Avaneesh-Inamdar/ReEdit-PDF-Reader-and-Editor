@@ -2,6 +2,7 @@ import { editSelection } from './lib/editSelection'
 import { version as appVersion } from '../../../package.json'
 import { getCurrentTextSelection } from './lib/textSelection'
 import { isTextInput } from './lib/pdfSelectAll'
+import { cycleWorkspaceFocus, documentNavigation, isDocumentSurface } from './lib/documentKeyboard'
 import { placeImage } from './lib/imagePlacement'
 import { openTool } from './lib/toolActions'
 import { CombineFilesModal } from './components/CombineFilesModal'
@@ -266,9 +267,53 @@ function App(): React.JSX.Element {
         if (e.key === 'Escape' && activeModal !== 'none') setActiveModal('none')
         return
       }
+      if (useUIStore.getState().openMenu) return
+      if (e.key === 'F6' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault()
+        cycleWorkspaceFocus(e.shiftKey)
+        return
+      }
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.shiftKey &&
+        e.key.toLowerCase() === 'n' &&
+        usePdfStore.getState().data
+      ) {
+        e.preventDefault()
+        const input = document.querySelector<HTMLInputElement>('.document-rail-page')
+        input?.focus()
+        input?.select()
+        return
+      }
+      const documentSurface = !isInput && isDocumentSurface(active)
+      if (documentSurface && useUIStore.getState().activeView === 'document') {
+        const state = usePdfStore.getState()
+        const navigation = documentNavigation(
+          e,
+          state.currentPage,
+          state.numPages,
+          useUIStore.getState().displayMode === 'single'
+        )
+        if (navigation) {
+          e.preventDefault()
+          if (navigation.type === 'page') {
+            state.setCurrentPage(navigation.page)
+            requestAnimationFrame(() =>
+              document.getElementById(`page-${navigation.page}`)?.scrollIntoView({ block: 'start' })
+            )
+          } else {
+            const viewer = document.querySelector('[data-pdf-viewer]')
+            viewer?.scrollBy({
+              top: navigation.direction * (viewer.clientHeight - 32),
+              behavior: 'auto'
+            })
+          }
+          return
+        }
+      }
 
       // Spacebar hold for hand tool
-      if (e.key === ' ' && !isInput && !e.repeat) {
+      if (e.key === ' ' && documentSurface && !e.repeat) {
         e.preventDefault()
         setSpaceHeld(true)
       }

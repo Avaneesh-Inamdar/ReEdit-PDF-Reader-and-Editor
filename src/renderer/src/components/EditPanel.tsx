@@ -515,9 +515,9 @@ export function EditPanel({pdfDoc}:{pdfDoc?:PDFDocumentProxy|null}={}): React.JS
 
         <p className="mt-4 text-xs" style={{ color: 'var(--acrobat-pane-text)' }}>
           Click existing text on the page to edit it. Apply your change, then save with Ctrl+S.
-          Scanned pages need OCR first. Edits retain the document font when it is embedded. If a
-          subset lacks a new character, choose a bundled font or import the full font. Paragraph
-          reflow is not supported.
+          Scanned pages need OCR first. Embedded fonts are retained when possible, with matching
+          installed or bundled alternatives when needed. Uniform paragraphs wrap inside their
+          detected text box; complex formatting uses line edits.
         </p>
 
         <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mt-6 mb-3">

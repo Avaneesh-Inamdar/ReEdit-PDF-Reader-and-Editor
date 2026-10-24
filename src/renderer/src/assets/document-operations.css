@@ -98,6 +98,51 @@
 .operation-check input {
   accent-color: var(--acrobat-accent);
 }
+.print-settings section {
+  padding: 12px 0;
+}
+.print-settings h3 {
+  margin-bottom: 8px;
+}
+.print-settings label {
+  margin: 7px 0;
+}
+.print-handling {
+  gap: 0;
+  flex-wrap: nowrap;
+  margin-bottom: 12px;
+  border: 1px solid var(--acrobat-input-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.print-settings .print-handling label {
+  position: relative;
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+  min-height: 32px;
+  margin: 0;
+  padding: 6px 4px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.print-handling label + label {
+  border-left: 1px solid var(--acrobat-input-border);
+}
+.print-handling input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.print-handling label:has(input:checked) {
+  background: var(--acrobat-accent);
+  color: white;
+}
+.print-handling label:has(input:focus-visible) {
+  outline: 2px solid var(--acrobat-text);
+  outline-offset: -3px;
+}
 .operation-primary,
 .operation-secondary {
   display: inline-flex;
