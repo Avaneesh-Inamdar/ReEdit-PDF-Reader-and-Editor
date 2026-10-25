@@ -1,5 +1,6 @@
 $ErrorActionPreference = "Stop"
 if ($env:CI -ne "true") { throw "Run installer validation on the isolated CI runner." }
+New-Item -ItemType Directory -Force 'release/native-validation/tauri' | Out-Null
 $env:WEBVIEW2_USER_DATA_FOLDER=Join-Path $env:TEMP ('ReEditPDF-Installer-WebView-'+[guid]::NewGuid().ToString('N'))
 $version = (Get-Content -Raw -LiteralPath "package.json" | ConvertFrom-Json).version
 $installer = Get-Item -LiteralPath "release/native-packages/Re-Edit-PDF-$version-windows-x64-setup.exe"
