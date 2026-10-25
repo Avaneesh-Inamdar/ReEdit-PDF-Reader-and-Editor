@@ -30,7 +30,9 @@
   },
   "releaseWorkflowValidation": {
     "stableReleaseRun": 40179199235,
-    "conclusion": "success"
+    "conclusion": "success",
+    "prereleasePublicationRun": 40179527785,
+    "prereleaseConclusion": "success; signed stable feed kept at 2.0.0 without downloading absent prerelease metadata"
   },
   "signing": "Existing updater key unavailable in this environment. No replacement identity or unsigned automatic update. Windows publisher signing is not configured.",
   "acrobatParity": "Not achieved. See AUDIT.md and ../../ACROBAT-PARITY.md.",
@@ -67,5 +69,14 @@
       "bytes": 14942836,
       "sha256": "8be9156d146f438da590656dbf57b9e891fcd10f847e4c4fa0ef214c339ec0ab"
     }
+  },
+  "publication": {
+    "url": "https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/tag/v2.1.0",
+    "tagCommit": "ffa112d3ec105bfd163ab38eeb66dae76cb244c3",
+    "draft": false,
+    "prerelease": true,
+    "assets": 9,
+    "githubAssetSizesAndSha256Matched": true,
+    "latestStableRelease": "v2.0.0"
   }
 }

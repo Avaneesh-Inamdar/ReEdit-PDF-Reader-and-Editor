@@ -1484,6 +1484,10 @@
     "stableFeedWorkflow": {
       "run": 40179199235,
       "conclusion": "success"
+    },
+    "prereleaseFeedWorkflow": {
+      "run": 40179527785,
+      "conclusion": "success; ineligible prerelease skipped, stable feed unchanged"
     }
   }
 }

@@ -62,6 +62,14 @@ rendering, not side-by-side Acrobat visual equivalence.
 
 ## Release assets and updates
 
+The [2.1.0 prerelease](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/tag/v2.1.0)
+is public at tag commit `ffa112d3ec105bfd163ab38eeb66dae76cb244c3`. All nine
+uploaded asset sizes and GitHub SHA-256 digests matched the local files before
+publication. The publication-triggered feed check
+[40179527785](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/actions/runs/40179527785)
+passed, excluding the prerelease before fetching update metadata. GitHub's latest
+stable release and the signed feed both remain on 2.0.0.
+
 Published downloads include Windows setup EXE/MSI/portable ZIP, Linux
 DEB/RPM/AppImage/portable tar.gz, corresponding native MuPDF source and
 `SHA256SUMS`. The Linux tar.gz contains an extracted AppDir with its bundled
