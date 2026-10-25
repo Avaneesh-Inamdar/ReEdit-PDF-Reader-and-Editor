@@ -1,19 +1,34 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- Node ESM JavaScript cannot contain TypeScript return annotations. */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import semver from 'semver'
 
-export function validatedFeed(release, manifest, current = null) {
+// Check channel eligibility before fetching signatures. A manual prerelease
+// must not need update metadata when the stable channel cannot advertise it.
+export function releaseCanUpdate(release, current = null) {
   if (release.draft) throw Error('Do not advertise a draft release')
+  const version = release.tag_name?.replace(/^v/, '')
+  if (!semver.valid(version)) throw Error('Invalid release version')
+  if (semver.major(version) < 2) return false
+  if (current && semver.valid(current.version) && semver.lt(version, current.version)) return false
+  // Once promoted, keep this channel stable. The original feed URL is retained
+  // for alpha.2 clients, but later experimental tags must not replace it.
+  if (
+    current &&
+    semver.valid(current.version) &&
+    !semver.prerelease(current.version) &&
+    (release.prerelease || semver.prerelease(version))
+  )
+    return false
+  return true
+}
+
+export function validatedFeed(release, manifest, current = null) {
   const version = release.tag_name?.replace(/^v/, '')
   if (!semver.valid(version) || version !== manifest.version)
     throw Error('Release version mismatch')
-  if (semver.major(version) < 2) return null
-  if (current && semver.valid(current.version) && semver.lt(version, current.version)) return null
-  // Once promoted, keep this channel stable. The original feed URL is retained
-  // for alpha.2 clients, but later experimental tags must not replace it.
-  if (current && semver.valid(current.version) && !semver.prerelease(current.version) &&
-      (release.prerelease || semver.prerelease(version))) return null
+  if (!releaseCanUpdate(release, current)) return null
   const assets = new Map(release.assets.map((asset) => [asset.browser_download_url, asset.name]))
   const verify = (entry) => {
     if (!entry || typeof entry.url !== 'string' || !assets.has(entry.url))

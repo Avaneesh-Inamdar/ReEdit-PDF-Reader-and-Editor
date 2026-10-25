@@ -33,15 +33,28 @@ jobs:
           cache: npm
       - if: steps.channel.outputs.native == 'true'
         run: npm ci --ignore-scripts
-      - name: Validate published update metadata
+      - name: Check release eligibility before downloading update metadata
+        id: eligibility
         if: steps.channel.outputs.native == 'true'
         run: |
           mkdir -p release/update-feed
           gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > release/update-feed/release.json
+          node --input-type=module <<'JS'
+          import { readFileSync, appendFileSync } from 'node:fs'
+          import { releaseCanUpdate } from './scripts/prepare-update-feed.mjs'
+          const release = JSON.parse(readFileSync('release/update-feed/release.json', 'utf8'))
+          const current = JSON.parse(readFileSync('updates/native-preview.json', 'utf8'))
+          const eligible = releaseCanUpdate(release, current)
+          appendFileSync(process.env.GITHUB_OUTPUT, `eligible=${eligible}\n`)
+          if (!eligible) console.log('Kept the existing update channel; release is not eligible.')
+          JS
+      - name: Validate published update metadata
+        if: steps.eligibility.outputs.eligible == 'true'
+        run: |
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern latest.json --dir release/update-feed
           node scripts/prepare-update-feed.mjs release/update-feed/release.json release/update-feed/latest.json updates/native-preview.json
       - name: Commit channel metadata
-        if: steps.channel.outputs.native == 'true'
+        if: steps.eligibility.outputs.eligible == 'true'
         run: |
           if git ls-files --error-unmatch updates/native-preview.json >/dev/null 2>&1 && git diff --quiet -- updates/native-preview.json; then exit 0; fi
           git config user.name 'github-actions[bot]'
