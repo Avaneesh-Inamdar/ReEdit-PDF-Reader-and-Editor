@@ -21,28 +21,30 @@
 
 ## Download
 
-Download [Re-Edit PDF v2.1.0](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest) for Windows or Linux. It uses a Rust desktop backend and the existing React workspace in the system webview, without the Electron runtime.
+Download [Re-Edit PDF v2.1.0 prerelease](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/tag/v2.1.0) for Windows or Linux, or choose the [signed stable v2.0.0 release](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest). The native app uses a Rust desktop backend and the existing React workspace in the system webview, without the Electron runtime.
 
-Version 2.1.0 continues the stable Rust/Tauri series. It checks for updates shortly after launch and shows a notification when a newer version is available. **Help → Check for Updates** offers verified download and installation when supported. Native 2.0.0 and alpha.2 users receive this release through the same update feed; earlier previews and Electron users should install it manually.
+Version 2.1.0 is currently a **manual-download prerelease**. Its existing updater signing key was unavailable in the release audit environment, so it has no signed update manifest and is not offered through automatic updates. The signed stable feed remains on 2.0.0. Install 2.1.0 manually if you want to try its new editing and printing workflows. See the [current Acrobat Pro audit](docs/releases/v2.1.0/AUDIT.md) and [validation report](docs/releases/v2.1.0/VALIDATION.md).
 
 The download badge counts release-asset downloads across all versions. Repeat downloads and supporting files count separately; it is not a count of unique users.
 
 | Platform | Package | Installation |
 | --- | --- | --- |
 | Windows x64 | Setup EXE | Run the installer; Finish can launch the app. |
+| Windows x64 | MSI / portable ZIP | Install the MSI, or extract the ZIP and run its EXE with the included DLLs. Portable use requires WebView2. |
 | Debian / Ubuntu x64 | DEB | `sudo apt install ./Re-Edit-PDF-*.deb` |
 | Fedora / RPM x64 | RPM | `sudo dnf install ./Re-Edit-PDF-*.rpm` |
 | Linux x64 | AppImage | Make executable, then run. Use `--appimage-extract-and-run` if FUSE is unavailable. |
+| Linux x64 | Portable tar.gz | Extract and run `squashfs-root/AppRun`; a compatible glibc desktop is required. |
 
 The setup EXE installs WebView2 when needed. Windows publisher signing is not configured; Windows may show a publisher warning. Updater signatures authenticate downloads; they are separate from Windows publisher signing.
 
-Release assets contain these four app packages, `SHA256SUMS`, the updater manifest (`latest.json`, with embedded package signatures), and the corresponding native MuPDF source archive. Build logs, screenshots and test reports stay in Actions or [release documentation](docs/releases/v2.0.0/VALIDATION.md), rather than appearing as extra downloads.
+The 2.1.0 prerelease contains the setup EXE, MSI, Windows ZIP, DEB, RPM, AppImage, Linux tar.gz, `SHA256SUMS`, and corresponding native MuPDF source archive. Checksums detect file changes; they are not publisher signatures. Build logs, screenshots and test reports stay in Actions or [release documentation](docs/releases/v2.1.0/VALIDATION.md).
 
-The manifest's `downloads` entries include the hashes and version-bound signatures for all four packages and the MuPDF source archive. The app uses its configured public key to verify supported automatic updates.
+Signed stable releases also contain `latest.json`. That manifest's `downloads` entries include hashes and version-bound signatures for their packages and MuPDF source archive. The app uses its configured public key to verify supported automatic updates. The 2.1.0 prerelease does not include this manifest.
 
 Native builds check the [native update feed](updates/native-preview.json) without uploading PDF content. Its original filename is retained so alpha.2 installations can upgrade. Updates require confirmation before downloading and installing; unsaved documents must be resolved first. AppImage builds support in-app updating. DEB/RPM users should download and install the matching package through their package manager.
 
-The **Publish native update feed** workflow refreshes that feed when a native GitHub release is published or edited. It checks release versions and asset URLs, requires matching signature-version metadata, and keeps older release edits from replacing a newer feed. After stable promotion, experimental releases cannot replace the stable feed. The app verifies the downloaded package's cryptographic signature before installation.
+The **Publish native update feed** workflow refreshes that feed when an eligible native GitHub release is published or edited. It checks release versions and asset URLs, requires matching signature-version metadata, and keeps older release edits from replacing a newer feed. After stable promotion, experimental releases cannot replace the stable feed; they are excluded before fetching update metadata. The app verifies the downloaded package's cryptographic signature before installation.
 
 Linux native packages require a glibc desktop environment and GTK/WebKitGTK support. Alpine/musl, ARM64 and macOS are not validated.
 

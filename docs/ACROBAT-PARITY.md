@@ -5,6 +5,11 @@ of complete compatibility or a pixel-identical reproduction. It covers the
 2.1.0 changes following v2.0.0. Package validation and publication status are
 recorded in [the 2.1.0 release report](releases/v2.1.0/VALIDATION.md).
 
+The [release audit](releases/v2.1.0/AUDIT.md) rechecks the current
+desktop Acrobat Pro target, concrete source differences, package provenance
+and completed CI reports. Its verdict is that identical UI and behavior have
+**not** been achieved. Current package availability does not change that verdict.
+
 ## Additional 2.1.0 work
 
 The October 25 implementation uses Adobe's public documentation as its workflow

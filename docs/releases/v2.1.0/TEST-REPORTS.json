@@ -1,0 +1,1489 @@
+{
+  "windows": {
+    "native-validation/regressions/acrobat-parity/result.json": {
+      "checks": {
+        "booklet_binding_preview": true,
+        "booklet_both_sides_restored": true,
+        "booklet_manual_pass_preview": true,
+        "booklet_manual_pass_simplex": true,
+        "booklet_preview": true,
+        "escape_returns_parent": true,
+        "escape_returns_trigger": true,
+        "first_page": true,
+        "focus_cycles_panes": true,
+        "goto_page_applies": true,
+        "goto_page_shortcut": true,
+        "invalid_layout_blocked": true,
+        "last_page": true,
+        "menu_keyboard_opens": true,
+        "menu_next_group": true,
+        "menu_skips_disabled": true,
+        "multiple_borders_preview": true,
+        "multiple_orders_preview": true,
+        "multiple_preview": true,
+        "page_arrow": true,
+        "poster_controls": true,
+        "print_sessions_released": true,
+        "space_activates_button": true
+      },
+      "errors": []
+    },
+    "native-validation/regressions/editing-regression/result.json": {
+      "checks": {
+        "convert_surface": true,
+        "font_faces_bounded": true,
+        "font_fallback_visible": true,
+        "no_font_error": true,
+        "paragraph_cancel_restores_geometry": true,
+        "paragraph_detected": true,
+        "paragraph_done_keeps_geometry": true,
+        "paragraph_move_uses_page_transform": true,
+        "paragraph_no_leftover_controls": true,
+        "paragraph_resize_preserves_size": true,
+        "removal_controls": true,
+        "replacement_keeps_following_words": true,
+        "selection_keeps_sentence": true,
+        "tool_button_labels_fit": true
+      },
+      "errors": []
+    },
+    "native-validation/regressions/interactions/result.json": {
+      "checks": {
+        "convert_menu_opaque": true,
+        "double_click_word": true,
+        "drag_ten_lines": true,
+        "edit_outline_cleared": true,
+        "header_brand_removed": true,
+        "inline_edit": true,
+        "inline_reedit": true,
+        "landscape_preview": true,
+        "native_page_scale_translation": true,
+        "no_installer_run": true,
+        "page_dimensions_label": true,
+        "paper_preview": true,
+        "print_sessions_released": true,
+        "printer_connected": true,
+        "printer_disconnected_pdf": true,
+        "printer_reconnected": true,
+        "reopened_edited_text": true,
+        "repeated_open_close": true,
+        "save_theme_matches": true,
+        "saved_pdf": true,
+        "scale_preview": true,
+        "signed_update_download": true,
+        "tampered_update_rejected": true,
+        "triple_click_line": true,
+        "trusted_mouse_input": true,
+        "trusted_wheel_zoom": true,
+        "trusted_wheel_zoom_out": true,
+        "workspace_wheel_zoom": true
+      },
+      "errors": [],
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0"
+    },
+    "native-validation/regressions/layout-stability/result.json": {
+      "checks": {
+        "continuous_scroll_keeps_zoom": true,
+        "fit_width_has_no_horizontal_overflow": true,
+        "landscape_geometry_stable": true
+      },
+      "errors": [],
+      "samples": {
+        "viewport_0": [
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          }
+        ],
+        "viewport_1": [
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          }
+        ],
+        "viewport_2": [
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 681.859375,
+            "w": 964.921875,
+            "x": 352.03125,
+            "y": 107
+          }
+        ],
+        "viewport_3": [
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 676.921875,
+            "w": 957.9375,
+            "x": 352.03125,
+            "y": 107
+          }
+        ]
+      }
+    },
+    "native-validation/regressions/ocr-recognition/result.json": {
+      "checks": {
+        "all_words_have_selection_geometry": true,
+        "body_recognized": true,
+        "no_text_before": true,
+        "small_footer_recognized": true
+      },
+      "errors": []
+    },
+    "native-validation/regressions/password-regression/result.json": {
+      "checks": {
+        "authenticated_edit": true,
+        "cancel_keeps_previous_document": true,
+        "cancel_releases_session": true,
+        "close_releases_session": true,
+        "correct_password_opens_pdf": true,
+        "final_sessions_empty": true,
+        "initial_sessions_empty": true,
+        "password_field_removed": true,
+        "prompt_accessible": true,
+        "prompt_centered": true,
+        "real_encrypted_fixture": true,
+        "saved_copy_rejects_wrong_password": true,
+        "saved_copy_stays_password_protected": true,
+        "saved_edit_reopens_with_original_password": true,
+        "wrong_password_retains_prompt": true
+      },
+      "errors": []
+    },
+    "native-validation/regressions/selection/result.json": {
+      "checks": {
+        "all_pages_once_in_order": true,
+        "document_only": true,
+        "edit_menu_select_all": true,
+        "editor_owns_select_all": true,
+        "escape_clears_selection": true,
+        "find_owns_select_all": true,
+        "home_does_not_select_chrome": true,
+        "modal_blocks_document_save": true,
+        "modal_does_not_select_document": true,
+        "offscreen_pages_copied": true,
+        "replacements_copied_once": true,
+        "single_page_scope": true
+      },
+      "errors": []
+    },
+    "native-validation/regressions/updates/result.json": {
+      "checks": {
+        "button_labels_fit": true,
+        "download_details": true,
+        "prompt_does_not_repeat": true,
+        "release_download_available": true,
+        "startup_prompt": true,
+        "theme_surface": true
+      },
+      "errors": []
+    },
+    "native-validation/startup-close/result.json": [
+      {
+        "closedNormally": true,
+        "closeSeconds": 0.1371852,
+        "delayMs": 0
+      },
+      {
+        "closedNormally": true,
+        "closeSeconds": 0.1357229,
+        "delayMs": 100
+      },
+      {
+        "closedNormally": true,
+        "closeSeconds": 0.1040895,
+        "delayMs": 500
+      }
+    ],
+    "native-validation/tauri/fonts-dialog-result.json": {
+      "checks": {
+        "alternative_labels": true,
+        "answer_cancel": true,
+        "answer_discard": true,
+        "answer_save": true,
+        "centered_cancel": true,
+        "centered_discard": true,
+        "centered_save": true,
+        "editor_cleanup": true,
+        "font_assets_load": true,
+        "new_font_families": true,
+        "replacement_spacing_reset": true
+      },
+      "errors": [],
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0"
+    },
+    "native-validation/tauri/ocr-edit-result.json": {
+      "checks": {
+        "can_reedit": true,
+        "invisible_ocr_source": true,
+        "saved_pdf": true
+      },
+      "errors": []
+    },
+    "native-validation/tauri/open-close-result.json": {
+      "checks": {
+        "binary_font_transport": true,
+        "binary_pdf_transport": true,
+        "layout": true,
+        "pinch_event": true,
+        "print_dialog": true,
+        "print_escape": true,
+        "reader": true,
+        "rendered": true,
+        "repeated_open_close": true,
+        "search": true,
+        "search_close_clears_highlights": true,
+        "sidebar": true,
+        "webview_page_zoom_unchanged": true
+      },
+      "cycles": [
+        {
+          "index": 1,
+          "jsHeap": 15482052,
+          "milliseconds": 1024
+        },
+        {
+          "index": 2,
+          "jsHeap": 14292332,
+          "milliseconds": 1014
+        },
+        {
+          "index": 3,
+          "jsHeap": 13412983,
+          "milliseconds": 1009
+        },
+        {
+          "index": 4,
+          "jsHeap": 12796173,
+          "milliseconds": 1013
+        },
+        {
+          "index": 5,
+          "jsHeap": 12813859,
+          "milliseconds": 1025
+        },
+        {
+          "index": 6,
+          "jsHeap": 12889057,
+          "milliseconds": 1015
+        },
+        {
+          "index": 7,
+          "jsHeap": 12817299,
+          "milliseconds": 1014
+        },
+        {
+          "index": 8,
+          "jsHeap": 12865213,
+          "milliseconds": 1019
+        },
+        {
+          "index": 9,
+          "jsHeap": 13018753,
+          "milliseconds": 1014
+        },
+        {
+          "index": 10,
+          "jsHeap": 12980122,
+          "milliseconds": 1014
+        },
+        {
+          "index": 11,
+          "jsHeap": 12947646,
+          "milliseconds": 1010
+        },
+        {
+          "index": 12,
+          "jsHeap": 13855404,
+          "milliseconds": 1023
+        }
+      ],
+      "errors": [],
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0"
+    },
+    "native-validation/tauri/windows-installer-result.json": {
+      "finishDismissSeconds": 0.1285233,
+      "checks": [
+        "assisted wizard reaches Finish",
+        "Finish dismisses promptly",
+        "Finish launches installed app",
+        "app shows its window",
+        "test app closes",
+        "test uninstall exits successfully"
+      ],
+      "version": "2.1.0",
+      "passed": true
+    },
+    "native-validation/tauri/windows-msi-result.json": {
+      "checks": [
+        "MSI installs",
+        "runtime DLLs present",
+        "installed app opens",
+        "installed app closes",
+        "MSI uninstalls"
+      ],
+      "version": "2.1.0",
+      "passed": true
+    }
+  },
+  "linux": {
+    "native-validation/distros/ubuntu-22.04/result.json": {
+      "checks": {
+        "centered_dialog": true,
+        "dialog_cancel": true,
+        "find_opens": true,
+        "font_discovery": true,
+        "landscape_preview": true,
+        "pdf_transport": true,
+        "print_preview": true,
+        "print_session_released": true,
+        "reader_rendered": true
+      },
+      "errors": [],
+      "userAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15"
+    },
+    "native-validation/regressions/acrobat-parity/result.json": {
+      "checks": {
+        "booklet_binding_preview": true,
+        "booklet_both_sides_restored": true,
+        "booklet_manual_pass_preview": true,
+        "booklet_manual_pass_simplex": true,
+        "booklet_preview": true,
+        "escape_returns_parent": true,
+        "escape_returns_trigger": true,
+        "first_page": true,
+        "focus_cycles_panes": true,
+        "goto_page_applies": true,
+        "goto_page_shortcut": true,
+        "invalid_layout_blocked": true,
+        "last_page": true,
+        "menu_keyboard_opens": true,
+        "menu_next_group": true,
+        "menu_skips_disabled": true,
+        "multiple_borders_preview": true,
+        "multiple_orders_preview": true,
+        "multiple_preview": true,
+        "page_arrow": true,
+        "poster_controls": true,
+        "print_sessions_released": true,
+        "space_activates_button": true
+      },
+      "errors": []
+    },
+    "native-validation/regressions/editing-regression/result.json": {
+      "checks": {
+        "convert_surface": true,
+        "font_faces_bounded": true,
+        "font_fallback_visible": true,
+        "no_font_error": true,
+        "paragraph_cancel_restores_geometry": true,
+        "paragraph_detected": true,
+        "paragraph_done_keeps_geometry": true,
+        "paragraph_move_uses_page_transform": true,
+        "paragraph_no_leftover_controls": true,
+        "paragraph_resize_preserves_size": true,
+        "removal_controls": true,
+        "replacement_keeps_following_words": true,
+        "selection_keeps_sentence": true,
+        "tool_button_labels_fit": true
+      },
+      "errors": []
+    },
+    "native-validation/regressions/layout-stability/result.json": {
+      "checks": {
+        "continuous_scroll_keeps_zoom": true,
+        "fit_width_has_no_horizontal_overflow": true,
+        "landscape_geometry_stable": true
+      },
+      "errors": [],
+      "samples": {
+        "viewport_0": [
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          }
+        ],
+        "viewport_1": [
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          }
+        ],
+        "viewport_2": [
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          },
+          {
+            "h": 688.9375,
+            "w": 974.9375,
+            "x": 352.03125,
+            "y": 107
+          }
+        ],
+        "viewport_3": [
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          },
+          {
+            "h": 684,
+            "w": 967.953125,
+            "x": 352.015625,
+            "y": 107
+          }
+        ]
+      }
+    },
+    "native-validation/regressions/ocr-recognition/result.json": {
+      "checks": {
+        "all_words_have_selection_geometry": true,
+        "body_recognized": true,
+        "no_text_before": true,
+        "small_footer_recognized": true
+      },
+      "errors": []
+    },
+    "native-validation/regressions/password-regression/result.json": {
+      "checks": {
+        "authenticated_edit": true,
+        "cancel_keeps_previous_document": true,
+        "cancel_releases_session": true,
+        "close_releases_session": true,
+        "correct_password_opens_pdf": true,
+        "final_sessions_empty": true,
+        "initial_sessions_empty": true,
+        "password_field_removed": true,
+        "prompt_accessible": true,
+        "prompt_centered": true,
+        "real_encrypted_fixture": true,
+        "saved_copy_rejects_wrong_password": true,
+        "saved_copy_stays_password_protected": true,
+        "saved_edit_reopens_with_original_password": true,
+        "wrong_password_retains_prompt": true
+      },
+      "errors": []
+    },
+    "native-validation/regressions/selection/result.json": {
+      "checks": {
+        "all_pages_once_in_order": true,
+        "document_only": true,
+        "edit_menu_select_all": true,
+        "editor_owns_select_all": true,
+        "escape_clears_selection": true,
+        "find_owns_select_all": true,
+        "home_does_not_select_chrome": true,
+        "modal_blocks_document_save": true,
+        "modal_does_not_select_document": true,
+        "offscreen_pages_copied": true,
+        "replacements_copied_once": true,
+        "single_page_scope": true
+      },
+      "errors": []
+    },
+    "native-validation/regressions/updates/result.json": {
+      "checks": {
+        "button_labels_fit": true,
+        "download_details": true,
+        "prompt_does_not_repeat": true,
+        "release_download_available": true,
+        "startup_prompt": true,
+        "theme_surface": true
+      },
+      "errors": []
+    }
+  },
+  "distributions": {
+    "native-distro-0/debian-12/package-result.json": {
+      "distribution": "debian-12",
+      "installedPackageLaunched": true,
+      "appImageExtractAndRunLaunched": true,
+      "environment": "container/Xvfb; FUSE, real desktop gestures and printers not tested"
+    },
+    "native-distro-0/debian-12/result.json": {
+      "checks": {
+        "centered_dialog": true,
+        "dialog_cancel": true,
+        "find_opens": true,
+        "font_discovery": true,
+        "landscape_preview": true,
+        "pdf_transport": true,
+        "print_preview": true,
+        "print_session_released": true,
+        "reader_rendered": true
+      },
+      "errors": [],
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15"
+    },
+    "native-distro-1/ubuntu-24.04/package-result.json": {
+      "distribution": "ubuntu-24.04",
+      "installedPackageLaunched": true,
+      "appImageExtractAndRunLaunched": true,
+      "environment": "container/Xvfb; FUSE, real desktop gestures and printers not tested"
+    },
+    "native-distro-1/ubuntu-24.04/result.json": {
+      "checks": {
+        "centered_dialog": true,
+        "dialog_cancel": true,
+        "find_opens": true,
+        "font_discovery": true,
+        "landscape_preview": true,
+        "pdf_transport": true,
+        "print_preview": true,
+        "print_session_released": true,
+        "reader_rendered": true
+      },
+      "errors": [],
+      "userAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15"
+    },
+    "native-distro-2/fedora-43/package-result.json": {
+      "distribution": "fedora-43",
+      "installedPackageLaunched": true,
+      "appImageExtractAndRunLaunched": true,
+      "environment": "container/Xvfb; FUSE, real desktop gestures and printers not tested"
+    },
+    "native-distro-2/fedora-43/result.json": {
+      "checks": {
+        "centered_dialog": true,
+        "dialog_cancel": true,
+        "find_opens": true,
+        "font_discovery": true,
+        "landscape_preview": true,
+        "pdf_transport": true,
+        "print_preview": true,
+        "print_session_released": true,
+        "reader_rendered": true
+      },
+      "errors": [],
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15"
+    }
+  },
+  "installers": {
+    "windows-installer-validation-1/startup-close/result.json": [
+      {
+        "closeSeconds": 0.1349289,
+        "delayMs": 0,
+        "closedNormally": true
+      },
+      {
+        "closeSeconds": 0.0704443,
+        "delayMs": 100,
+        "closedNormally": true
+      },
+      {
+        "closeSeconds": 0.0748351,
+        "delayMs": 500,
+        "closedNormally": true
+      }
+    ],
+    "windows-installer-validation-1/tauri/windows-installer-result.json": {
+      "finishDismissSeconds": 0.4541499,
+      "checks": [
+        "assisted wizard reaches Finish",
+        "Finish dismisses promptly",
+        "Finish launches installed app",
+        "app shows its window",
+        "test app closes",
+        "test uninstall exits successfully"
+      ],
+      "version": "2.1.0",
+      "passed": true
+    },
+    "windows-installer-validation-1/tauri/windows-msi-result.json": {
+      "passed": true,
+      "checks": [
+        "MSI installs",
+        "runtime DLLs present",
+        "installed app opens",
+        "installed app closes",
+        "MSI uninstalls"
+      ],
+      "version": "2.1.0"
+    },
+    "windows-installer-validation-2/startup-close/result.json": [
+      {
+        "closeSeconds": 0.1323219,
+        "closedNormally": true,
+        "delayMs": 0
+      },
+      {
+        "closeSeconds": 0.0696349,
+        "closedNormally": true,
+        "delayMs": 100
+      },
+      {
+        "closeSeconds": 0.1006921,
+        "closedNormally": true,
+        "delayMs": 500
+      }
+    ],
+    "windows-installer-validation-2/tauri/windows-installer-result.json": {
+      "checks": [
+        "assisted wizard reaches Finish",
+        "Finish dismisses promptly",
+        "Finish launches installed app",
+        "app shows its window",
+        "test app closes",
+        "test uninstall exits successfully"
+      ],
+      "passed": true,
+      "version": "2.1.0",
+      "finishDismissSeconds": 0.2664359
+    },
+    "windows-installer-validation-2/tauri/windows-msi-result.json": {
+      "checks": [
+        "MSI installs",
+        "runtime DLLs present",
+        "installed app opens",
+        "installed app closes",
+        "MSI uninstalls"
+      ],
+      "passed": true,
+      "version": "2.1.0"
+    }
+  },
+  "local": {
+    "typecheck": "passed (node and renderer)",
+    "rendererBuild": "passed",
+    "tests": {
+      "files": 36,
+      "passed": 190,
+      "skipped": 1,
+      "skipReason": "optional LibreOffice integration; LibreOffice is not installed"
+    },
+    "changedReleaseCodeLint": "passed with zero warnings",
+    "sourceLint": {
+      "errors": 58,
+      "files": 24,
+      "scope": [
+        "src/renderer/src",
+        "src/shared"
+      ],
+      "note": "Existing application source was not changed in this audit. The unbounded repository-wide lint scan was stopped because it also scans vendored/generated code."
+    },
+    "packageIntegrity": {
+      "windowsZip": "CRC and executable/CRT/license entries passed",
+      "linuxAppDirTar": "archive paths, executable AppRun, bundled WebKit and application binary passed",
+      "mupdfSource": "archive paths and COPYING entry passed",
+      "rpmMetadata": "re-edit-pdf 2.1.0 x86_64"
+    },
+    "stableFeedWorkflow": {
+      "run": 40179199235,
+      "conclusion": "success"
+    }
+  }
+}

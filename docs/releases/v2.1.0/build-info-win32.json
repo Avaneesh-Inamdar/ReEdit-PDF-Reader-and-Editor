@@ -1,0 +1,9 @@
+{
+  "version": "2.1.0",
+  "platform": "win32",
+  "architecture": "x64",
+  "commit": "3ea243ba0aefaa6dda0a7c92bbdcf45c94351635",
+  "node": "v22.23.4",
+  "rust": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "signing": "Updater signatures are added locally after downloading CI artifacts. Windows publisher signing is not configured."
+}
