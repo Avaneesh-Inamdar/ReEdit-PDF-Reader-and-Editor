@@ -19,6 +19,14 @@
 
 ![Re-Edit PDF document workspace](docs/images/workspace.png)
 
+The tools center and editing workspace, shown with a sample document:
+
+![Tools center](docs/images/tools-workspace.png)
+
+![Edit PDF workspace](docs/images/edit-workspace.png)
+
+![Crop selected pages in Organize Pages](docs/images/crop-pages.png)
+
 ## Download
 
 Download [Re-Edit PDF v2.1.0 prerelease](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/tag/v2.1.0) for Windows or Linux, or choose the [signed stable v2.0.0 release](https://github.com/Avaneesh-Inamdar/ReEdit-PDF-Reader-and-Editor/releases/latest). The native app uses a Rust desktop backend and the existing React workspace in the system webview, without the Electron runtime.
@@ -59,7 +67,7 @@ The installer registers PDF **Open With** support and a separate document icon. 
 - **OCR:** offline English recognition with accurate and fast models, automatic/column/block layouts, page ranges, searchable output and explicit save-copy/overwrite actions. Accurate automatic recognition uses adaptive thresholding and a second pass for sparse text.
 - **Find:** result list, matching text excerpts, case/whole-word filters, F3 navigation and searchable edited/placed text.
 - **Printing:** application print dialog with printer selection, copies, grayscale, duplex, ranges, odd/even pages, reverse order, paper size, scaling and preview.
-- **Page tools:** combine, reorder, rotate, extract and delete pages.
+- **Page tools:** combine, reorder, rotate, crop, extract and delete pages. In Organize Pages, Ctrl-click toggles individual pages, Shift-click selects a range, and page cards can be selected from the keyboard. Crop margins are measured in PDF points in the unrotated page orientation; cropping hides content without removing it.
 - **Forms and security:** supported AcroForm fields, P12 certificate signing, genuine content redaction, password clearing and document permission details. Printing, copying, annotations, forms and assembly permissions are shown separately; this does not validate certificate trust.
 - **Conversion:** editable Word text export and Office-to-PDF import through an optional LibreOffice installation.
 - **Desktop integration:** native window controls, recent-file favorites/removal, file associations and Help → Check for Updates.
@@ -71,6 +79,8 @@ feature gaps, the official-package evidence and checks. Version 2.1.0 adds
 conservative paragraph wrapping, Size/Multiple/Poster/Booklet print layouts and
 improved menu, pane and page keyboard navigation. It is not a complete Acrobat
 replacement; the comparison explains the limits of each workflow.
+
+The navigation pane supports keyboard access to bookmarks and its controls. Bookmarks are cleared when switching documents so that an unavailable outline does not show the previous document’s entries.
 
 ## Getting started
 

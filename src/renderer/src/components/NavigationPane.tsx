@@ -20,25 +20,35 @@ function BookmarkTree({
   path: number[]
 }): React.JSX.Element {
   const { toggleBookmark } = useUIStore()
+  const goToBookmark = (page: number): void => {
+    if (page <= 0) return
+    usePdfStore.getState().setCurrentPage(page)
+    document.getElementById(`page-${page}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
   return (
     <div style={{ paddingLeft: depth * 16 }}>
       {items.map((item, i) => (
         <div key={`${item.title}-${i}`}>
           <div
             className="bm-item"
-            onClick={() => {
-              const pg = item.pageNumber
-              if (pg > 0) {
-                usePdfStore.getState().setCurrentPage(pg)
-                document
-                  .getElementById(`page-${pg}`)
-                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            role="link"
+            tabIndex={item.pageNumber > 0 ? 0 : -1}
+            onClick={() => goToBookmark(item.pageNumber)}
+            onKeyDown={(event) => {
+              if (
+                event.target === event.currentTarget &&
+                (event.key === 'Enter' || event.key === ' ')
+              ) {
+                event.preventDefault()
+                goToBookmark(item.pageNumber)
               }
             }}
           >
             {item.children.length > 0 && (
               <button
                 className="tb-btn"
+                aria-label={`${item.expanded ? 'Collapse' : 'Expand'} ${item.title}`}
+                aria-expanded={item.expanded}
                 onClick={(e) => {
                   e.stopPropagation()
                   toggleBookmark([...path, i])
@@ -118,6 +128,7 @@ export function NavigationPane({
       return
     }
     let cancelled = false
+    setBookmarks([])
     const extract = async (): Promise<void> => {
       try {
         const outline = await (
@@ -131,9 +142,11 @@ export function NavigationPane({
             let pageNumber = 0
             try {
               if (it.dest) {
-                pageNumber = await destinationPage(pdfDoc, it.dest) || 0
+                pageNumber = (await destinationPage(pdfDoc, it.dest)) || 0
               }
-            } catch {}
+            } catch {
+              // An invalid destination leaves this bookmark without a page link.
+            }
             const children = it.items ? await convertItems(it.items) : []
             result.push({ title: it.title || 'Untitled', pageNumber, children, expanded: false })
           }
@@ -141,7 +154,9 @@ export function NavigationPane({
         }
         const bms = await convertItems(outline)
         if (!cancelled) setBookmarks(bms)
-      } catch {}
+      } catch {
+        // A malformed outline should not prevent the document from opening.
+      }
     }
     extract()
     return () => {
@@ -217,6 +232,8 @@ export function NavigationPane({
             style={{ width: 32, height: 32, marginBottom: 2 }}
             onClick={() => setLeftPane(leftPane === t.id ? 'closed' : t.id)}
             title={t.label}
+            aria-label={t.label}
+            aria-pressed={leftPane === t.id}
           >
             {t.icon}
           </button>
@@ -225,6 +242,7 @@ export function NavigationPane({
         <button
           className="tb-btn"
           title="Close navigation pane"
+          aria-label="Close navigation pane"
           onClick={() => setLeftPane('closed')}
         >
           <Icon name="close" />
