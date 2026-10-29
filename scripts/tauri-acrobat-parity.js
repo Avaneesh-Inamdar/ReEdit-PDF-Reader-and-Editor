@@ -201,6 +201,7 @@
     document.querySelector('[aria-label="Select page 1"]').click()
     const cropButton = () => [...document.querySelectorAll('.modal-card button')]
       .find((button) => button.textContent.trim() === 'Crop')
+    await wait(() => cropButton() && !cropButton().disabled, 'Page selection')
     cropButton().click()
     await wait(() => document.querySelector('[aria-label="Drag left crop edge"]'), 'Crop preview')
     const fieldLeft = document.querySelector('#crop-title').closest('form').querySelector('input')
@@ -226,6 +227,7 @@
     await wait(() => selectedPage().includes('540 × 792 pt'), 'Cropped page dimensions')
     checks.crop_updates_page = true
     document.querySelector('[aria-label="Select page 1"]').click()
+    await wait(() => cropButton() && !cropButton().disabled, 'Reselect page')
     cropButton().click()
     await wait(() => document.querySelector('#crop-title'), 'Reopen crop')
     ;[...document.querySelector('#crop-title').closest('form').querySelectorAll('button')]
