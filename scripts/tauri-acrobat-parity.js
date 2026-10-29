@@ -248,11 +248,39 @@
     await pause(100)
     numberForm.requestSubmit()
     await wait(() => !document.querySelector('#page-numbers-title'), 'Apply page numbering')
+    document.querySelector('[aria-label="Select page 2"]').click()
+    await wait(() => numberButton() && !numberButton().disabled, 'Select page for header')
+    numberButton().click()
+    await wait(() => document.querySelector('#page-numbers-title'), 'Header dialog')
+    const headerForm = document.querySelector('#page-numbers-title').closest('form')
+    const inputs = headerForm.querySelectorAll('input')
+    const setInput = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+    setInput.call(inputs[0], '1')
+    inputs[0].dispatchEvent(new Event('input', { bubbles: true }))
+    setInput.call(inputs[1], 'Page {page} of {total}')
+    inputs[1].dispatchEvent(new Event('input', { bubbles: true }))
+    const selects = headerForm.querySelectorAll('select')
+    selects[0].value = 'top'; selects[0].dispatchEvent(new Event('change', { bubbles: true }))
+    selects[1].value = 'right'; selects[1].dispatchEvent(new Event('change', { bubbles: true }))
+    await pause(100)
+    headerForm.requestSubmit()
+    await wait(() => !document.querySelector('#page-numbers-title'), 'Apply header')
     ;[...document.querySelectorAll('.modal-card button')]
       .find((button) => button.textContent.trim() === 'Done').click()
     await wait(() => [...document.querySelectorAll('#page-1 [data-pdf-run]')]
       .some((run) => run.textContent.trim() === '100'), 'Page number text')
     checks.page_number_added = true
+    document.querySelector('[data-pdf-viewer]').focus()
+    await key('ArrowRight', 'ArrowRight', 39)
+    await wait(() => [...document.querySelectorAll('#page-2 [data-pdf-run]')]
+      .some((run) => run.textContent.trim() === 'Page 2 of 32'), 'Header text')
+    checks.header_added = true
+    const headerRun = [...document.querySelectorAll('#page-2 [data-pdf-run]')]
+      .find((run) => run.textContent.trim() === 'Page 2 of 32')
+    const pageBox = document.querySelector('#page-2').getBoundingClientRect()
+    const headerBox = headerRun.getBoundingClientRect()
+    checks.header_right_top = headerBox.top < pageBox.top + pageBox.height * 0.2 &&
+      headerBox.right > pageBox.left + pageBox.width * 0.7
     if (Object.values(checks).some((value) => !value))
       throw Error(
         'Failed: ' +

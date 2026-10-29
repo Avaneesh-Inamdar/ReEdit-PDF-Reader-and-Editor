@@ -40,5 +40,24 @@ describe('page numbering', () => {
     await pdf.destroy()
     await expect(addPageNumbers(data, [0], 0)).rejects.toThrow('positive whole number')
     await expect(addPageNumbers(data, [4], 1)).rejects.toThrow('Invalid page selection')
+    await expect(addPageNumbers(data, [0], 1, { position: 'top', alignment: 'left', template: '😀' })).rejects.toThrow('unsupported')
+  })
+
+  it('places formatted headers at the right edge in every page orientation', async () => {
+    const bytes = await addPageNumbers(await fixture(), [0, 1, 2, 3], 3, {
+      position: 'top', alignment: 'right', template: 'Page {page} of {total}'
+    })
+    const pdf = await getPdfJsDoc(bytes.slice().buffer as ArrayBuffer)
+    for (let i = 1; i <= 4; i++) {
+      const page = await pdf.getPage(i)
+      const viewport = page.getViewport({ scale: 1 })
+      const item = (await page.getTextContent()).items.find((entry) => 'str' in entry && entry.str === `Page ${i + 2} of 4`)
+      if (!item || !('transform' in item)) throw new Error('Header missing')
+      const [x, y] = viewport.convertToViewportPoint(item.transform[4], item.transform[5])
+      expect(y).toBeCloseTo(34, 1)
+      // PDF.js text advances can differ slightly from the embedded font's metrics.
+      expect(Math.abs(x + item.width - (viewport.width - 24))).toBeLessThan(1)
+    }
+    await pdf.destroy()
   })
 })

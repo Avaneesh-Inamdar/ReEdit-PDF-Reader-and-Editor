@@ -651,14 +651,27 @@ export async function restorePageBounds(data: ArrayBuffer, indices: number[]): P
   return pdf.save()
 }
 
-/** Add centered footer numbers in the visual orientation of each selected page. */
+export type PageNumberOptions = {
+  position: 'top' | 'bottom'
+  alignment: 'left' | 'center' | 'right'
+  template: string
+}
+
+/** Add page labels in the visual orientation of each selected page. */
 export async function addPageNumbers(
   data: ArrayBuffer,
   indices: number[],
-  firstNumber: number
+  firstNumber: number,
+  options: PageNumberOptions = { position: 'bottom', alignment: 'center', template: '{page}' }
 ): Promise<Uint8Array> {
   if (!Number.isSafeInteger(firstNumber) || firstNumber < 1) {
     throw new Error('The first page number must be a positive whole number.')
+  }
+  if (!['top', 'bottom'].includes(options.position) || !['left', 'center', 'right'].includes(options.alignment)) {
+    throw new Error('Invalid page number position.')
+  }
+  if (!options.template.trim() || options.template.length > 120 || /[\r\n]/.test(options.template)) {
+    throw new Error('Enter a single-line label of up to 120 characters.')
   }
   const pdf = await PDFDocument.load(data)
   const font = await pdf.embedFont(StandardFonts.Helvetica)
@@ -673,23 +686,27 @@ export async function addPageNumbers(
     const box = page.getCropBox()
     const rotation = ((page.getRotation().angle % 360) + 360) % 360
     if (![0, 90, 180, 270].includes(rotation)) throw new Error(`Unsupported rotation on page ${index + 1}.`)
-    const label = String(firstNumber + index)
-    const textWidth = font.widthOfTextAtSize(label, fontSize)
+    const label = options.template.replaceAll('{page}', String(firstNumber + index)).replaceAll('{total}', String(pdf.getPageCount()))
+    let textWidth: number
+    try { textWidth = font.widthOfTextAtSize(label, fontSize) }
+    catch { throw new Error('The label contains characters unsupported by the built-in font.') }
     const visualWidth = rotation % 180 ? box.height : box.width
     const visualHeight = rotation % 180 ? box.width : box.height
-    if (visualWidth < textWidth + 4 || visualHeight < margin + fontSize) {
-      throw new Error(`Page ${index + 1} is too small for a footer number.`)
+    if (visualWidth < textWidth + 2 * margin || visualHeight < 2 * margin + fontSize) {
+      throw new Error(`Page ${index + 1} is too small for this page label.`)
     }
-    return { page, box, rotation, label, textWidth }
+    return { page, box, rotation, label, textWidth, visualWidth, visualHeight }
   })
-  for (const { page, box, rotation, label, textWidth } of entries) {
+  for (const { page, box, rotation, label, textWidth, visualWidth, visualHeight } of entries) {
+    const x = options.alignment === 'left' ? margin : options.alignment === 'right' ? visualWidth - margin - textWidth : (visualWidth - textWidth) / 2
+    const y = options.position === 'top' ? visualHeight - margin - fontSize : margin
     const coordinates = rotation === 90
-      ? { x: box.x + box.width - margin, y: box.y + (box.height - textWidth) / 2 }
+      ? { x: box.x + box.width - y, y: box.y + x }
       : rotation === 180
-        ? { x: box.x + (box.width + textWidth) / 2, y: box.y + box.height - margin }
+        ? { x: box.x + box.width - x, y: box.y + box.height - y }
         : rotation === 270
-          ? { x: box.x + margin, y: box.y + (box.height + textWidth) / 2 }
-          : { x: box.x + (box.width - textWidth) / 2, y: box.y + margin }
+          ? { x: box.x + y, y: box.y + box.height - x }
+          : { x: box.x + x, y: box.y + y }
     page.drawText(label, { ...coordinates, size: fontSize, font, rotate: degrees(rotation) })
   }
   return pdf.save()

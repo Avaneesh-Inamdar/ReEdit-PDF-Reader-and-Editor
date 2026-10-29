@@ -11,6 +11,7 @@ import { useUIStore } from '../stores/useUIStore'
 import { useTabStore } from '../stores/useTabStore'
 import { pdfjsLib, pdfAssetOptions } from '../lib/pdfjs'
 import { deletePages, rotatePages, insertBlankPage, reorderPages, splitPdf, cropPages, restorePageBounds, addPageNumbers } from '../lib/pdfEditing'
+import type { PageNumberOptions } from '../lib/pdfEditing'
 import { selectPage } from '../lib/pageSelection'
 import { CropPreview } from './CropPreview'
 
@@ -35,6 +36,7 @@ export function OrganizePagesModal(): React.JSX.Element {
   const [numberingOpen, setNumberingOpen] = useState(false)
   const [firstPageNumber, setFirstPageNumber] = useState('1')
   const [numberingError, setNumberingError] = useState('')
+  const [numberOptions, setNumberOptions] = useState<PageNumberOptions>({ position: 'bottom', alignment: 'center', template: '{page}' })
 
   // Keep order in sync with numPages
   useEffect(() => {
@@ -213,7 +215,7 @@ export function OrganizePagesModal(): React.JSX.Element {
     try {
       setBusy(true)
       setNumberingError('')
-      const bytes = await addPageNumbers((await prepareDocument()).slice().buffer as ArrayBuffer, idxs, first)
+      const bytes = await addPageNumbers((await prepareDocument()).slice().buffer as ArrayBuffer, idxs, first, numberOptions)
       await applyBytes(bytes)
       setNumberingOpen(false)
     } catch (error) {
@@ -418,10 +420,26 @@ export function OrganizePagesModal(): React.JSX.Element {
           <div className="modal-overlay" onClick={(event) => event.stopPropagation()}>
             <form className="modal-card p-5" role="dialog" aria-modal="true" aria-labelledby="page-numbers-title" onKeyDown={(event) => { if (event.key === 'Escape' && !busy) { event.stopPropagation(); setNumberingOpen(false) } }} onSubmit={(event) => { event.preventDefault(); void onAddPageNumbers() }} style={{ width: 440, maxWidth: '90vw' }}>
               <h2 id="page-numbers-title" className="text-lg font-semibold">Add page numbers</h2>
-              <p className="text-sm my-3">Add a centered footer to {selected.size} selected page{selected.size === 1 ? '' : 's'}. The first page of the document uses the number below; unselected pages retain their positions in the sequence. Adding numbers again creates another footer.</p>
+              <p className="text-sm my-3">Add a header or footer to {selected.size} selected page{selected.size === 1 ? '' : 's'}. The first page of the document uses the number below; unselected pages retain their positions in the sequence. Adding again creates another label.</p>
               <label className="flex flex-col gap-1 text-sm">First page number
                 <input type="number" min="1" step="1" required autoFocus value={firstPageNumber} onChange={(event) => setFirstPageNumber(event.target.value)} style={{ color: 'var(--acrobat-text)', background: 'var(--acrobat-pane-bg)', border: '1px solid var(--acrobat-border)', padding: 6 }} />
               </label>
+              <label className="flex flex-col gap-1 text-sm mt-3">Label text
+                <input type="text" maxLength={120} required value={numberOptions.template} onChange={(event) => { const template = event.target.value; setNumberOptions((current) => ({ ...current, template })) }} style={{ color: 'var(--acrobat-text)', background: 'var(--acrobat-pane-bg)', border: '1px solid var(--acrobat-border)', padding: 6 }} />
+              </label>
+              <p className="text-xs mt-1">Use {'{page}'} for the page number and {'{total}'} for the document page count.</p>
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <label className="flex flex-col gap-1 text-sm">Position
+                  <select value={numberOptions.position} onChange={(event) => { const position = event.target.value as PageNumberOptions['position']; setNumberOptions((current) => ({ ...current, position })) }} style={{ color: 'var(--acrobat-text)', background: 'var(--acrobat-pane-bg)', border: '1px solid var(--acrobat-border)', padding: 6 }}>
+                    <option value="bottom">Footer</option><option value="top">Header</option>
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-sm">Alignment
+                  <select value={numberOptions.alignment} onChange={(event) => { const alignment = event.target.value as PageNumberOptions['alignment']; setNumberOptions((current) => ({ ...current, alignment })) }} style={{ color: 'var(--acrobat-text)', background: 'var(--acrobat-pane-bg)', border: '1px solid var(--acrobat-border)', padding: 6 }}>
+                    <option value="left">Left</option><option value="center">Center</option><option value="right">Right</option>
+                  </select>
+                </label>
+              </div>
               {numberingError && <p role="alert" className="text-sm my-2" style={{ color: '#d33' }}>{numberingError}</p>}
               <div className="flex justify-end gap-2 mt-4">
                 <button type="button" className="operation-secondary" disabled={busy} onClick={() => setNumberingOpen(false)}>Cancel</button>
