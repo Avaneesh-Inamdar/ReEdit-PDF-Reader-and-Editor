@@ -10,7 +10,7 @@ import { usePdfStore } from '../stores/usePdfStore'
 import { useUIStore } from '../stores/useUIStore'
 import { useTabStore } from '../stores/useTabStore'
 import { pdfjsLib, pdfAssetOptions } from '../lib/pdfjs'
-import { deletePages, rotatePages, insertBlankPage, reorderPages, splitPdf, cropPages, restorePageBounds, addPageNumbers } from '../lib/pdfEditing'
+import { deletePages, rotatePages, insertBlankPage, reorderPages, splitPdf, cropPages, restorePageBounds, addPageNumbers, addTextWatermark } from '../lib/pdfEditing'
 import type { PageNumberOptions } from '../lib/pdfEditing'
 import { selectPage } from '../lib/pageSelection'
 import { CropPreview } from './CropPreview'
@@ -37,6 +37,12 @@ export function OrganizePagesModal(): React.JSX.Element {
   const [firstPageNumber, setFirstPageNumber] = useState('1')
   const [numberingError, setNumberingError] = useState('')
   const [numberOptions, setNumberOptions] = useState<PageNumberOptions>({ position: 'bottom', alignment: 'center', template: '{page}' })
+  const [watermarkOpen, setWatermarkOpen] = useState(false)
+  const [watermarkText, setWatermarkText] = useState('')
+  const [watermarkSize, setWatermarkSize] = useState('36')
+  const [watermarkOpacity, setWatermarkOpacity] = useState('30')
+  const [watermarkAngle, setWatermarkAngle] = useState<0 | 45>(45)
+  const [watermarkError, setWatermarkError] = useState('')
 
   // Keep order in sync with numPages
   useEffect(() => {
@@ -222,6 +228,25 @@ export function OrganizePagesModal(): React.JSX.Element {
       setNumberingError(error instanceof Error ? error.message : String(error))
     } finally { setBusy(false) }
   }
+  const onAddWatermark = async (): Promise<void> => {
+    const idxs = getSelectedIndices()
+    if (!idxs.length || !data) return
+    if (!watermarkSize.trim() || !watermarkOpacity.trim()) {
+      setWatermarkError('Enter a size and opacity.')
+      return
+    }
+    try {
+      setBusy(true)
+      setWatermarkError('')
+      const bytes = await addTextWatermark((await prepareDocument()).slice().buffer as ArrayBuffer, idxs, {
+        text: watermarkText, size: Number(watermarkSize), opacity: Number(watermarkOpacity) / 100, angle: watermarkAngle
+      })
+      await applyBytes(bytes)
+      setWatermarkOpen(false)
+    } catch (error) {
+      setWatermarkError(error instanceof Error ? error.message : String(error))
+    } finally { setBusy(false) }
+  }
   const onDelete = async (): Promise<void> => {
     const idxs = getSelectedIndices()
     if (!idxs.length || !data) return
@@ -279,6 +304,9 @@ export function OrganizePagesModal(): React.JSX.Element {
             </button>
             <button className="tb-btn" style={{ padding: '0 12px' }} disabled={selected.size === 0 || busy} onClick={() => { setNumberingError(''); setNumberingOpen(true) }}>
               Page numbers
+            </button>
+            <button className="tb-btn" style={{ padding: '0 12px' }} disabled={selected.size === 0 || busy} onClick={() => { setWatermarkError(''); setWatermarkOpen(true) }}>
+              Watermark
             </button>
             <div className="tb-sep" />
             <button className="tb-btn" style={{ padding: '0 12px', color: selected.size ? '#ef5350' : 'inherit' }} disabled={selected.size === 0 || busy} onClick={() => void onDelete()}>
@@ -444,6 +472,33 @@ export function OrganizePagesModal(): React.JSX.Element {
               <div className="flex justify-end gap-2 mt-4">
                 <button type="button" className="operation-secondary" disabled={busy} onClick={() => setNumberingOpen(false)}>Cancel</button>
                 <button type="submit" className="operation-primary" disabled={busy}>Add page numbers</button>
+              </div>
+            </form>
+          </div>
+        )}
+        {watermarkOpen && (
+          <div className="modal-overlay" onClick={(event) => event.stopPropagation()}>
+            <form className="modal-card p-5" role="dialog" aria-modal="true" aria-labelledby="watermark-title" onKeyDown={(event) => { if (event.key === 'Escape' && !busy) { event.stopPropagation(); setWatermarkOpen(false) } }} onSubmit={(event) => { event.preventDefault(); void onAddWatermark() }} style={{ width: 440, maxWidth: '90vw', maxHeight: '90vh', overflow: 'auto' }}>
+              <h2 id="watermark-title" className="text-lg font-semibold">Add text watermark</h2>
+              <p className="text-sm my-3">Place centered text above the content of {selected.size} selected page{selected.size === 1 ? '' : 's'}. Undo can remove this addition before other changes.</p>
+              <label className="flex flex-col gap-1 text-sm">Text
+                <input type="text" maxLength={120} required autoFocus value={watermarkText} onChange={(event) => setWatermarkText(event.target.value)} style={{ color: 'var(--acrobat-text)', background: 'var(--acrobat-pane-bg)', border: '1px solid var(--acrobat-border)', padding: 6 }} />
+              </label>
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <label className="flex flex-col gap-1 text-sm">Size (points)
+                  <input type="number" min="8" max="144" step="1" required value={watermarkSize} onChange={(event) => setWatermarkSize(event.target.value)} style={{ color: 'var(--acrobat-text)', background: 'var(--acrobat-pane-bg)', border: '1px solid var(--acrobat-border)', padding: 6 }} />
+                </label>
+                <label className="flex flex-col gap-1 text-sm">Opacity (%)
+                  <input type="number" min="5" max="100" step="1" required value={watermarkOpacity} onChange={(event) => setWatermarkOpacity(event.target.value)} style={{ color: 'var(--acrobat-text)', background: 'var(--acrobat-pane-bg)', border: '1px solid var(--acrobat-border)', padding: 6 }} />
+                </label>
+              </div>
+              <label className="flex flex-col gap-1 text-sm mt-3">Orientation
+                <select value={watermarkAngle} onChange={(event) => setWatermarkAngle(Number(event.target.value) as 0 | 45)} style={{ color: 'var(--acrobat-text)', background: 'var(--acrobat-pane-bg)', border: '1px solid var(--acrobat-border)', padding: 6 }}><option value="45">Diagonal</option><option value="0">Horizontal</option></select>
+              </label>
+              {watermarkError && <p role="alert" className="text-sm my-2" style={{ color: '#d33' }}>{watermarkError}</p>}
+              <div className="flex justify-end gap-2 mt-4">
+                <button type="button" className="operation-secondary" disabled={busy} onClick={() => setWatermarkOpen(false)}>Cancel</button>
+                <button type="submit" className="operation-primary" disabled={busy}>Add watermark</button>
               </div>
             </form>
           </div>

@@ -281,6 +281,31 @@
     const headerBox = headerRun.getBoundingClientRect()
     checks.header_right_top = headerBox.top < pageBox.top + pageBox.height * 0.2 &&
       headerBox.right > pageBox.left + pageBox.width * 0.7
+    if (!document.querySelector('.workspace-tool-list')) document.querySelector('[title="All tools"]').click()
+    await wait(() => document.querySelector('.workspace-tool-list'), 'Tools for watermark')
+    ;[...document.querySelectorAll('.workspace-tool-list button')]
+      .find((button) => button.textContent.trim() === 'Organize Pages').click()
+    await wait(() => document.querySelector('[aria-label="Select page 3"]'), 'Organize for watermark')
+    document.querySelector('[aria-label="Select page 3"]').click()
+    const watermarkButton = () => [...document.querySelectorAll('.modal-card button')]
+      .find((button) => button.textContent.trim() === 'Watermark')
+    await wait(() => watermarkButton() && !watermarkButton().disabled, 'Select watermark page')
+    watermarkButton().click()
+    await wait(() => document.querySelector('#watermark-title'), 'Watermark dialog')
+    const watermarkForm = document.querySelector('#watermark-title').closest('form')
+    const watermarkInput = watermarkForm.querySelector('input')
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(watermarkInput, 'DRAFT')
+    watermarkInput.dispatchEvent(new Event('input', { bubbles: true }))
+    await pause(100)
+    watermarkForm.requestSubmit()
+    await wait(() => !document.querySelector('#watermark-title'), 'Apply watermark')
+    ;[...document.querySelectorAll('.modal-card button')]
+      .find((button) => button.textContent.trim() === 'Done').click()
+    document.querySelector('[data-pdf-viewer]').focus()
+    await key('ArrowRight', 'ArrowRight', 39)
+    await wait(() => [...document.querySelectorAll('#page-3 [data-pdf-run]')]
+      .some((run) => run.textContent.trim() === 'DRAFT'), 'Watermark text')
+    checks.watermark_added = true
     if (Object.values(checks).some((value) => !value))
       throw Error(
         'Failed: ' +

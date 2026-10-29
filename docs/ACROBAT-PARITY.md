@@ -16,6 +16,10 @@ center or right, with page-number and total-page placeholders. Multiple labels
 per page, editing or removing previously inserted labels, broader styling,
 and Bates numbering remain open.
 
+The page organizer also adds centered text watermarks with size, opacity and
+horizontal or diagonal placement. Image watermarks, background placement,
+independent removal after later edits, and richer watermark styling remain open.
+
 The [release audit](releases/v2.1.0/AUDIT.md) rechecks the current
 desktop Acrobat Pro target, concrete source differences, package provenance
 and completed CI reports. Its verdict is that identical UI and behavior have

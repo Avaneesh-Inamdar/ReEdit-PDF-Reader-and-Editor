@@ -712,6 +712,60 @@ export async function addPageNumbers(
   return pdf.save()
 }
 
+export type TextWatermarkOptions = {
+  text: string
+  size: number
+  opacity: number
+  angle: 0 | 45
+}
+
+/** Place a centered text watermark above existing page content. */
+export async function addTextWatermark(
+  data: ArrayBuffer,
+  indices: number[],
+  options: TextWatermarkOptions
+): Promise<Uint8Array> {
+  const text = options.text.trim()
+  if (!text || text.length > 120 || /[\r\n]/.test(text)) {
+    throw new Error('Enter a single-line watermark of up to 120 characters.')
+  }
+  if (!Number.isFinite(options.size) || options.size < 8 || options.size > 144 ||
+      !Number.isFinite(options.opacity) || options.opacity < 0.05 || options.opacity > 1 ||
+      ![0, 45].includes(options.angle)) {
+    throw new Error('Choose a size from 8 to 144 points and opacity from 5% to 100%.')
+  }
+  const pdf = await PDFDocument.load(data)
+  const font = await pdf.embedFont(StandardFonts.Helvetica)
+  let textWidth: number
+  try { textWidth = font.widthOfTextAtSize(text, options.size) }
+  catch { throw new Error('The watermark contains characters unsupported by the built-in font.') }
+  const angle = options.angle * Math.PI / 180
+  const width = Math.abs(Math.cos(angle)) * textWidth + Math.abs(Math.sin(angle)) * options.size
+  const height = Math.abs(Math.sin(angle)) * textWidth + Math.abs(Math.cos(angle)) * options.size
+  const entries = [...new Set(indices)].map((index) => {
+    if (!Number.isInteger(index) || index < 0 || index >= pdf.getPageCount()) throw new Error('Invalid page selection.')
+    const page = pdf.getPage(index)
+    const box = page.getCropBox()
+    const rotation = ((page.getRotation().angle % 360) + 360) % 360
+    if (![0, 90, 180, 270].includes(rotation)) throw new Error(`Unsupported rotation on page ${index + 1}.`)
+    const visualWidth = rotation % 180 ? box.height : box.width
+    const visualHeight = rotation % 180 ? box.width : box.height
+    if (width > visualWidth || height > visualHeight) throw new Error(`Watermark is too large for page ${index + 1}.`)
+    return { page, box, rotation }
+  })
+  for (const { page, box, rotation } of entries) {
+    const radians = (rotation + options.angle) * Math.PI / 180
+    const cos = Math.cos(radians), sin = Math.sin(radians)
+    page.drawText(text, {
+      x: box.x + box.width / 2 - textWidth / 2 * cos + options.size * 0.35 * sin,
+      y: box.y + box.height / 2 - textWidth / 2 * sin - options.size * 0.35 * cos,
+      font, size: options.size, rotate: degrees(rotation + options.angle),
+      opacity: options.opacity, color: rgb(0.35, 0.35, 0.35)
+    })
+  }
+  return pdf.save()
+}
+
 export async function mergePdfs(datas: ArrayBuffer[]): Promise<Uint8Array> {
   const merged = await PDFDocument.create()
   for (const data of datas) {
