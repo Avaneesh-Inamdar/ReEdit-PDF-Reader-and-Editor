@@ -198,6 +198,17 @@
     ;[...document.querySelectorAll('.workspace-tool-list button')]
       .find((button) => button.textContent.trim() === 'Organize Pages').click()
     await wait(() => document.querySelector('[aria-label="Select page 1"]'), 'Organize pages')
+    const rangeInput = document.querySelector('#organize-selection-range')
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(rangeInput, '1,3-4')
+    rangeInput.dispatchEvent(new Event('input', { bubbles: true }))
+    await pause(100)
+    rangeInput.closest('form').requestSubmit()
+    await wait(() => document.querySelector('[aria-label="Select page 4"]').getAttribute('aria-pressed') === 'true', 'Range selection')
+    checks.organize_range_selection = document.querySelector('[aria-label="Select page 1"]').getAttribute('aria-pressed') === 'true' &&
+      document.querySelector('[aria-label="Select page 2"]').getAttribute('aria-pressed') === 'false' &&
+      document.querySelector('[aria-label="Select page 3"]').getAttribute('aria-pressed') === 'true'
+    ;[...rangeInput.closest('form').querySelectorAll('button')].find((button) => button.textContent.trim() === 'Clear').click()
+    await wait(() => document.querySelector('[aria-label="Select page 1"]').getAttribute('aria-pressed') === 'false', 'Clear selection')
     document.querySelector('[aria-label="Select page 1"]').click()
     const cropButton = () => [...document.querySelectorAll('.modal-card button')]
       .find((button) => button.textContent.trim() === 'Crop')

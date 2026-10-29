@@ -1,9 +1,11 @@
 // WHY: split/extract pages via human range string (e.g. "1-3,5,7-9")
 export function parsePageRange(range: string, totalPages: number): number[] {
   if (!range.trim()) throw new Error('empty range')
+  if (!Number.isSafeInteger(totalPages) || totalPages < 1) throw new Error('invalid page count')
   const indices: number[] = []
-  const parts = range.split(',').map(s=> s.trim()).filter(Boolean)
+  const parts = range.split(',').map(s=> s.trim())
   for (const p of parts) {
+    if (!/^\d+(?:\s*-\s*\d+)?$/.test(p)) throw new Error(`invalid range segment "${p}"`)
     if (p.includes('-')) {
       const [aStr, bStr] = p.split('-').map(s=> s.trim())
       const a = parseInt(aStr, 10), b = parseInt(bStr, 10)

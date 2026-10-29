@@ -21,6 +21,11 @@ describe('page-range parsing', () => {
     expect(()=> parsePageRange('5-2',10)).toThrow()
     expect(()=> parsePageRange('abc',10)).toThrow()
     expect(()=> parsePageRange('',10)).toThrow()
+    expect(()=> parsePageRange('1x,2',10)).toThrow()
+    expect(()=> parsePageRange('1-3-5',10)).toThrow()
+    expect(()=> parsePageRange('1,,3',10)).toThrow()
+    expect(()=> parsePageRange('1,',10)).toThrow()
+    expect(()=> parsePageRange('1',0)).toThrow()
   })
   it('formats ranges', () => {
     expect(formatPageRange([0,1,2,4,6,7,8])).toBe('1-3,5,7-9')

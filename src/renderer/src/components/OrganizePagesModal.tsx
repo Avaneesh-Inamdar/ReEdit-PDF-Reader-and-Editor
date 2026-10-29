@@ -13,6 +13,7 @@ import { pdfjsLib, pdfAssetOptions } from '../lib/pdfjs'
 import { deletePages, rotatePages, insertBlankPage, reorderPages, splitPdf, cropPages, restorePageBounds, addPageNumbers, addTextWatermark } from '../lib/pdfEditing'
 import type { PageNumberOptions } from '../lib/pdfEditing'
 import { selectPage } from '../lib/pageSelection'
+import { parsePageRange } from '../lib/pageRange'
 import { CropPreview } from './CropPreview'
 
 // Organize Pages – real drag-drop reorder, rotate, delete, insert, extract
@@ -43,6 +44,8 @@ export function OrganizePagesModal(): React.JSX.Element {
   const [watermarkOpacity, setWatermarkOpacity] = useState('30')
   const [watermarkAngle, setWatermarkAngle] = useState<0 | 45>(45)
   const [watermarkError, setWatermarkError] = useState('')
+  const [selectionRange, setSelectionRange] = useState('')
+  const [selectionError, setSelectionError] = useState('')
 
   // Keep order in sync with numPages
   useEffect(() => {
@@ -117,6 +120,16 @@ export function OrganizePagesModal(): React.JSX.Element {
     const anchor = selectionAnchor.current
     setSelected((current) => selectPage(current, pageIdx, anchor, { toggle, range }))
     if (!range || selectionAnchor.current === null) selectionAnchor.current = pageIdx
+  }
+  const selectRange = (): void => {
+    try {
+      const indices = parsePageRange(selectionRange, numPages)
+      setSelected(new Set(indices))
+      selectionAnchor.current = indices[0] ?? null
+      setSelectionError('')
+    } catch {
+      setSelectionError(`Enter valid pages between 1 and ${numPages}, such as 1-3,5.`)
+    }
   }
 
   // Drag-drop reorder (like PDFsam, Stirling-PDF)
@@ -341,6 +354,14 @@ export function OrganizePagesModal(): React.JSX.Element {
           <div className="text-xs mb-4 text-center" style={{ color: 'var(--acrobat-text-muted)' }}>
             Drag pages to reorder · Ctrl+click toggles pages · Shift+click selects a range
           </div>
+          <form className="flex items-center justify-center gap-2 mb-3" onSubmit={(event) => { event.preventDefault(); selectRange() }}>
+            <label htmlFor="organize-selection-range" className="text-xs">Select pages</label>
+            <input id="organize-selection-range" value={selectionRange} onChange={(event) => setSelectionRange(event.target.value)} placeholder="e.g. 1-3,5" disabled={busy} style={{ width: 125, color: 'var(--acrobat-text)', background: 'var(--acrobat-pane-bg)', border: '1px solid var(--acrobat-border)', padding: '4px 6px' }} />
+            <button className="operation-secondary" type="submit" disabled={busy}>Select range</button>
+            <button className="operation-secondary" type="button" disabled={busy || !numPages} onClick={() => { setSelected(new Set(Array.from({ length: numPages }, (_, i) => i))); selectionAnchor.current = 0; setSelectionError('') }}>Select all</button>
+            <button className="operation-secondary" type="button" disabled={busy || !selected.size} onClick={() => { setSelected(new Set()); selectionAnchor.current = null; setSelectionError('') }}>Clear</button>
+          </form>
+          {selectionError && <p role="alert" className="text-xs text-center mb-3" style={{ color: '#d33' }}>{selectionError}</p>}
           <div
             className="flex flex-wrap gap-6 justify-center max-w-6xl mx-auto"
             onDragOver={(e)=> { e.preventDefault(); e.stopPropagation() }}
