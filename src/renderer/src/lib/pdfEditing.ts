@@ -606,6 +606,35 @@ export async function rotatePages(
   return await pdf.save()
 }
 
+export type CropMargins = { left: number; right: number; top: number; bottom: number }
+
+/** Inset each selected page's existing crop box, in unrotated PDF points. */
+export async function cropPages(
+  data: ArrayBuffer,
+  indices: number[],
+  margins: CropMargins
+): Promise<Uint8Array> {
+  if (Object.values(margins).some((value) => !Number.isFinite(value) || value < 0)) {
+    throw new Error('Crop margins must be non-negative numbers.')
+  }
+  const pdf = await PDFDocument.load(data)
+  const pages = [...new Set(indices)].map((index) => {
+    if (!Number.isInteger(index) || index < 0 || index >= pdf.getPageCount()) {
+      throw new Error('Invalid page selection.')
+    }
+    const page = pdf.getPage(index)
+    const box = page.getCropBox()
+    const width = box.width - margins.left - margins.right
+    const height = box.height - margins.top - margins.bottom
+    if (width <= 0 || height <= 0) throw new Error(`Margins leave no visible area on page ${index + 1}.`)
+    return { page, box, width, height }
+  })
+  for (const { page, box, width, height } of pages) {
+    page.setCropBox(box.x + margins.left, box.y + margins.bottom, width, height)
+  }
+  return pdf.save()
+}
+
 export async function mergePdfs(datas: ArrayBuffer[]): Promise<Uint8Array> {
   const merged = await PDFDocument.create()
   for (const data of datas) {

@@ -5,6 +5,11 @@ of complete compatibility or a pixel-identical reproduction. It covers the
 2.1.0 changes following v2.0.0. Package validation and publication status are
 recorded in [the 2.1.0 release report](releases/v2.1.0/VALIDATION.md).
 
+Subsequent work adds a crop-box operation with a draggable preview to Organize Pages. It
+applies to selected pages in unrotated PDF coordinates and is undoable; it does
+not remove hidden content. The preview shows the first selected page. The
+table below otherwise records the state of the October 25 assessment.
+
 The [release audit](releases/v2.1.0/AUDIT.md) rechecks the current
 desktop Acrobat Pro target, concrete source differences, package provenance
 and completed CI reports. Its verdict is that identical UI and behavior have

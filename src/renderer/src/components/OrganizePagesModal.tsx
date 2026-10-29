@@ -10,7 +10,9 @@ import { usePdfStore } from '../stores/usePdfStore'
 import { useUIStore } from '../stores/useUIStore'
 import { useTabStore } from '../stores/useTabStore'
 import { pdfjsLib, pdfAssetOptions } from '../lib/pdfjs'
-import { deletePages, rotatePages, insertBlankPage, reorderPages, splitPdf } from '../lib/pdfEditing'
+import { deletePages, rotatePages, insertBlankPage, reorderPages, splitPdf, cropPages } from '../lib/pdfEditing'
+import { selectPage } from '../lib/pageSelection'
+import { CropPreview } from './CropPreview'
 
 // Organize Pages – real drag-drop reorder, rotate, delete, insert, extract
 // refs: Stirling-PDF organize, pdf-lib reorderPages, Adobe Acrobat organize UI, MDN HTML5 DnD
@@ -22,31 +24,40 @@ export function OrganizePagesModal(): React.JSX.Element {
   const thumbnailRoot = useRef<HTMLDivElement>(null)
   const thumbs = useThumbnails(thumbnailDoc, rotation, 0.3, thumbnailRoot)
   const [selected, setSelected] = useState<Set<number>>(new Set())
+  const selectionAnchor = useRef<number | null>(null)
   const [order, setOrder] = useState<number[]>([])
   const dragIdx = useRef<number | null>(null)
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
+  const [cropOpen, setCropOpen] = useState(false)
+  const [cropMargins, setCropMargins] = useState({ left: '0', right: '0', top: '0', bottom: '0' })
+  const [cropError, setCropError] = useState('')
 
   // Keep order in sync with numPages
   useEffect(() => {
     setOrder(Array.from({ length: numPages }, (_, i) => i))
+    selectionAnchor.current = null
   }, [numPages])
 
   const handleUndo = (): void => {
     if (undoPdf()) {
       setSelected(new Set())
+      selectionAnchor.current = null
     }
   }
 
   const handleRedo = (): void => {
     if (redoPdf()) {
       setSelected(new Set())
+      selectionAnchor.current = null
     }
   }
 
   // Keyboard shortcut for Undo / Redo within Organize Pages
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
+      if (e.target instanceof Element && e.target.closest('[aria-labelledby="crop-title"]')) return
+      if (e.target instanceof HTMLElement && (e.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))) return
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
         e.preventDefault()
         e.stopPropagation()
@@ -84,17 +95,17 @@ export function OrganizePagesModal(): React.JSX.Element {
       setOrder(Array.from({ length: doc.getPageCount() }, (_, i) => i))
     } catch {}
     setSelected(new Set())
+    selectionAnchor.current = null
     // Mark dirty like normal editors (Stirling-PDF, PDFsam) – page ops need save
     try { usePdfStore.getState().setDirty(true) } catch {}
     const tabId = useTabStore.getState().activeTabId
     if (tabId) useTabStore.getState().markDirty(tabId)
   }
 
-  const toggleSelect = (pageIdx: number, multi: boolean): void => {
-    const s = new Set(multi ? selected : [])
-    if (s.has(pageIdx)) s.delete(pageIdx)
-    else s.add(pageIdx)
-    setSelected(s)
+  const toggleSelect = (pageIdx: number, toggle: boolean, range: boolean): void => {
+    const anchor = selectionAnchor.current
+    setSelected((current) => selectPage(current, pageIdx, anchor, { toggle, range }))
+    if (!range || selectionAnchor.current === null) selectionAnchor.current = pageIdx
   }
 
   // Drag-drop reorder (like PDFsam, Stirling-PDF)
@@ -153,6 +164,27 @@ export function OrganizePagesModal(): React.JSX.Element {
       await applyBytes(bytes)
     } catch (e) { alert(String(e)) } finally { setBusy(false) }
   }
+  const onCrop = async (): Promise<void> => {
+    const idxs = getSelectedIndices()
+    if (!idxs.length || !data) return
+    const values = Object.values(cropMargins)
+    if (values.some((value) => value.trim() === '' || !Number.isFinite(Number(value)) || Number(value) < 0)) {
+      setCropError('Enter a non-negative number for each margin.')
+      return
+    }
+    try {
+      setBusy(true)
+      setCropError('')
+      const bytes = await cropPages((await prepareDocument()).slice().buffer as ArrayBuffer, idxs, {
+        left: Number(cropMargins.left), right: Number(cropMargins.right),
+        top: Number(cropMargins.top), bottom: Number(cropMargins.bottom)
+      })
+      await applyBytes(bytes)
+      setCropOpen(false)
+    } catch (error) {
+      setCropError(error instanceof Error ? error.message : String(error))
+    } finally { setBusy(false) }
+  }
   const onDelete = async (): Promise<void> => {
     const idxs = getSelectedIndices()
     if (!idxs.length || !data) return
@@ -205,6 +237,9 @@ export function OrganizePagesModal(): React.JSX.Element {
               <Icon name="rotateLeft" />
               Rotate CCW
             </button>
+            <button className="tb-btn" style={{ padding: '0 12px' }} disabled={selected.size === 0 || busy} onClick={() => { setCropError(''); setCropOpen(true) }}>
+              Crop
+            </button>
             <div className="tb-sep" />
             <button className="tb-btn" style={{ padding: '0 12px', color: selected.size ? '#ef5350' : 'inherit' }} disabled={selected.size === 0 || busy} onClick={() => void onDelete()}>
               <Icon name="delete" />
@@ -236,7 +271,7 @@ export function OrganizePagesModal(): React.JSX.Element {
 
         <div className="flex-1 overflow-auto p-8" style={{ background: 'var(--acrobat-canvas)' }}>
           <div className="text-xs mb-4 text-center" style={{ color: 'var(--acrobat-text-muted)' }}>
-            Drag pages to reorder · Click to select (Ctrl+click multi) · Selected actions affect highlighted pages
+            Drag pages to reorder · Ctrl+click toggles pages · Shift+click selects a range
           </div>
           <div
             className="flex flex-wrap gap-6 justify-center max-w-6xl mx-auto"
@@ -251,6 +286,16 @@ export function OrganizePagesModal(): React.JSX.Element {
                 <div key={`${origIdx}-${displayPos}`} data-thumbnail={origIdx+1} className="flex flex-col items-center gap-2" onDragOver={(e)=> onDragOver(e, displayPos)} onDragLeave={onDragLeave} onDrop={(e)=> void onDropReorder(e, displayPos)}>
                   <div
                     draggable
+                    role="button"
+                    aria-label={`Select page ${origIdx + 1}`}
+                    aria-pressed={active}
+                    tabIndex={busy ? -1 : 0}
+                    onKeyDown={(e) => {
+                      if (!busy && (e.key === ' ' || e.key === 'Enter')) {
+                        e.preventDefault()
+                        toggleSelect(origIdx, e.ctrlKey || e.metaKey, e.shiftKey)
+                      }
+                    }}
                     onDragStart={(e)=> onDragStart(e, displayPos)}
                     onDragEnd={() => { dragIdx.current = null; setDragOverIdx(null) }}
                     className="org-page-card"
@@ -266,7 +311,7 @@ export function OrganizePagesModal(): React.JSX.Element {
                       overflow: 'hidden',
                       opacity: busy ? 0.6 : 1
                     }}
-                    onClick={(e) => toggleSelect(origIdx, e.ctrlKey || e.metaKey || e.shiftKey)}
+                    onClick={(e) => { if (!busy) toggleSelect(origIdx, e.ctrlKey || e.metaKey, e.shiftKey) }}
                     title="Drag to reorder, click to select"
                   >
                     {src ? (
@@ -304,6 +349,32 @@ export function OrganizePagesModal(): React.JSX.Element {
             </button>
           </div>
         </div>
+        {cropOpen && (
+          <div className="modal-overlay" onClick={(event) => event.stopPropagation()}>
+            <form className="modal-card p-5" role="dialog" aria-modal="true" aria-labelledby="crop-title" onKeyDown={(event) => { if (event.key === 'Escape' && !busy) { event.stopPropagation(); setCropOpen(false) } }} onSubmit={(event) => { event.preventDefault(); void onCrop() }} style={{ width: 760, maxWidth: '90vw', maxHeight: '90vh', overflow: 'auto' }}>
+              <h2 id="crop-title" className="text-lg font-semibold">Crop selected pages</h2>
+              <p className="text-sm my-3">Drag the edges or enter margins in PDF points (72 points per inch). Preview shows the first selected page in its unrotated orientation. Cropping hides content; it does not remove it.</p>
+              <div style={{ display: 'flex', gap: 24, alignItems: 'start', flexWrap: 'wrap' }}>
+              <CropPreview pdf={thumbnailDoc} pageNumber={Math.min(...selected) + 1} margins={cropMargins} onChange={(side, value) => setCropMargins((current) => ({ ...current, [side]: value }))} />
+              <div style={{ flex: '1 1 220px' }}>
+              <div className="grid grid-cols-2 gap-3">
+                {(['left', 'right', 'top', 'bottom'] as const).map((side) => (
+                  <label key={side} className="flex flex-col gap-1 text-sm">
+                    {side[0].toUpperCase() + side.slice(1)}
+                    <input type="number" min="0" step="any" required autoFocus={side === 'left'} value={cropMargins[side]} onChange={(event) => setCropMargins({ ...cropMargins, [side]: event.target.value })} style={{ color: 'var(--acrobat-text)', background: 'var(--acrobat-pane-bg)', border: '1px solid var(--acrobat-border)', padding: 6 }} />
+                  </label>
+                ))}
+              </div>
+              {cropError && <p role="alert" className="text-sm my-2" style={{ color: '#d33' }}>{cropError}</p>}
+              </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <button type="button" className="operation-secondary" disabled={busy} onClick={() => setCropOpen(false)}>Cancel</button>
+                <button type="submit" className="operation-primary" disabled={busy}>Crop {selected.size} page{selected.size === 1 ? '' : 's'}</button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   )
