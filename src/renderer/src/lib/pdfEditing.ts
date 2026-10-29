@@ -635,6 +635,22 @@ export async function cropPages(
   return pdf.save()
 }
 
+/** Restore the visible crop box to the page's media box without deleting content. */
+export async function restorePageBounds(data: ArrayBuffer, indices: number[]): Promise<Uint8Array> {
+  const pdf = await PDFDocument.load(data)
+  const pages = [...new Set(indices)].map((index) => {
+    if (!Number.isInteger(index) || index < 0 || index >= pdf.getPageCount()) {
+      throw new Error('Invalid page selection.')
+    }
+    return pdf.getPage(index)
+  })
+  for (const page of pages) {
+    const box = page.getMediaBox()
+    page.setCropBox(box.x, box.y, box.width, box.height)
+  }
+  return pdf.save()
+}
+
 export async function mergePdfs(datas: ArrayBuffer[]): Promise<Uint8Array> {
   const merged = await PDFDocument.create()
   for (const data of datas) {

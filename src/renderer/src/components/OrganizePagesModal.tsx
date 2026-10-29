@@ -10,7 +10,7 @@ import { usePdfStore } from '../stores/usePdfStore'
 import { useUIStore } from '../stores/useUIStore'
 import { useTabStore } from '../stores/useTabStore'
 import { pdfjsLib, pdfAssetOptions } from '../lib/pdfjs'
-import { deletePages, rotatePages, insertBlankPage, reorderPages, splitPdf, cropPages } from '../lib/pdfEditing'
+import { deletePages, rotatePages, insertBlankPage, reorderPages, splitPdf, cropPages, restorePageBounds } from '../lib/pdfEditing'
 import { selectPage } from '../lib/pageSelection'
 import { CropPreview } from './CropPreview'
 
@@ -185,6 +185,20 @@ export function OrganizePagesModal(): React.JSX.Element {
       setCropError(error instanceof Error ? error.message : String(error))
     } finally { setBusy(false) }
   }
+  const onRestorePageBounds = async (): Promise<void> => {
+    const idxs = getSelectedIndices()
+    if (!idxs.length || !data) return
+    try {
+      setBusy(true)
+      setCropError('')
+      const bytes = await restorePageBounds((await prepareDocument()).slice().buffer as ArrayBuffer, idxs)
+      await applyBytes(bytes)
+      setCropMargins({ left: '0', right: '0', top: '0', bottom: '0' })
+      setCropOpen(false)
+    } catch (error) {
+      setCropError(error instanceof Error ? error.message : String(error))
+    } finally { setBusy(false) }
+  }
   const onDelete = async (): Promise<void> => {
     const idxs = getSelectedIndices()
     if (!idxs.length || !data) return
@@ -353,7 +367,7 @@ export function OrganizePagesModal(): React.JSX.Element {
           <div className="modal-overlay" onClick={(event) => event.stopPropagation()}>
             <form className="modal-card p-5" role="dialog" aria-modal="true" aria-labelledby="crop-title" onKeyDown={(event) => { if (event.key === 'Escape' && !busy) { event.stopPropagation(); setCropOpen(false) } }} onSubmit={(event) => { event.preventDefault(); void onCrop() }} style={{ width: 760, maxWidth: '90vw', maxHeight: '90vh', overflow: 'auto' }}>
               <h2 id="crop-title" className="text-lg font-semibold">Crop selected pages</h2>
-              <p className="text-sm my-3">Drag the edges or enter margins in PDF points (72 points per inch). Preview shows the first selected page in its unrotated orientation. Cropping hides content; it does not remove it.</p>
+              <p className="text-sm my-3">Drag the edges or enter margins in PDF points (72 points per inch). Preview shows the first selected page in its unrotated orientation. Cropping hides content; it does not remove it. Restore full page reveals content within the original page bounds.</p>
               <div style={{ display: 'flex', gap: 24, alignItems: 'start', flexWrap: 'wrap' }}>
               <CropPreview pdf={thumbnailDoc} pageNumber={Math.min(...selected) + 1} margins={cropMargins} onChange={(side, value) => setCropMargins((current) => ({ ...current, [side]: value }))} />
               <div style={{ flex: '1 1 220px' }}>
@@ -369,6 +383,7 @@ export function OrganizePagesModal(): React.JSX.Element {
               </div>
               </div>
               <div className="flex justify-end gap-2 mt-4">
+                <button type="button" className="operation-secondary" disabled={busy} onClick={() => void onRestorePageBounds()}>Restore full page</button>
                 <button type="button" className="operation-secondary" disabled={busy} onClick={() => setCropOpen(false)}>Cancel</button>
                 <button type="submit" className="operation-primary" disabled={busy}>Crop {selected.size} page{selected.size === 1 ? '' : 's'}</button>
               </div>

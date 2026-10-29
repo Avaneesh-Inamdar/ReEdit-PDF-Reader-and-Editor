@@ -190,6 +190,49 @@
     document.querySelector('[title="Close print dialog"]').click()
     await wait(() => !document.querySelector('.print-dialog'), 'Close print')
     checks.print_sessions_released = (await invoke('desktop_test_sessions')) === 0
+
+    // Exercise crop geometry through the actual native renderer and reload path.
+    const toolsButton = document.querySelector('[title="All tools"]')
+    if (!document.querySelector('.workspace-tool-list')) toolsButton.click()
+    await wait(() => document.querySelector('.workspace-tool-list'), 'Tools panel')
+    ;[...document.querySelectorAll('.workspace-tool-list button')]
+      .find((button) => button.textContent.trim() === 'Organize Pages').click()
+    await wait(() => document.querySelector('[aria-label="Select page 1"]'), 'Organize pages')
+    document.querySelector('[aria-label="Select page 1"]').click()
+    const cropButton = () => [...document.querySelectorAll('.modal-card button')]
+      .find((button) => button.textContent.trim() === 'Crop')
+    cropButton().click()
+    await wait(() => document.querySelector('[aria-label="Drag left crop edge"]'), 'Crop preview')
+    const fieldLeft = document.querySelector('#crop-title').closest('form').querySelector('input')
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(fieldLeft, '72')
+    fieldLeft.dispatchEvent(new Event('input', { bubbles: true }))
+    await wait(() => document.querySelector('[aria-label="Drag left crop edge"]').getBoundingClientRect().x >
+      document.querySelector('[aria-label="Preview of page 1"]').getBoundingClientRect().x + 10, 'Crop edge follows margin')
+    checks.crop_preview_follows_margin = true
+    if (nativeKeys) {
+      const handle = document.querySelector('[aria-label="Drag left crop edge"]').getBoundingClientRect()
+      const x = handle.left + handle.width / 2, y = handle.top + handle.height / 2
+      await invoke('desktop_test_input', { method: 'Input.dispatchMouseEvent', params: { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 } })
+      await invoke('desktop_test_input', { method: 'Input.dispatchMouseEvent', params: { type: 'mouseMoved', x: x + 25, y, button: 'left', buttons: 1 } })
+      await invoke('desktop_test_input', { method: 'Input.dispatchMouseEvent', params: { type: 'mouseReleased', x: x + 25, y, button: 'left', buttons: 0, clickCount: 1 } })
+      await wait(() => Number(fieldLeft.value) > 90, 'Crop handle drag')
+      checks.crop_handle_drag = true
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(fieldLeft, '72')
+      fieldLeft.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+    await pause(100)
+    document.querySelector('#crop-title').closest('form').requestSubmit()
+    await wait(() => !document.querySelector('#crop-title'), 'Apply crop')
+    await wait(() => selectedPage().includes('540 × 792 pt'), 'Cropped page dimensions')
+    checks.crop_updates_page = true
+    document.querySelector('[aria-label="Select page 1"]').click()
+    cropButton().click()
+    await wait(() => document.querySelector('#crop-title'), 'Reopen crop')
+    ;[...document.querySelector('#crop-title').closest('form').querySelectorAll('button')]
+      .find((button) => button.textContent.trim() === 'Restore full page').click()
+    await wait(() => !document.querySelector('#crop-title'), 'Restore bounds')
+    await wait(() => selectedPage().includes('612 × 792 pt'), 'Restored page dimensions')
+    checks.crop_restore_page = true
     if (Object.values(checks).some((value) => !value))
       throw Error(
         'Failed: ' +
