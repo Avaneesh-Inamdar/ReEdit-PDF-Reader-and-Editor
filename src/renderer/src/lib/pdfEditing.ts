@@ -651,6 +651,50 @@ export async function restorePageBounds(data: ArrayBuffer, indices: number[]): P
   return pdf.save()
 }
 
+/** Add centered footer numbers in the visual orientation of each selected page. */
+export async function addPageNumbers(
+  data: ArrayBuffer,
+  indices: number[],
+  firstNumber: number
+): Promise<Uint8Array> {
+  if (!Number.isSafeInteger(firstNumber) || firstNumber < 1) {
+    throw new Error('The first page number must be a positive whole number.')
+  }
+  const pdf = await PDFDocument.load(data)
+  const font = await pdf.embedFont(StandardFonts.Helvetica)
+  const fontSize = 10
+  const margin = 24
+  const entries = [...new Set(indices)].map((index) => {
+    if (!Number.isInteger(index) || index < 0 || index >= pdf.getPageCount()) {
+      throw new Error('Invalid page selection.')
+    }
+    if (!Number.isSafeInteger(firstNumber + index)) throw new Error('Page number is too large.')
+    const page = pdf.getPage(index)
+    const box = page.getCropBox()
+    const rotation = ((page.getRotation().angle % 360) + 360) % 360
+    if (![0, 90, 180, 270].includes(rotation)) throw new Error(`Unsupported rotation on page ${index + 1}.`)
+    const label = String(firstNumber + index)
+    const textWidth = font.widthOfTextAtSize(label, fontSize)
+    const visualWidth = rotation % 180 ? box.height : box.width
+    const visualHeight = rotation % 180 ? box.width : box.height
+    if (visualWidth < textWidth + 4 || visualHeight < margin + fontSize) {
+      throw new Error(`Page ${index + 1} is too small for a footer number.`)
+    }
+    return { page, box, rotation, label, textWidth }
+  })
+  for (const { page, box, rotation, label, textWidth } of entries) {
+    const coordinates = rotation === 90
+      ? { x: box.x + box.width - margin, y: box.y + (box.height - textWidth) / 2 }
+      : rotation === 180
+        ? { x: box.x + (box.width + textWidth) / 2, y: box.y + box.height - margin }
+        : rotation === 270
+          ? { x: box.x + margin, y: box.y + (box.height + textWidth) / 2 }
+          : { x: box.x + (box.width - textWidth) / 2, y: box.y + margin }
+    page.drawText(label, { ...coordinates, size: fontSize, font, rotate: degrees(rotation) })
+  }
+  return pdf.save()
+}
+
 export async function mergePdfs(datas: ArrayBuffer[]): Promise<Uint8Array> {
   const merged = await PDFDocument.create()
   for (const data of datas) {

@@ -235,6 +235,24 @@
     await wait(() => !document.querySelector('#crop-title'), 'Restore bounds')
     await wait(() => selectedPage().includes('612 × 792 pt'), 'Restored page dimensions')
     checks.crop_restore_page = true
+    document.querySelector('[aria-label="Select page 1"]').click()
+    const numberButton = () => [...document.querySelectorAll('.modal-card button')]
+      .find((button) => button.textContent.trim() === 'Page numbers')
+    await wait(() => numberButton() && !numberButton().disabled, 'Select page for numbering')
+    numberButton().click()
+    await wait(() => document.querySelector('#page-numbers-title'), 'Page number dialog')
+    const numberForm = document.querySelector('#page-numbers-title').closest('form')
+    const firstNumber = numberForm.querySelector('input')
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(firstNumber, '100')
+    firstNumber.dispatchEvent(new Event('input', { bubbles: true }))
+    await pause(100)
+    numberForm.requestSubmit()
+    await wait(() => !document.querySelector('#page-numbers-title'), 'Apply page numbering')
+    ;[...document.querySelectorAll('.modal-card button')]
+      .find((button) => button.textContent.trim() === 'Done').click()
+    await wait(() => [...document.querySelectorAll('#page-1 [data-pdf-run]')]
+      .some((run) => run.textContent.trim() === '100'), 'Page number text')
+    checks.page_number_added = true
     if (Object.values(checks).some((value) => !value))
       throw Error(
         'Failed: ' +

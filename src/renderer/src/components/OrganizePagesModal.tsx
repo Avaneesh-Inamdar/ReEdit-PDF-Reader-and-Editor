@@ -10,7 +10,7 @@ import { usePdfStore } from '../stores/usePdfStore'
 import { useUIStore } from '../stores/useUIStore'
 import { useTabStore } from '../stores/useTabStore'
 import { pdfjsLib, pdfAssetOptions } from '../lib/pdfjs'
-import { deletePages, rotatePages, insertBlankPage, reorderPages, splitPdf, cropPages, restorePageBounds } from '../lib/pdfEditing'
+import { deletePages, rotatePages, insertBlankPage, reorderPages, splitPdf, cropPages, restorePageBounds, addPageNumbers } from '../lib/pdfEditing'
 import { selectPage } from '../lib/pageSelection'
 import { CropPreview } from './CropPreview'
 
@@ -32,6 +32,9 @@ export function OrganizePagesModal(): React.JSX.Element {
   const [cropOpen, setCropOpen] = useState(false)
   const [cropMargins, setCropMargins] = useState({ left: '0', right: '0', top: '0', bottom: '0' })
   const [cropError, setCropError] = useState('')
+  const [numberingOpen, setNumberingOpen] = useState(false)
+  const [firstPageNumber, setFirstPageNumber] = useState('1')
+  const [numberingError, setNumberingError] = useState('')
 
   // Keep order in sync with numPages
   useEffect(() => {
@@ -56,7 +59,7 @@ export function OrganizePagesModal(): React.JSX.Element {
   // Keyboard shortcut for Undo / Redo within Organize Pages
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
-      if (e.target instanceof Element && e.target.closest('[aria-labelledby="crop-title"]')) return
+      if (e.target instanceof Element && e.target.closest('[aria-modal="true"]')) return
       if (e.target instanceof HTMLElement && (e.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))) return
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
         e.preventDefault()
@@ -199,6 +202,24 @@ export function OrganizePagesModal(): React.JSX.Element {
       setCropError(error instanceof Error ? error.message : String(error))
     } finally { setBusy(false) }
   }
+  const onAddPageNumbers = async (): Promise<void> => {
+    const idxs = getSelectedIndices()
+    if (!idxs.length || !data) return
+    const first = Number(firstPageNumber)
+    if (firstPageNumber.trim() === '' || !Number.isSafeInteger(first) || first < 1) {
+      setNumberingError('Enter a positive whole number.')
+      return
+    }
+    try {
+      setBusy(true)
+      setNumberingError('')
+      const bytes = await addPageNumbers((await prepareDocument()).slice().buffer as ArrayBuffer, idxs, first)
+      await applyBytes(bytes)
+      setNumberingOpen(false)
+    } catch (error) {
+      setNumberingError(error instanceof Error ? error.message : String(error))
+    } finally { setBusy(false) }
+  }
   const onDelete = async (): Promise<void> => {
     const idxs = getSelectedIndices()
     if (!idxs.length || !data) return
@@ -242,7 +263,7 @@ export function OrganizePagesModal(): React.JSX.Element {
       <div className="modal-card flex flex-col" style={{ width: '90vw', maxWidth: 1000, height: '85vh' }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center px-4 shrink-0" style={{ height: 50, borderBottom: '1px solid var(--acrobat-border)', background: 'var(--acrobat-toolbar)' }}>
           <span className="text-sm font-semibold mr-6" style={{ color: 'var(--acrobat-text)' }}>Organize Pages</span>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1" style={{ overflowX: 'auto', minWidth: 0 }}>
             <button className="tb-btn" style={{ padding: '0 12px' }} disabled={selected.size === 0 || busy} onClick={() => void onRotate(90)}>
               <Icon name="rotate" />
               Rotate CW
@@ -253,6 +274,9 @@ export function OrganizePagesModal(): React.JSX.Element {
             </button>
             <button className="tb-btn" style={{ padding: '0 12px' }} disabled={selected.size === 0 || busy} onClick={() => { setCropError(''); setCropOpen(true) }}>
               Crop
+            </button>
+            <button className="tb-btn" style={{ padding: '0 12px' }} disabled={selected.size === 0 || busy} onClick={() => { setNumberingError(''); setNumberingOpen(true) }}>
+              Page numbers
             </button>
             <div className="tb-sep" />
             <button className="tb-btn" style={{ padding: '0 12px', color: selected.size ? '#ef5350' : 'inherit' }} disabled={selected.size === 0 || busy} onClick={() => void onDelete()}>
@@ -386,6 +410,22 @@ export function OrganizePagesModal(): React.JSX.Element {
                 <button type="button" className="operation-secondary" disabled={busy} onClick={() => void onRestorePageBounds()}>Restore full page</button>
                 <button type="button" className="operation-secondary" disabled={busy} onClick={() => setCropOpen(false)}>Cancel</button>
                 <button type="submit" className="operation-primary" disabled={busy}>Crop {selected.size} page{selected.size === 1 ? '' : 's'}</button>
+              </div>
+            </form>
+          </div>
+        )}
+        {numberingOpen && (
+          <div className="modal-overlay" onClick={(event) => event.stopPropagation()}>
+            <form className="modal-card p-5" role="dialog" aria-modal="true" aria-labelledby="page-numbers-title" onKeyDown={(event) => { if (event.key === 'Escape' && !busy) { event.stopPropagation(); setNumberingOpen(false) } }} onSubmit={(event) => { event.preventDefault(); void onAddPageNumbers() }} style={{ width: 440, maxWidth: '90vw' }}>
+              <h2 id="page-numbers-title" className="text-lg font-semibold">Add page numbers</h2>
+              <p className="text-sm my-3">Add a centered footer to {selected.size} selected page{selected.size === 1 ? '' : 's'}. The first page of the document uses the number below; unselected pages retain their positions in the sequence. Adding numbers again creates another footer.</p>
+              <label className="flex flex-col gap-1 text-sm">First page number
+                <input type="number" min="1" step="1" required autoFocus value={firstPageNumber} onChange={(event) => setFirstPageNumber(event.target.value)} style={{ color: 'var(--acrobat-text)', background: 'var(--acrobat-pane-bg)', border: '1px solid var(--acrobat-border)', padding: 6 }} />
+              </label>
+              {numberingError && <p role="alert" className="text-sm my-2" style={{ color: '#d33' }}>{numberingError}</p>}
+              <div className="flex justify-end gap-2 mt-4">
+                <button type="button" className="operation-secondary" disabled={busy} onClick={() => setNumberingOpen(false)}>Cancel</button>
+                <button type="submit" className="operation-primary" disabled={busy}>Add page numbers</button>
               </div>
             </form>
           </div>

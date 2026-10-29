@@ -10,6 +10,10 @@ applies to selected pages in unrotated PDF coordinates and is undoable; it does
 not remove hidden content. The preview shows the first selected page. The
 table below otherwise records the state of the October 25 assessment.
 
+Organize Pages also supports adding centered footer page numbers to selected
+pages, including rotated and cropped pages. Custom header/footer layouts,
+editing or removing previously inserted numbers, and Bates numbering remain open.
+
 The [release audit](releases/v2.1.0/AUDIT.md) rechecks the current
 desktop Acrobat Pro target, concrete source differences, package provenance
 and completed CI reports. Its verdict is that identical UI and behavior have
