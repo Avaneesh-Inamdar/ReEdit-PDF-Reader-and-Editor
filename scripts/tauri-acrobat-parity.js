@@ -301,6 +301,7 @@
     await wait(() => !document.querySelector('#watermark-title'), 'Apply watermark')
     ;[...document.querySelectorAll('.modal-card button')]
       .find((button) => button.textContent.trim() === 'Done').click()
+    await wait(() => document.querySelector('[data-pdf-viewer]'), 'Reader after watermark')
     document.querySelector('[data-pdf-viewer]').focus()
     await key('ArrowRight', 'ArrowRight', 39)
     await wait(() => [...document.querySelectorAll('#page-3 [data-pdf-run]')]
